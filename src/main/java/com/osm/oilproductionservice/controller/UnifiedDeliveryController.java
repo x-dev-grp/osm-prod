@@ -17,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/production/deliveries")
-@CrossOrigin
+
 public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> {
 
     private final UnifiedDeliveryService UnifiedDeliveryService;

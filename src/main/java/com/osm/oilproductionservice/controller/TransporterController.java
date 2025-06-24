@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/production/transporter")
-@CrossOrigin
+
 public class TransporterController extends BaseControllerImpl<Transporter, TransporterDTO, TransporterDTO> {
 
     private final TransporterService transporterDTOService;

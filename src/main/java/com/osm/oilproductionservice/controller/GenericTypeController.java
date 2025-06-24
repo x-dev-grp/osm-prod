@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 
 @RequestMapping("/api/production/types")
-@CrossOrigin
+
 public class GenericTypeController extends
         BaseControllerImpl<BaseType, BaseTypeDto, BaseTypeDto> {
     private final GenericTypeService genericTypeService;
