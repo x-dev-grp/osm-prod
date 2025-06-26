@@ -1,11 +1,18 @@
 package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
+import com.osm.oilproductionservice.dto.StorageUnitDto;
+import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
+import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.QualityControlResult;
+import com.osm.oilproductionservice.model.StorageUnit;
+import com.osm.oilproductionservice.repository.StorageUnitRepo;
+import com.osm.oilproductionservice.service.OilTransactionService;
 import com.osm.oilproductionservice.service.QualityControlResultService;
+import com.osm.oilproductionservice.service.StorageUnitService;
+import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
-import com.xdev.xdevbase.models.OSMModule;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -23,19 +30,26 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
 
     private static final Logger log = LoggerFactory.getLogger(QualityControlResultController.class);
     private final QualityControlResultService qualityControlResultService;
+    private final UnifiedDeliveryService unifiedDeliveryService;
+    private final StorageUnitService storageUnitService;
+    private final StorageUnitRepo storageUnitRepo;
+    private final OilTransactionService oilTransactionService;
 
-    public QualityControlResultController(BaseService<QualityControlResult, QualityControlResultDto, QualityControlResultDto> baseService, ModelMapper modelMapper, QualityControlResultService qualityControlResultService) {
+    public QualityControlResultController(BaseService<QualityControlResult, QualityControlResultDto, QualityControlResultDto> baseService, ModelMapper modelMapper, QualityControlResultService qualityControlResultService, UnifiedDeliveryService unifiedDeliveryService, StorageUnitService storageUnitService, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService) {
         super(baseService, modelMapper);
         this.qualityControlResultService = qualityControlResultService;
+        this.unifiedDeliveryService = unifiedDeliveryService;
+        this.storageUnitService = storageUnitService;
+        this.storageUnitRepo = storageUnitRepo;
+        this.oilTransactionService = oilTransactionService;
     }
 
     @PostMapping("/save-batch")
     public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> saveBatch(@RequestBody List<QualityControlResultDto> dtos) {
         log.debug("Received save-batch request with {} DTOs", dtos.size());
         try {
-            List<QualityControlResultDto> savedDtos = qualityControlResultService.saveAll(dtos);
-            log.debug("Successfully saved {} DTOs", savedDtos.size());
-            ApiResponse<QualityControlResult, QualityControlResultDto> ff = new ApiResponse<>(true, "", savedDtos);
+
+            ApiResponse<QualityControlResult, QualityControlResultDto> ff = new ApiResponse<>(true, "", qualityControlResultService.savebatch(dtos));
             return ResponseEntity.ok(ff);
         } catch (IllegalArgumentException e) {
             log.error("Bad request: {}", e.getMessage());

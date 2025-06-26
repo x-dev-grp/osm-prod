@@ -33,8 +33,8 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     @NotNull(message = "Region is required")
     private BaseTypeDto region;
 
-    private float poidsBrute;
-    private float poidsNet;
+    private Double poidsBrute;
+    private Double poidsNet;
     private String matriculeCamion;
     private String etatCamion;
     // Represent supplierType as a string for simplification (or use a nested DTO if needed)
@@ -49,15 +49,15 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private BaseTypeDto oilVariety;
 
-    private Float oilQuantity;
+    private Double oilQuantity;
 
-    private Float unitPrice;
+    private Double unitPrice;
 
-    private Float price;
+    private Double price;
 
-    private Float paidAmount;
+    private Double paidAmount;
 
-    private Float unpaidAmount;
+    private Double unpaidAmount;
 
     private BaseTypeDto oilType;
 
@@ -74,9 +74,9 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private OliveLotStatus status;
 
-    private Float rendement;
+    private Double rendement;
 
-    private Float oliveQuantity;
+    private Double oliveQuantity;
 
     private String parcel;
 
@@ -164,19 +164,19 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     }
 
 
-    public float getPoidsBrute() {
+    public Double getPoidsBrute() {
         return poidsBrute;
     }
 
-    public void setPoidsBrute(float poidsBrute) {
+    public void setPoidsBrute(Double poidsBrute) {
         this.poidsBrute = poidsBrute;
     }
 
-    public float getPoidsNet() {
+    public Double getPoidsNet() {
         return poidsNet;
     }
 
-    public void setPoidsNet(float poidsNet) {
+    public void setPoidsNet(Double poidsNet) {
         this.poidsNet = poidsNet;
     }
 
@@ -220,43 +220,43 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.oilVariety = oilVariety;
     }
 
-    public Float getOilQuantity() {
+    public Double getOilQuantity() {
         return oilQuantity;
     }
 
-    public void setOilQuantity(Float oilQuantity) {
+    public void setOilQuantity(Double oilQuantity) {
         this.oilQuantity = oilQuantity;
     }
 
-    public Float getUnitPrice() {
+    public Double getUnitPrice() {
         return unitPrice;
     }
 
-    public void setUnitPrice(Float unitPrice) {
+    public void setUnitPrice(Double unitPrice) {
         this.unitPrice = unitPrice;
     }
 
-    public Float getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(Float price) {
+    public void setPrice(Double price) {
         this.price = price;
     }
 
-    public Float getPaidAmount() {
+    public Double getPaidAmount() {
         return paidAmount;
     }
 
-    public void setPaidAmount(Float paidAmount) {
+    public void setPaidAmount(Double paidAmount) {
         this.paidAmount = paidAmount;
     }
 
-    public Float getUnpaidAmount() {
+    public Double getUnpaidAmount() {
         return unpaidAmount;
     }
 
-    public void setUnpaidAmount(Float unpaidAmount) {
+    public void setUnpaidAmount(Double unpaidAmount) {
         this.unpaidAmount = unpaidAmount;
     }
 
@@ -313,20 +313,20 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.status = status;
     }
 
-    public Float getRendement() {
+    public Double getRendement() {
         return rendement;
     }
 
-    public void setRendement(Float rendement) {
+    public void setRendement(Double rendement) {
         this.rendement = rendement;
     }
 
 
-    public Float getOliveQuantity() {
+    public Double getOliveQuantity() {
         return oliveQuantity;
     }
 
-    public void setOliveQuantity(Float oliveQuantity) {
+    public void setOliveQuantity(Double oliveQuantity) {
         this.oliveQuantity = oliveQuantity;
     }
 

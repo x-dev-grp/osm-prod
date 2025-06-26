@@ -18,6 +18,9 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private LocalDateTime nextMaintenanceDate;
     private LocalDateTime lastInspectionDate;
 
+    private Double avgCost =  0.0 ;
+    private Double totalCost= 0.0;
+
     private BaseTypeDto oilType;
     private StorageStatus status = StorageStatus.AVAILABLE;
 
@@ -134,5 +137,21 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
 
     public void setLastEmptyDate(LocalDateTime lastEmptyDate) {
         this.lastEmptyDate = lastEmptyDate;
+    }
+
+    public Double getAvgCost() {
+        return avgCost;
+    }
+
+    public void setAvgCost(Double avgCost) {
+        this.avgCost = avgCost;
+    }
+
+    public Double getTotalCost() {
+        return totalCost;
+    }
+
+    public void setTotalCost(Double totalCost) {
+        this.totalCost = totalCost;
     }
 }

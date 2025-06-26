@@ -1,12 +1,14 @@
 package com.osm.oilproductionservice.service;
 
+import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
+import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.enums.RuleType;
-import com.osm.oilproductionservice.model.QualityControlResult;
-import com.osm.oilproductionservice.model.QualityControlRule;
-import com.osm.oilproductionservice.model.UnifiedDelivery;
+import com.osm.oilproductionservice.enums.TransactionType;
+import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
+import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.QualityControlResultRepository;
 import com.osm.oilproductionservice.repository.QualityControlRuleRepository;
 import com.xdev.xdevbase.repos.BaseRepository;
@@ -33,14 +35,23 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     private final ModelMapper modelMapper;
 
     private final UnifiedDeliveryService unifiedDeliveryService;
+    private final UnifiedDeliveryRepository unifiedDeliveryRepository;
+    private final QualityControlResultRepository qualityControlResultRepository;
+    private final OilTransactionRepository oilTransactionRepository;
+    private final OilTransactionService oilTransactionService;
 
-    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService) {
+    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService,
+                                       UnifiedDeliveryRepository unifiedDeliveryRepository, QualityControlResultRepository qualityControlResultRepository, OilTransactionRepository oilTransactionRepository, OilTransactionService oilTransactionService) {
         super(repository, modelMapper);
         this.repository = repository1;
         this.ruleRepository = ruleRepository;
         this.deliveryRepo = deliveryRepo;
         this.modelMapper = modelMapper1;
         this.unifiedDeliveryService = unifiedDeliveryService;
+        this.unifiedDeliveryRepository = unifiedDeliveryRepository;
+        this.qualityControlResultRepository = qualityControlResultRepository;
+        this.oilTransactionRepository = oilTransactionRepository;
+        this.oilTransactionService = oilTransactionService;
     }
 
     @Transactional
@@ -71,7 +82,6 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 2. Preload all Delivery IDs
         Set<UUID> deliveryUuids = dtos.stream()
                 .map(QualityControlResultDto::getDeliveryId)
-                .map(UUID::fromString)
                 .collect(Collectors.toSet());
 
         Map<UUID, UnifiedDelivery> deliveryMap = this.deliveryRepo.findAllById(deliveryUuids).stream()
@@ -96,7 +106,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             entity.setMeasuredValue(dto.getMeasuredValue());
 
             // Get Delivery
-            UUID deliveryId = UUID.fromString(dto.getDeliveryId());
+            UUID deliveryId = dto.getDeliveryId();
             UnifiedDelivery delivery = deliveryMap.get(deliveryId);
             entity.setDelivery(delivery);
 
@@ -267,5 +277,23 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         actions.add("READ");
         actions.addAll(Set.of("UPDATE", "DELETE"));
         return actions;
+    }
+
+    public List<QualityControlResultDto> savebatch(List<QualityControlResultDto> dtos) {
+        UnifiedDelivery sod = unifiedDeliveryRepository.findById(dtos.getFirst().getDeliveryId()).orElse(null);
+        if (Objects.nonNull(sod) && sod.getDeliveryType() == DeliveryType.OIL) {
+            OilTransaction oilTransaction = new OilTransaction();
+            oilTransaction.setStorageUnitDestination(sod.getStorageUnit());
+            oilTransaction.setStorageUnitSource(null);
+            oilTransaction.setTransactionType(TransactionType.RECEPTION_IN);
+            oilTransaction.setQualityGrade(null);
+            oilTransaction.setQuantityKg(sod.getOilQuantity());
+            oilTransaction.setUnitPrice(sod.getUnitPrice());
+            oilTransaction.setReceptionId(sod.getId());
+            oilTransactionService.save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
+        }
+        List<QualityControlResult> list = dtos.stream().map((element) -> modelMapper.map(element, QualityControlResult.class)).toList();
+        List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);
+        return savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();
     }
 }

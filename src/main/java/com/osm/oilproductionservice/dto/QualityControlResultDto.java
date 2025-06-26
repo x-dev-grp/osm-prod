@@ -7,6 +7,7 @@ import com.osm.oilproductionservice.model.QualityControlResult;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * DTO for {@link com.osm.oilproductionservice.model.QualityControlResult}
@@ -17,7 +18,7 @@ public class QualityControlResultDto extends BaseDto<QualityControlResult> imple
 
     QualityControlRuleDto rule;
     String measuredValue;
-    private String deliveryId;
+    private UUID deliveryId;
 
 
 
@@ -37,11 +38,11 @@ public class QualityControlResultDto extends BaseDto<QualityControlResult> imple
         this.measuredValue = measuredValue;
     }
 
-    public String getDeliveryId() {
+    public UUID getDeliveryId() {
         return deliveryId;
     }
 
-    public void setDeliveryId(String deliveryId) {
+    public void setDeliveryId(UUID deliveryId) {
         this.deliveryId = deliveryId;
     }
 }

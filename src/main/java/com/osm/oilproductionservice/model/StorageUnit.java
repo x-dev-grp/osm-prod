@@ -4,6 +4,8 @@ import com.osm.oilproductionservice.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,6 +21,9 @@ public class StorageUnit extends BaseEntity {
 
     private LocalDateTime nextMaintenanceDate;
     private LocalDateTime lastInspectionDate;
+
+    private Double avgCost = 0.0;
+    private Double totalCost = 0.0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oilType; // OIL_VARIETY
@@ -95,6 +100,21 @@ public class StorageUnit extends BaseEntity {
         this.currentVolume = currentVolume;
     }
 
+    public void updateCurrentVolume(Double volume, int direction, Double unitPrice) {
+        java.util.function.Function<Double, Double> rd = v -> BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        if (volume != null) {
+            if (direction == 0) {
+                this.currentVolume = rd.apply(this.currentVolume - volume);
+                this.totalCost = rd.apply(this.totalCost - (volume * this.avgCost));
+            } else {
+                this.currentVolume = rd.apply(this.currentVolume + volume);
+                this.totalCost = rd.apply(this.totalCost + (volume * unitPrice));
+            }
+
+            this.avgCost = rd.apply(this.totalCost / this.currentVolume);
+        }
+    }
+
     public LocalDateTime getNextMaintenanceDate() {
         return nextMaintenanceDate;
     }
@@ -141,5 +161,21 @@ public class StorageUnit extends BaseEntity {
 
     public void setLastEmptyDate(LocalDateTime lastEmptyDate) {
         this.lastEmptyDate = lastEmptyDate;
+    }
+
+    public Double getAvgCost() {
+        return avgCost;
+    }
+
+    public void setAvgCost(Double avgCost) {
+        this.avgCost = avgCost;
+    }
+
+    public Double getTotalCost() {
+        return totalCost;
+    }
+
+    public void setTotalCost(Double totalCost) {
+        this.totalCost = totalCost;
     }
 }

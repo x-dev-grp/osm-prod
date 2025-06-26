@@ -49,8 +49,8 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private BaseType region;
 
     // Example weight fields (if these are required)
-    private float poidsBrute;
-    private float poidsNet;
+    private Double poidsBrute;
+    private Double poidsNet;
 
     private String matriculeCamion;
     private String etatCamion;
@@ -78,12 +78,12 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oilVariety; // The variety of oil
-    private Float oilQuantity;   // In appropriate unit, e.g., liters
+    private Double oilQuantity;   // In appropriate unit, e.g., liters
 
-    private Float unitPrice;
-    private Float price;
-    private Float paidAmount;
-    private Float unpaidAmount;
+    private Double unitPrice;
+    private Double price;
+    private Double paidAmount;
+    private Double unpaidAmount;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
@@ -107,10 +107,10 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private OliveLotStatus status;  // Status of the olive lot
 
     // Additional fields found in the UnifiedDelivery constructor, if needed
-    private Float rendement; // Yield or performance measure
+    private Double rendement; // Yield or performance measure
     @ManyToOne(fetch = FetchType.LAZY)
     private MillMachine millMachine;
-    private Float oliveQuantity;
+    private Double oliveQuantity;
     private String parcel;
 
 
@@ -169,19 +169,19 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.region = region;
     }
 
-    public float getPoidsBrute() {
+    public Double getPoidsBrute() {
         return poidsBrute;
     }
 
-    public void setPoidsBrute(float poidsBrute) {
+    public void setPoidsBrute(Double poidsBrute) {
         this.poidsBrute = poidsBrute;
     }
 
-    public float getPoidsNet() {
+    public Double getPoidsNet() {
         return poidsNet;
     }
 
-    public void setPoidsNet(float poidsNet) {
+    public void setPoidsNet(Double poidsNet) {
         this.poidsNet = poidsNet;
     }
 
@@ -234,43 +234,43 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.oilVariety = oilVariety;
     }
 
-    public Float getOilQuantity() {
+    public Double getOilQuantity() {
         return oilQuantity;
     }
 
-    public void setOilQuantity(Float oilQuantity) {
+    public void setOilQuantity(Double oilQuantity) {
         this.oilQuantity = oilQuantity;
     }
 
-    public Float getUnitPrice() {
+    public Double getUnitPrice() {
         return unitPrice;
     }
 
-    public void setUnitPrice(Float unitPrice) {
+    public void setUnitPrice(Double unitPrice) {
         this.unitPrice = unitPrice;
     }
 
-    public Float getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(Float price) {
+    public void setPrice(Double price) {
         this.price = price;
     }
 
-    public Float getPaidAmount() {
+    public Double getPaidAmount() {
         return paidAmount;
     }
 
-    public void setPaidAmount(Float paidAmount) {
+    public void setPaidAmount(Double paidAmount) {
         this.paidAmount = paidAmount;
     }
 
-    public Float getUnpaidAmount() {
+    public Double getUnpaidAmount() {
         return unpaidAmount;
     }
 
-    public void setUnpaidAmount(Float unpaidAmount) {
+    public void setUnpaidAmount(Double unpaidAmount) {
         this.unpaidAmount = unpaidAmount;
     }
 
@@ -342,11 +342,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.status = status;
     }
 
-    public Float getRendement() {
+    public Double getRendement() {
         return rendement;
     }
 
-    public void setRendement(Float rendement) {
+    public void setRendement(Double rendement) {
         this.rendement = rendement;
     }
 
@@ -358,11 +358,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.millMachine = millMachine;
     }
 
-    public Float getOliveQuantity() {
+    public Double getOliveQuantity() {
         return oliveQuantity;
     }
 
-    public void setOliveQuantity(Float oliveQuantity) {
+    public void setOliveQuantity(Double oliveQuantity) {
         this.oliveQuantity = oliveQuantity;
     }
 
