@@ -1,6 +1,7 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
+import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
@@ -11,7 +12,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTransactionDTO, OilTransactionDTO> {
@@ -28,6 +31,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     public OilTransactionDTO save(OilTransactionDTO request) {
         OilTransaction oilTransaction = modelMapper.map(request, OilTransaction.class);
         oilTransaction.setTotalPrice();
+        oilTransaction.setTransactionState(TransactionState.COMPLETED);
         oilTransaction = oilTransactionRepository.save(oilTransaction);
         StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
         StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
@@ -42,7 +46,9 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
-
+    public List<OilTransaction> findByStorageUnitId(UUID storageUnitId) {
+        return oilTransactionRepository.findByStorageUnitDestinationId(storageUnitId);
+    }
     @Override
     public Set<String> actionsMapping(OilTransaction oilTransaction) {
         Set<String> actions = new HashSet<>();

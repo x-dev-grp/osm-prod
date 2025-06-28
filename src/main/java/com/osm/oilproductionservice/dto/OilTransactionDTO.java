@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.xdev.xdevbase.dtos.BaseDto;
@@ -17,8 +18,25 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private Double quantityKg;
     private Double unitPrice;
     private Double totalPrice;
-    private UUID receptionId;
     private TransactionType transactionType;
+    private TransactionState transactionState;
+    private UnifiedDeliveryDTO reception;
+
+    public UnifiedDeliveryDTO getReception() {
+        return reception;
+    }
+
+    public void setReception(UnifiedDeliveryDTO reception) {
+        this.reception = reception;
+    }
+
+    public TransactionState getTransactionState() {
+        return transactionState;
+    }
+
+    public void setTransactionState(TransactionState transactionState) {
+        this.transactionState = transactionState;
+    }
 
     public Boolean getDeleted() {
         return isDeleted;
@@ -94,13 +112,7 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
         this.totalPrice = totalPrice;
     }
 
-    public UUID getReceptionId() {
-        return receptionId;
-    }
 
-    public void setReceptionId(UUID receptionId) {
-        this.receptionId = receptionId;
-    }
 
     public TransactionType getTransactionType() {
         return transactionType;

@@ -1,11 +1,13 @@
 package com.osm.oilproductionservice.model;
 
+import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
 import com.xdev.xdevbase.entities.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
@@ -27,7 +29,22 @@ public class OilTransaction extends BaseEntity implements Serializable {
     private Double quantityKg;
     private Double unitPrice;
     private double totalPrice;
-    private UUID receptionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private UnifiedDelivery reception;
+
+    private TransactionState transactionState;
+
+    public TransactionState getTransactionState() {
+        return transactionState;
+    }
+
+    public void setTransactionState(TransactionState transactionState) {
+        this.transactionState = transactionState;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
 
 
     public TransactionType getTransactionType() {
@@ -86,12 +103,12 @@ public class OilTransaction extends BaseEntity implements Serializable {
         this.totalPrice = unitPrice * quantityKg;
     }
 
-    public UUID getReceptionId() {
-        return receptionId;
+    public UnifiedDelivery getReception() {
+        return reception;
     }
 
-    public void setReceptionId(UUID receptionId) {
-        this.receptionId = receptionId;
+    public void setReception(UnifiedDelivery receptionId) {
+        this.reception = receptionId;
     }
 
 }

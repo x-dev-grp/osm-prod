@@ -2,10 +2,7 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.RuleType;
-import com.osm.oilproductionservice.enums.TransactionType;
+import com.osm.oilproductionservice.enums.*;
 import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
@@ -287,9 +284,10 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             oilTransaction.setStorageUnitSource(null);
             oilTransaction.setTransactionType(TransactionType.RECEPTION_IN);
             oilTransaction.setQualityGrade(null);
+            oilTransaction.setTransactionState(TransactionState.COMPLETED);
             oilTransaction.setQuantityKg(sod.getOilQuantity());
             oilTransaction.setUnitPrice(sod.getUnitPrice());
-            oilTransaction.setReceptionId(sod.getId());
+            oilTransaction.setReception(sod);
             oilTransactionService.save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
         }
         List<QualityControlResult> list = dtos.stream().map((element) -> modelMapper.map(element, QualityControlResult.class)).toList();
