@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/production/deliveries")
@@ -42,6 +43,28 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
 
         return ResponseEntity.ok(response);
     }
+
+    // Get deliveries by supplier ID
+    @GetMapping("/supplier/{supplierId}")
+    public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesBySupplier(@PathVariable UUID supplierId) {
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getDeliveriesBySupplier(supplierId));
+        return ResponseEntity.ok(response);
+    }
+
+    // Get paid deliveries by supplier ID
+    @GetMapping("/supplier/{supplierId}/paid")
+    public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getPaidDeliveriesBySupplier(@PathVariable UUID supplierId) {
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Paid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getPaidDeliveriesBySupplier(supplierId));
+        return ResponseEntity.ok(response);
+    }
+
+    // Get unpaid deliveries by supplier ID
+    @GetMapping("/supplier/{supplierId}/unpaid")
+    public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getUnpaidDeliveriesBySupplier(@PathVariable UUID supplierId) {
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getUnpaidDeliveriesBySupplier(supplierId));
+        return ResponseEntity.ok(response);
+    }
+
     @Override
     protected String getResourceName() {
         return "UNIFIEDDELIVERY".toUpperCase();

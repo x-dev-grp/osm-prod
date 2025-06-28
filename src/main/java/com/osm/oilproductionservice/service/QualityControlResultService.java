@@ -290,7 +290,13 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             oilTransaction.setReception(sod);
             oilTransactionService.save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
         }
+
         List<QualityControlResult> list = dtos.stream().map((element) -> modelMapper.map(element, QualityControlResult.class)).toList();
+
+        sod.setHasQualityControl(true); // since we just added new results
+        sod.setStatus(OliveLotStatus.CONTROLLED);
+        deliveryRepo.saveAndFlush(sod);
+
         List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);
         return savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();
     }

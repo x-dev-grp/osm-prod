@@ -39,14 +39,14 @@ public class PlanningController {
         }
     }
     /* ───── NEW: mark LOT completed ───── */
-    @PatchMapping("/planning/lots/{lotNumber}/completed")
+    @PostMapping("/planning/lots/{lotNumber}/completed")
     public ResponseEntity<Void> completeLot(@PathVariable String lotNumber) {
         planningService.markLotCompleted(lotNumber);
         return ResponseEntity.noContent().build();
     }
 
     /* ───── NEW: mark GLOBAL-LOT completed ───── */
-    @PatchMapping("/planning/globalLots/{globalLotNumber}/completed")
+    @PostMapping("/planning/globalLots/{globalLotNumber}/completed")
     public ResponseEntity<Void> completeGlobalLot(@PathVariable String globalLotNumber) {
         planningService.markGlobalLotCompleted(globalLotNumber);
         return ResponseEntity.noContent().build();

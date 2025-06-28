@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> {
@@ -86,6 +87,28 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     public List<UnifiedDeliveryDTO> findByDeliveryTypeInAndQualityControlResultsIsNull(List<String> types) {
         return deliveryRepository.findByDeliveryTypeInAndQualityControlResultsIsNull(types).stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).collect(Collectors.toList());
     }
+
+    // Get deliveries by supplier ID
+    public List<UnifiedDeliveryDTO> getDeliveriesBySupplier(UUID supplierId) {
+        return deliveryRepository.findBySupplierId(supplierId).stream()
+                .map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    // Get paid deliveries by supplier ID
+    public List<UnifiedDeliveryDTO> getPaidDeliveriesBySupplier(UUID supplierId) {
+        return deliveryRepository.findPaidDeliveriesBySupplierId(supplierId).stream()
+                .map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    // Get unpaid deliveries by supplier ID
+    public List<UnifiedDeliveryDTO> getUnpaidDeliveriesBySupplier(UUID supplierId) {
+        return deliveryRepository.findUnpaidDeliveriesBySupplierId(supplierId).stream()
+                .map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public Set<String> actionsMapping(UnifiedDelivery user) {
         Set<String> actions = new HashSet<>();
