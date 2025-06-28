@@ -3,12 +3,10 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
-import com.osm.oilproductionservice.repository.DeliveryRepository;
-import com.osm.oilproductionservice.repository.GenericRepository;
-import com.osm.oilproductionservice.repository.SupplierInfoTypeRepository;
-import com.osm.oilproductionservice.repository.SupplierRepository;
+import com.osm.oilproductionservice.repository.*;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import jakarta.transaction.Transactional;
@@ -29,13 +27,15 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     private final DeliveryRepository deliveryRepository;
     private final SupplierRepository supplierRepository;
     private final SupplierInfoTypeRepository supplierInfoTypeRepository;
+    private final StorageUnitRepo storageUnitRepo;
 
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, GenericRepository genericRepository, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, SupplierInfoTypeRepository supplierInfoTypeRepository) {
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, GenericRepository genericRepository, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, SupplierInfoTypeRepository supplierInfoTypeRepository, StorageUnitRepo storageUnitRepo) {
         super(repository, modelMapper);
         this.genericRepository = genericRepository;
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
         this.supplierInfoTypeRepository = supplierInfoTypeRepository;
+        this.storageUnitRepo = storageUnitRepo;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
 
-        BeanUtils.copyProperties(dto, existing, "id", "supplier");
+        BeanUtils.copyProperties(dto, existing, "id", "supplier","storageUnit");
 
         // 3. Resolve and set the Supplier relationship
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
@@ -72,6 +72,13 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             existing.setSupplierType(supplier);
         } else {
             existing.setSupplierType(null);
+        }
+        if (dto.getStorageUnit() != null && dto.getStorageUnit().getId() != null) {
+            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId())
+                    .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getStorageUnit().getId()));
+            existing.setStorageUnit(stu);
+        } else {
+            existing.setStorageUnit(null);
         }
 
         // 4. Persist changes
