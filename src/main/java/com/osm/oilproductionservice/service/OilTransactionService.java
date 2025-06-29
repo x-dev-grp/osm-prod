@@ -31,7 +31,6 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     public OilTransactionDTO save(OilTransactionDTO request) {
         OilTransaction oilTransaction = modelMapper.map(request, OilTransaction.class);
         oilTransaction.setTotalPrice();
-        oilTransaction.setTransactionState(TransactionState.COMPLETED);
         oilTransaction = oilTransactionRepository.save(oilTransaction);
         StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
         StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
@@ -45,6 +44,11 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         }
 
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
+    }
+    public OilTransactionDTO approveOilCredit(OilTransactionDTO request) {
+
+
+     return null;
     }
     public List<OilTransaction> findByStorageUnitId(UUID storageUnitId) {
         return oilTransactionRepository.findByStorageUnitDestinationId(storageUnitId);

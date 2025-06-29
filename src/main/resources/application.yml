@@ -49,6 +49,15 @@ spring:
           issuer-uri: ${JWT_ISSUER_URI:http://localhost:8088}
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/oauth2/jwks}
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 10000
+            readTimeout: 60000
+            loggerLevel: headers
+
 eureka:
   client:
     service-url:
@@ -60,6 +69,10 @@ eureka:
 logging:
   level:
     com.xdev: ${XDEV_LOG_LEVEL:DEBUG}
+    com.xdev.xdevsecurity: DEBUG
+    com.xdev.communicator: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
 
 springdoc:
   api-docs:

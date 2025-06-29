@@ -23,6 +23,14 @@ public class OilTransaction extends BaseEntity implements Serializable {
     private StorageUnit storageUnitSource;
 
     private String qualityGrade;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oilType;
+    private TransactionState transactionState = TransactionState.COMPLETED;
+
+    public BaseType getOilType() {
+        return oilType;
+    }
     /**
      * Net quantity moved, in kilograms (positive for IN, negative for OUT)
      */
@@ -32,7 +40,9 @@ public class OilTransaction extends BaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private UnifiedDelivery reception;
 
-    private TransactionState transactionState;
+    public void setOilType(BaseType oilType) {
+        this.oilType = oilType;
+    }
 
     public TransactionState getTransactionState() {
         return transactionState;
