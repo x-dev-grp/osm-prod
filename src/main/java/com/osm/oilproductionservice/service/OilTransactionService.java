@@ -2,6 +2,7 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.enums.TransactionState;
+import com.osm.oilproductionservice.feignClients.services.OilCeditFeignService;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
@@ -20,10 +21,12 @@ import java.util.UUID;
 public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTransactionDTO, OilTransactionDTO> {
     private final OilTransactionRepository oilTransactionRepository;
     private final StorageUnitRepo storageUnitRepo;
-    public OilTransactionService(OilTransactionRepository repository, ModelMapper modelMapper, StorageUnitService storageUnitService, StorageUnitRepo storageUnitRepo) {
+    private final OilCeditFeignService oilCeditFeignService;
+    public OilTransactionService(OilTransactionRepository repository, ModelMapper modelMapper, StorageUnitService storageUnitService, StorageUnitRepo storageUnitRepo, OilCeditFeignService oilCeditFeignService) {
         super(repository, modelMapper);
         this.oilTransactionRepository = repository;
         this.storageUnitRepo = storageUnitRepo;
+        this.oilCeditFeignService = oilCeditFeignService;
     }
 
 
@@ -45,11 +48,27 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
-    public OilTransactionDTO approveOilCredit(OilTransactionDTO request) {
 
-
-     return null;
+    public OilTransactionDTO approveOilTransaction(OilTransactionDTO dto){
+        if(dto ==null || dto.getId()==null)return null;
+        OilTransaction oilTransaction = oilTransactionRepository.findById(dto.getId()).orElseThrow( () -> new RuntimeException("Oil transaction not found"));
+        if(dto.getStorageUnitSource() != null && dto.getStorageUnitSource().getId() != null) {
+            StorageUnit storageUnitSource = storageUnitRepo.findById(dto.getStorageUnitSource().getId()).orElse(null);
+            if (storageUnitSource != null) {
+                oilTransaction.setStorageUnitSource(storageUnitSource);
+                oilTransaction.setUnitPrice(storageUnitSource.getAvgCost());
+                oilTransaction.setTotalPrice();
+                storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(), 0, null);
+                storageUnitRepo.save(storageUnitSource);
+                oilTransaction.setTransactionState(TransactionState.COMPLETED);
+                oilCeditFeignService.approveOilCredit(oilTransaction.getExternalId()).thenAccept(response -> {
+                    oilTransactionRepository.save(oilTransaction);
+                });
+            }
+        }
+        return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
+
     public List<OilTransaction> findByStorageUnitId(UUID storageUnitId) {
         return oilTransactionRepository.findByStorageUnitDestinationId(storageUnitId);
     }

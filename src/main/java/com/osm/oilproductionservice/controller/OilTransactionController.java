@@ -5,14 +5,12 @@ import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.service.OilTransactionService;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
+import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +42,17 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
                 .collect(Collectors.toList()));
 
         return ResponseEntity.ok(ff);
+    }
+
+    @PutMapping("/approve")
+    public ResponseEntity<ApiSingleResponse<OilTransaction,OilTransactionDTO>> approveOilTransaction(@RequestBody OilTransactionDTO dto) {
+        try {
+            OilTransactionDTO oilTransaction  =oilTransactionService.approveOilTransaction(dto);
+            return ResponseEntity.ok(new ApiSingleResponse<>(true, "", oilTransaction));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+
     }
     @Override
     protected String getResourceName() {
