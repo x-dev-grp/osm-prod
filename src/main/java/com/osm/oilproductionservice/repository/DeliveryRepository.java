@@ -56,4 +56,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     // Count unpaid deliveries by supplier ID
     @Query("SELECT COUNT(d) FROM UnifiedDelivery d WHERE d.supplier.id = :supplierId AND (d.paidAmount IS NULL OR d.paidAmount = 0 OR (d.price IS NOT NULL AND d.paidAmount < d.price))")
     long countUnpaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
+
+    @Query(value = "SELECT * FROM delivery d WHERE d.mill_machine_id = :mill AND d.status = :status", nativeQuery = true)
+    List<UnifiedDelivery> findByMillMachineIdAndStatus(@Param("mill") UUID mill, @Param("status") String status);
 }

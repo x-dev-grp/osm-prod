@@ -288,6 +288,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             oilTransaction.setQuantityKg(sod.getOilQuantity());
             oilTransaction.setUnitPrice(sod.getUnitPrice());
             oilTransaction.setReception(sod);
+            oilTransaction.setOilType(sod.getOilType());
             oilTransactionService.save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
         }
 
@@ -295,7 +296,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
         sod.setHasQualityControl(true); // since we just added new results
         sod.setStatus(OliveLotStatus.CONTROLLED);
-        deliveryRepo.saveAndFlush(sod);
+        deliveryRepo.save(sod);
 
         List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);
         return savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();

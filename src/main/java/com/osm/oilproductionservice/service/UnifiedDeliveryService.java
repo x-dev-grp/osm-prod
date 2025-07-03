@@ -63,7 +63,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
 
-        BeanUtils.copyProperties(dto, existing, "id", "supplier","storageUnit");
+        BeanUtils.copyProperties(dto, existing, "id", "supplier","storageUnit","externalId");
 
         // 3. Resolve and set the Supplier relationship
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {

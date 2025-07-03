@@ -2,16 +2,14 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
+import com.osm.oilproductionservice.model.BaseType;
 import com.osm.oilproductionservice.model.OilTransaction;
-import com.xdev.xdevbase.dtos.BaseDto;
+ import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class OilTransactionDTO extends BaseDto<OilTransaction> {
-    private Boolean isDeleted = false;
-    private LocalDateTime createdDate;
-    private LocalDateTime lastModifiedDate;
     private StorageUnitDto storageUnitDestination;
     private StorageUnitDto storageUnitSource;
     private String qualityGrade;
@@ -21,6 +19,7 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private TransactionType transactionType;
     private TransactionState transactionState;
     private UnifiedDeliveryDTO reception;
+    private BaseTypeDto oilType;
 
     public UnifiedDeliveryDTO getReception() {
         return reception;
@@ -38,31 +37,7 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
         this.transactionState = transactionState;
     }
 
-    public Boolean getDeleted() {
-        return isDeleted;
-    }
 
-    public void setDeleted(Boolean deleted) {
-        isDeleted = deleted;
-    }
-
-
-    public LocalDateTime getCreatedDate() {
-        return createdDate;
-    }
-
-    public void setCreatedDate(LocalDateTime createdDate) {
-        this.createdDate = createdDate;
-    }
-
-
-    public LocalDateTime getLastModifiedDate() {
-        return lastModifiedDate;
-    }
-
-    public void setLastModifiedDate(LocalDateTime lastModifiedDate) {
-        this.lastModifiedDate = lastModifiedDate;
-    }
 
     public StorageUnitDto getStorageUnitDestination() {
         return storageUnitDestination;
@@ -120,5 +95,13 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
 
     public void setTransactionType(TransactionType transactionType) {
         this.transactionType = transactionType;
+    }
+
+    public BaseTypeDto getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(BaseTypeDto oilType) {
+        this.oilType = oilType;
     }
 }
