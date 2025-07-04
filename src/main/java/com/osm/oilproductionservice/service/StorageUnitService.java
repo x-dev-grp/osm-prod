@@ -3,6 +3,7 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.StorageUnitDto;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -21,10 +22,10 @@ public class StorageUnitService extends BaseServiceImpl<StorageUnit, StorageUnit
     }
 
     @Override
-    public Set<String> actionsMapping(StorageUnit storageUnit) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(StorageUnit storageUnit) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+
         return actions;
     }
 }

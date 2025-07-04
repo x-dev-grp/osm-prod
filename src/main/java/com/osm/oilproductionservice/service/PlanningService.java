@@ -169,7 +169,7 @@ public class PlanningService {
 
         // Assign deliveries to mills
         for (MillMachineDto mill : millMachineDtos) {
-            List<UnifiedDelivery> deliveries = deliveryRepo.findByMillMachineIdAndStatus(mill.getId(), OliveLotStatus.CONTROLLED.name());
+            List<UnifiedDelivery> deliveries = deliveryRepo.findByMillMachineIdAndStatus(mill.getId(), OliveLotStatus.OLIVE_CONTROLLED.name());
             if (!deliveries.isEmpty()) {
                 MillPlanDTO millPlan = millPlans.stream()
                         .filter(mp -> mp.getMillMachineId().equals(mill.getId()))
@@ -196,7 +196,7 @@ public class PlanningService {
         // Group deliveries by global lot
         List<UnifiedDelivery> allDeliveries = deliveryRepo.findOliveDeliveriesControlled()
             .stream()
-            .filter(d -> d.getStatus() == OliveLotStatus.CONTROLLED).toList();        List<UnifiedDeliveryDTO> allDeliveryDtos = allDeliveries.stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).toList();
+            .filter(d -> d.getStatus() == OliveLotStatus.OLIVE_CONTROLLED).toList();        List<UnifiedDeliveryDTO> allDeliveryDtos = allDeliveries.stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).toList();
         Map<String, List<UnifiedDeliveryDTO>> globalLotGroups = allDeliveryDtos.stream()
                 .filter(d -> d.getGlobalLotNumber() != null)
                 .collect(Collectors.groupingBy(UnifiedDeliveryDTO::getGlobalLotNumber));

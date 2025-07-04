@@ -5,6 +5,7 @@ import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.GenericRepository;
 import com.osm.oilproductionservice.repository.SupplierInfoTypeRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -46,10 +47,10 @@ public class SupplierTypeService extends BaseServiceImpl<Supplier, SupplierDto, 
     }
 
     @Override
-    public Set<String> actionsMapping(Supplier supplier) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(Supplier supplier) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+
         return actions;
     }
 

@@ -8,6 +8,7 @@ import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.QualityControlResultRepository;
 import com.osm.oilproductionservice.repository.QualityControlRuleRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -116,8 +117,12 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
         // 5. Update hasQualityControl flag
         for (UnifiedDelivery delivery : deliveryMap.values()) {
-            delivery.setHasQualityControl(true); // since we just added new results
-            delivery.setStatus(OliveLotStatus.CONTROLLED);
+            delivery.setHasQualityControl(true);
+             if(delivery.getDeliveryType() == DeliveryType.OIL)// since we just added new results
+               delivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
+             else
+                 delivery.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
+
         }
         deliveryRepo.saveAll(deliveryMap.values());
 
@@ -269,10 +274,10 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 //    }
 
     @Override
-    public Set<String> actionsMapping(QualityControlResult result) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(QualityControlResult result) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+
         return actions;
     }
 
@@ -294,8 +299,12 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
         List<QualityControlResult> list = dtos.stream().map((element) -> modelMapper.map(element, QualityControlResult.class)).toList();
 
-        sod.setHasQualityControl(true); // since we just added new results
-        sod.setStatus(OliveLotStatus.CONTROLLED);
+        sod.setHasQualityControl(true);
+        // since we just added new results
+        if(sod.getDeliveryType() == DeliveryType.OIL)// since we just added new results
+            sod.setStatus(OliveLotStatus.OIL_CONTROLLED);
+        else
+            sod.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
         deliveryRepo.save(sod);
 
         List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);

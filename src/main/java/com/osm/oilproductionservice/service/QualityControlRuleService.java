@@ -2,6 +2,7 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.QualityControlRuleDto;
 import com.osm.oilproductionservice.model.QualityControlRule;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -122,10 +123,10 @@ public class QualityControlRuleService extends BaseServiceImpl<QualityControlRul
 //    }
 
     @Override
-    public Set<String> actionsMapping(QualityControlRule rule) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(QualityControlRule rule) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+
         return actions;
     }
 }

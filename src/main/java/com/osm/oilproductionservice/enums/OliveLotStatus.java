@@ -9,10 +9,12 @@ public enum OliveLotStatus {
 
     NEW,
     IN_PROGRESS,
-    CONTROLLED,
+    OLIVE_CONTROLLED,
+    OIL_CONTROLLED,
     COMPLETED,
     REFUSED,
-    CANCELLED
+    CANCELLED,
+    IN_STOCK
 
 
 }

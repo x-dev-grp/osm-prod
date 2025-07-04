@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.xdev.communicator.models.production.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Cache;
@@ -40,9 +41,14 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private String deliveryNumber;
 
     @Enumerated(EnumType.STRING)
-    private DeliveryType deliveryType;  // E.g., OIL, OLIVE, etc.
+    private DeliveryType deliveryType;
 
+    @Enumerated(EnumType.STRING)
+    private OperationType operationType;
+
+    // E.g., OIL, OLIVE, etc.
     private String lotNumber;
+    private String lotOliveNumber;
     private LocalDateTime deliveryDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -93,9 +99,9 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     // --- Olive Delivery Specific Fields ---
     private LocalDateTime trtDate;   // Treatment date for olive delivery
-    @ManyToOne(fetch = FetchType.LAZY)
+ /*   @ManyToOne(fetch = FetchType.LAZY)
     private BaseType operationType;
-
+*/
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oliveVariety;
     private int sackCount;
@@ -113,7 +119,29 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private Double oliveQuantity;
     private String parcel;
 
+    public String getLotOliveNumber() {
+        return lotOliveNumber;
+    }
 
+    public void setLotOliveNumber(String lotOliveNumber) {
+        this.lotOliveNumber = lotOliveNumber;
+    }
+
+    public OperationType getOperationType() {
+        return operationType;
+    }
+
+    public void setOperationType(OperationType operationType) {
+        this.operationType = operationType;
+    }
+
+    public Supplier getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(Supplier supplier) {
+        this.supplier = supplier;
+    }
 
     /**
      * A full-argument constructor to initialize all common fields along with delivery-specific properties.
@@ -302,13 +330,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.trtDate = trtDate;
     }
 
-    public BaseType getOperationType() {
-        return operationType;
-    }
-
-    public void setOperationType(BaseType operationType) {
-        this.operationType = operationType;
-    }
 
     public BaseType getOliveVariety() {
         return oliveVariety;

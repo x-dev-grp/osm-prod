@@ -1,8 +1,10 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.MachinePlanDto;
+import com.osm.oilproductionservice.model.CompanyProfile;
 import com.osm.oilproductionservice.model.MachinePlan;
 import com.osm.oilproductionservice.repository.MachinePlanRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -23,10 +25,9 @@ public class MachinePlanService extends BaseServiceImpl<MachinePlan, MachinePlan
     // Add any machine-plan–specific business logic here if needed.
 
     @Override
-    public Set<String> actionsMapping(MachinePlan machinePlan) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(MachinePlan machinePlan) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
         return actions;
     }
 }

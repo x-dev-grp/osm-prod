@@ -1,8 +1,10 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.MillMachineDto;
+import com.osm.oilproductionservice.model.CompanyProfile;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.repository.MillMachineRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -20,10 +22,9 @@ public class MillMachineService extends BaseServiceImpl<MillMachine, MillMachine
     }
 
     @Override
-    public Set<String> actionsMapping(MillMachine millMachine) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(MillMachine millMachine) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
         return actions;
     }
 }

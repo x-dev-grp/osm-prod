@@ -25,6 +25,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     private DeliveryType deliveryType;
 
     private String lotNumber;
+    private String lotOliveNumber;
 
     @NotNull(message = "Delivery date is required")
     private LocalDateTime deliveryDate;
@@ -86,7 +87,13 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     private BaseTypeDto operationType;
     private MillMachineDto millMachine;
 
+    public String getLotOliveNumber() {
+        return lotOliveNumber;
+    }
 
+    public void setLotOliveNumber(String lotOliveNumber) {
+        this.lotOliveNumber = lotOliveNumber;
+    }
     public String getDeliveryNumber() {
         return deliveryNumber;
     }

@@ -4,6 +4,7 @@ import com.osm.oilproductionservice.dto.BaseTypeDto;
 import com.osm.oilproductionservice.enums.TypeCategory;
 import com.osm.oilproductionservice.model.BaseType;
 import com.osm.oilproductionservice.repository.GenericRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -30,10 +31,9 @@ public class GenericTypeService extends BaseServiceImpl<BaseType, BaseTypeDto, B
     }
 
     @Override
-    public Set<String> actionsMapping(BaseType baseType) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(BaseType baseType) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
         return actions;
     }
 }

@@ -3,11 +3,13 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.feignClients.services.OilCeditFeignService;
+import com.osm.oilproductionservice.model.CompanyProfile;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -73,10 +75,9 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         return oilTransactionRepository.findByStorageUnitDestinationId(storageUnitId);
     }
     @Override
-    public Set<String> actionsMapping(OilTransaction oilTransaction) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(OilTransaction oilTransaction) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
         return actions;
     }
 }

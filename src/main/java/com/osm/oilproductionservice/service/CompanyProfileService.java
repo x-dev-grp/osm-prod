@@ -4,7 +4,9 @@ import com.osm.oilproductionservice.dto.CompanyProfileDTO;
 import com.osm.oilproductionservice.enums.TypeCategory;
 import com.osm.oilproductionservice.model.BaseType;
 import com.osm.oilproductionservice.model.CompanyProfile;
+import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.repository.GenericRepository;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -31,10 +33,9 @@ public class CompanyProfileService extends BaseServiceImpl<CompanyProfile, Compa
     }
 
     @Override
-    public Set<String> actionsMapping(CompanyProfile companyProfile) {
-        Set<String> actions = new HashSet<>();
-        actions.add("READ");
-        actions.addAll(Set.of("UPDATE", "DELETE"));
+    public Set<Action> actionsMapping(CompanyProfile companyProfile) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
         return actions;
     }
 }
