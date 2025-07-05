@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
+import com.xdev.communicator.models.production.enums.OperationType;
 import com.xdev.xdevbase.dtos.BaseDto;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,6 +24,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     @NotNull(message = "Delivery type is required")
     private DeliveryType deliveryType;
+    private OperationType operationType;
 
     private String lotNumber;
     private String lotOliveNumber;
@@ -84,7 +86,6 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     private Set<QualityControlResultDto> qualityControlResults = new HashSet<>();
 
     private StorageUnitDto storageUnit;
-    private BaseTypeDto operationType;
     private MillMachineDto millMachine;
 
     public String getLotOliveNumber() {
@@ -147,11 +148,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.storageUnit = storageUnit;
     }
 
-    public BaseTypeDto getOperationType() {
+    public OperationType getOperationType() {
         return operationType;
     }
 
-    public void setOperationType(BaseTypeDto operationType) {
+    public void setOperationType(OperationType operationType) {
         this.operationType = operationType;
     }
 
