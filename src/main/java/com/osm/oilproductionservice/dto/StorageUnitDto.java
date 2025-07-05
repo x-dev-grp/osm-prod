@@ -18,8 +18,8 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private LocalDateTime nextMaintenanceDate;
     private LocalDateTime lastInspectionDate;
 
-    private Double avgCost =  0.0 ;
-    private Double totalCost= 0.0;
+    private Double avgCost = 0.0;
+    private Double totalCost = 0.0;
 
     private BaseTypeDto oilType;
     private StorageStatus status = StorageStatus.AVAILABLE;

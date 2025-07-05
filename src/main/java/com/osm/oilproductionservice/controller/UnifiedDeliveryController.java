@@ -6,7 +6,6 @@ import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
-import com.xdev.xdevbase.models.OSMModule;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;

@@ -65,20 +65,27 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+        
+        <!-- Structured logging dependency -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
     </dependencies>
-	<repositories>
-		<repository>
-			<id>github</id>
-			<url>https://maven.pkg.github.com/x-dev-grp/osm-parent</url>
-		</repository>
-	</repositories>
+<!--	<repositories>-->
+<!--		<repository>-->
+<!--			<id>github</id>-->
+<!--			<url>https://maven.pkg.github.com/x-dev-grp/osm-parent</url>-->
+<!--		</repository>-->
+<!--	</repositories>-->
 
-	<pluginRepositories>
-		<pluginRepository>
-			<id>github</id>
-			<url>https://maven.pkg.github.com/x-dev-grp/osm-parent</url>
-		</pluginRepository>
-	</pluginRepositories>
+<!--	<pluginRepositories>-->
+<!--		<pluginRepository>-->
+<!--			<id>github</id>-->
+<!--			<url>https://maven.pkg.github.com/x-dev-grp/osm-parent</url>-->
+<!--		</pluginRepository>-->
+<!--	</pluginRepositories>-->
 	<build>
 		<plugins>
 			<plugin>
