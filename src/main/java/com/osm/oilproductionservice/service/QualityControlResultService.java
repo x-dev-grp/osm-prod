@@ -112,10 +112,10 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 5. Update hasQualityControl flag
         for (UnifiedDelivery delivery : deliveryMap.values()) {
             delivery.setHasQualityControl(true);
-             if(delivery.getDeliveryType() == DeliveryType.OIL)// since we just added new results
-               delivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
-             else
-                 delivery.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
+            if (delivery.getDeliveryType() == DeliveryType.OIL)// since we just added new results
+                delivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
+            else
+                delivery.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
 
         }
         deliveryRepo.saveAll(deliveryMap.values());
@@ -187,7 +187,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     @Override
     public Set<Action> actionsMapping(QualityControlResult result) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
 
         return actions;
     }
@@ -212,7 +212,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
         sod.setHasQualityControl(true);
         // since we just added new results
-        if(sod.getDeliveryType() == DeliveryType.OIL)// since we just added new results
+        if (sod.getDeliveryType() == DeliveryType.OIL)// since we just added new results
             sod.setStatus(OliveLotStatus.OIL_CONTROLLED);
         else
             sod.setStatus(OliveLotStatus.OLIVE_CONTROLLED);

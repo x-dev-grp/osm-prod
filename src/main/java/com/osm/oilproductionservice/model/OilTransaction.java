@@ -27,10 +27,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oilType;
     private TransactionState transactionState = TransactionState.COMPLETED;
-
-    public BaseType getOilType() {
-        return oilType;
-    }
     /**
      * Net quantity moved, in kilograms (positive for IN, negative for OUT)
      */
@@ -39,6 +35,10 @@ public class OilTransaction extends BaseEntity implements Serializable {
     private double totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     private UnifiedDelivery reception;
+
+    public BaseType getOilType() {
+        return oilType;
+    }
 
     public void setOilType(BaseType oilType) {
         this.oilType = oilType;
@@ -51,11 +51,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
     public void setTransactionState(TransactionState transactionState) {
         this.transactionState = transactionState;
     }
-
-    public void setTotalPrice(double totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
 
     public TransactionType getTransactionType() {
         return transactionType;
@@ -107,6 +102,10 @@ public class OilTransaction extends BaseEntity implements Serializable {
 
     public double getTotalPrice() {
         return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
     }
 
     public void setTotalPrice() {

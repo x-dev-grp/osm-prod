@@ -17,7 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${HIBERNATE_DDL_AUTO:update}
-    show-sql: ${SHOW_SQL:true}
+    show-sql: ${SHOW_SQL:false}
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   data:
@@ -56,23 +56,35 @@ spring:
           default:
             connectTimeout: 10000
             readTimeout: 60000
-            loggerLevel: headers
+            loggerLevel: basic
 
 eureka:
   client:
+    # pull the registry every 5s (default 30s)
+    registry-fetch-interval-seconds: 5
+    # don’t block startup waiting for registry sync
+    wait-for-registry-sync: false
     service-url:
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
     hostname: ${HOSTNAME:localhost}
+    # heartbeat every 5s (default 30s)
+    lease-renewal-interval-in-seconds: 5
+    # expire missing instances after ~15s (default 90s)
+    lease-expiration-duration-in-seconds: 15
+
 
 logging:
   level:
-    com.xdev: ${XDEV_LOG_LEVEL:DEBUG}
-    com.xdev.xdevsecurity: DEBUG
-    com.xdev.communicator: DEBUG
+    com.osm.oilproductionservice: DEBUG
+    com.xdev: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    feign: DEBUG
+    com.netflix.discovery: DEBUG
 
 springdoc:
   api-docs:

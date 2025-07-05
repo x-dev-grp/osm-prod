@@ -3,8 +3,6 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.feignClients.services.OilCeditFeignService;
-import com.osm.oilproductionservice.model.CompanyProfile;
-import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
@@ -24,6 +22,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     private final OilTransactionRepository oilTransactionRepository;
     private final StorageUnitRepo storageUnitRepo;
     private final OilCeditFeignService oilCeditFeignService;
+
     public OilTransactionService(OilTransactionRepository repository, ModelMapper modelMapper, StorageUnitService storageUnitService, StorageUnitRepo storageUnitRepo, OilCeditFeignService oilCeditFeignService) {
         super(repository, modelMapper);
         this.oilTransactionRepository = repository;
@@ -39,22 +38,22 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         oilTransaction = oilTransactionRepository.save(oilTransaction);
         StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
         StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
-        if(storageUnitDestination != null ) {
-            storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(),1,oilTransaction.getUnitPrice());
+        if (storageUnitDestination != null) {
+            storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
             storageUnitRepo.save(storageUnitDestination);
         }
-        if(storageUnitSource != null ) {
-            storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(),0,null);
+        if (storageUnitSource != null) {
+            storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(), 0, null);
             storageUnitRepo.save(storageUnitSource);
         }
 
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
 
-    public OilTransactionDTO approveOilTransaction(OilTransactionDTO dto){
-        if(dto ==null || dto.getId()==null)return null;
-        OilTransaction oilTransaction = oilTransactionRepository.findById(dto.getId()).orElseThrow( () -> new RuntimeException("Oil transaction not found"));
-        if(dto.getStorageUnitSource() != null && dto.getStorageUnitSource().getId() != null) {
+    public OilTransactionDTO approveOilTransaction(OilTransactionDTO dto) {
+        if (dto == null || dto.getId() == null) return null;
+        OilTransaction oilTransaction = oilTransactionRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("Oil transaction not found"));
+        if (dto.getStorageUnitSource() != null && dto.getStorageUnitSource().getId() != null) {
             StorageUnit storageUnitSource = storageUnitRepo.findById(dto.getStorageUnitSource().getId()).orElse(null);
             if (storageUnitSource != null) {
                 oilTransaction.setStorageUnitSource(storageUnitSource);
@@ -74,10 +73,11 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     public List<OilTransaction> findByStorageUnitId(UUID storageUnitId) {
         return oilTransactionRepository.findByStorageUnitDestinationId(storageUnitId);
     }
+
     @Override
     public Set<Action> actionsMapping(OilTransaction oilTransaction) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
         return actions;
     }
 }

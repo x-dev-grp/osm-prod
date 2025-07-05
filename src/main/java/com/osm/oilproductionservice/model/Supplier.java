@@ -19,9 +19,6 @@ public class Supplier extends BaseEntity {
     private BaseType genericSupplierType;
 
 
-
-
-
     public SupplierInfo getSupplierInfo() {
         return supplierInfo;
     }

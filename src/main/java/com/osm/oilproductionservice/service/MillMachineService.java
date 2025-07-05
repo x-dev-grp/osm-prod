@@ -1,7 +1,6 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.MillMachineDto;
-import com.osm.oilproductionservice.model.CompanyProfile;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.repository.MillMachineRepository;
 import com.xdev.xdevbase.models.Action;
@@ -24,7 +23,7 @@ public class MillMachineService extends BaseServiceImpl<MillMachine, MillMachine
     @Override
     public Set<Action> actionsMapping(MillMachine millMachine) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
         return actions;
     }
 }

@@ -94,6 +94,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     public void setLotOliveNumber(String lotOliveNumber) {
         this.lotOliveNumber = lotOliveNumber;
     }
+
     public String getDeliveryNumber() {
         return deliveryNumber;
     }

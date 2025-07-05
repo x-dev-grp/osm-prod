@@ -27,6 +27,7 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
         this.UnifiedDeliveryService = UnifiedDeliveryService;
         this.oilTransactionService = oilTransactionService;
     }
+
     /**
      * GET /api/production/oil_transaction/storage-unit/{storageUnitId}
      * Returns all transactions whose destination tank is the given storage-unit.
@@ -35,7 +36,7 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
     public ResponseEntity<ApiResponse<OilTransaction, OilTransactionDTO>> getByStorageUnit(
             @PathVariable UUID storageUnitId) {
 
-         ApiResponse<OilTransaction, OilTransactionDTO> ff = new ApiResponse<>(true, "", oilTransactionService
+        ApiResponse<OilTransaction, OilTransactionDTO> ff = new ApiResponse<>(true, "", oilTransactionService
                 .findByStorageUnitId(storageUnitId)
                 .stream()
                 .map(tx -> modelMapper.map(tx, OilTransactionDTO.class))
@@ -45,15 +46,16 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
     }
 
     @PutMapping("/approve")
-    public ResponseEntity<ApiSingleResponse<OilTransaction,OilTransactionDTO>> approveOilTransaction(@RequestBody OilTransactionDTO dto) {
+    public ResponseEntity<ApiSingleResponse<OilTransaction, OilTransactionDTO>> approveOilTransaction(@RequestBody OilTransactionDTO dto) {
         try {
-            OilTransactionDTO oilTransaction  =oilTransactionService.approveOilTransaction(dto);
+            OilTransactionDTO oilTransaction = oilTransactionService.approveOilTransaction(dto);
             return ResponseEntity.ok(new ApiSingleResponse<>(true, "", oilTransaction));
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
 
     }
+
     @Override
     protected String getResourceName() {
         return "OILTRANSACTION";

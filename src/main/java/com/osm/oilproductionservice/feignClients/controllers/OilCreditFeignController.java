@@ -12,7 +12,7 @@ import java.util.UUID;
 
 
 @FeignClient(name = "financeservice", path = "/api/finance/oil-credit", configuration = FeignConfiguration.class)
-public interface OilCreditFeignController extends BaseFeignController<OilCreditDto,OilCreditDto> {
+public interface OilCreditFeignController extends BaseFeignController<OilCreditDto, OilCreditDto> {
     @PutMapping("/{transactionId}/approve")
-    public ResponseEntity<Void> approveOilCredit(@PathVariable UUID transactionId);
+    ResponseEntity<Void> approveOilCredit(@PathVariable UUID transactionId);
 }

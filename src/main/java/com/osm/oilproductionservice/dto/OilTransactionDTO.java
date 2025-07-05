@@ -2,12 +2,8 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
-import com.osm.oilproductionservice.model.BaseType;
 import com.osm.oilproductionservice.model.OilTransaction;
- import com.xdev.xdevbase.dtos.BaseDto;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
+import com.xdev.xdevbase.dtos.BaseDto;
 
 public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private StorageUnitDto storageUnitDestination;
@@ -36,7 +32,6 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     public void setTransactionState(TransactionState transactionState) {
         this.transactionState = transactionState;
     }
-
 
 
     public StorageUnitDto getStorageUnitDestination() {
@@ -86,7 +81,6 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     public void setTotalPrice(Double totalPrice) {
         this.totalPrice = totalPrice;
     }
-
 
 
     public TransactionType getTransactionType() {

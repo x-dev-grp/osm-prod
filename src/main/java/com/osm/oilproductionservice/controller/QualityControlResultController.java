@@ -1,11 +1,7 @@
 package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
-import com.osm.oilproductionservice.dto.StorageUnitDto;
-import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
-import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.QualityControlResult;
-import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
 import com.osm.oilproductionservice.service.OilTransactionService;
 import com.osm.oilproductionservice.service.QualityControlResultService;

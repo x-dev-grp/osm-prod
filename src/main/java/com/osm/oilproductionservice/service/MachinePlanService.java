@@ -1,7 +1,6 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.MachinePlanDto;
-import com.osm.oilproductionservice.model.CompanyProfile;
 import com.osm.oilproductionservice.model.MachinePlan;
 import com.osm.oilproductionservice.repository.MachinePlanRepository;
 import com.xdev.xdevbase.models.Action;
@@ -27,7 +26,7 @@ public class MachinePlanService extends BaseServiceImpl<MachinePlan, MachinePlan
     @Override
     public Set<Action> actionsMapping(MachinePlan machinePlan) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
         return actions;
     }
 }

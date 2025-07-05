@@ -29,5 +29,6 @@ public interface GlobalLotRepository extends JpaRepository<GlobalLot, UUID> {
 
     // AFTER
     Optional<GlobalLot> findByGlobalLotNumber(String globalLotNumber);
-     List<GlobalLot> findByLotsMillMachineId(UUID id);
+
+    List<GlobalLot> findByLotsMillMachineId(UUID id);
 }

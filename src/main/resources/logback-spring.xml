@@ -1,20 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <!-- Console appender definition -->
+    <!-- Define properties -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"/>
+    <property name="JSON_PATTERN"
+              value='{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%-5level","thread":"%thread","traceId":"%X{traceId:-}","logger":"%logger{36}","message":"%msg","service":"oilproductionservice"}%n'/>
+
+    <!-- Pretty, colorized console appender for human-friendly logs -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
+            <pattern>%highlight(%d{yyyy-MM-dd HH:mm:ss.SSS}) [%thread] %-5level %cyan(%logger{36}) - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <!-- Set the logging level for the parent module package to DEBUG -->
-    <logger name="com.xdev" level="DEBUG" additivity="false">
+    <!-- Application specific loggers -->
+    <logger name="com.osm.oilproductionservice" level="INFO" additivity="false">
         <appender-ref ref="Console"/>
     </logger>
-
-    <!-- Root logger configuration -->
-    <root level="debug">
+    <logger name="com.xdev" level="INFO" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="org.springframework.security" level="WARN" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="org.springframework.web" level="INFO" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="org.hibernate.SQL" level="WARN" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="feign" level="INFO" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <logger name="com.netflix.discovery" level="WARN" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+    <root level="INFO">
         <appender-ref ref="Console"/>
     </root>
 

@@ -1,7 +1,6 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.*;
-import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
@@ -24,11 +23,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PlanningService {
 
-    private static final Logger log = LoggerFactory.getLogger(PlanningService.class);
     public static final String MILL_NOT_FOUND = "Mill not found: ";
     public static final String DELIVERY_NOT_FOUND = "Delivery not found: ";
     public static final String NO_DELIVERIES_FOUND_FOR_GLOBAL_LOT = "No deliveries found for global lot: ";
-
+    private static final Logger log = LoggerFactory.getLogger(PlanningService.class);
     private final MillMachineRepository millRepo;
     private final DeliveryRepository deliveryRepo;
     private final ModelMapper modelMapper;
@@ -41,7 +39,7 @@ public class PlanningService {
 
         // 1. Get all deliveries that are currently assigned to mills
         List<UnifiedDelivery> currentlyAssignedDeliveries = deliveryRepo.findByMillMachineIsNotNull();
-        
+
         // 2. Load all deliveries referenced in the request
         Map<String, UnifiedDelivery> deliveryMap = loadDeliveries(req);
 
@@ -65,54 +63,54 @@ public class PlanningService {
             if (millPlan.getItems() != null && !millPlan.getItems().isEmpty()) {
                 // Process regular lots
                 millPlan.getItems().stream()
-                    .filter(item -> item.getType().equals(PlanItemType.LOT.toString()))
-                    .forEach(item -> {
-                        UnifiedDelivery delivery = deliveryMap.get(item.getId());
-                        if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
-                            MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
-                                .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
-                            delivery.setMillMachine(mill);
-                            processedLotNumbers.add(delivery.getLotNumber());
-                        }
-                    });
+                        .filter(item -> item.getType().equals(PlanItemType.LOT.toString()))
+                        .forEach(item -> {
+                            UnifiedDelivery delivery = deliveryMap.get(item.getId());
+                            if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
+                                MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
+                                        .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
+                                delivery.setMillMachine(mill);
+                                processedLotNumbers.add(delivery.getLotNumber());
+                            }
+                        });
 
                 // Process global lots
                 millPlan.getItems().stream()
-                    .filter(item ->  item.getType().equals(PlanItemType.GLOBAL_LOT.toString()))
-                    .forEach(item -> req.getGlobalLots().stream()
-                        .filter(gl -> gl.getGlobalLotNumber().equals(item.getId()))
-                        .findFirst()
-                        .ifPresent(globalLot -> {
-                            MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
-                                .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
+                        .filter(item -> item.getType().equals(PlanItemType.GLOBAL_LOT.toString()))
+                        .forEach(item -> req.getGlobalLots().stream()
+                                .filter(gl -> gl.getGlobalLotNumber().equals(item.getId()))
+                                .findFirst()
+                                .ifPresent(globalLot -> {
+                                    MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
+                                            .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
 
-                            globalLot.getLots().forEach(lotDto -> {
-                                UnifiedDelivery delivery = deliveryMap.get(lotDto.getLotNumber());
-                                if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
-                                    delivery.setMillMachine(mill);
-                                    delivery.setGlobalLotNumber(globalLot.getGlobalLotNumber());
-                                    processedLotNumbers.add(delivery.getLotNumber());
-                                }
-                            });
-                        }));
+                                    globalLot.getLots().forEach(lotDto -> {
+                                        UnifiedDelivery delivery = deliveryMap.get(lotDto.getLotNumber());
+                                        if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
+                                            delivery.setMillMachine(mill);
+                                            delivery.setGlobalLotNumber(globalLot.getGlobalLotNumber());
+                                            processedLotNumbers.add(delivery.getLotNumber());
+                                        }
+                                    });
+                                }));
             }
         });
 
         // 6. Clear assignments for lots that were previously assigned but not in the current request
         currentlyAssignedDeliveries.stream()
-            .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
-            .forEach(d -> {
-                d.setMillMachine(null);
-                d.setGlobalLotNumber(null);
-            });
+                .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
+                .forEach(d -> {
+                    d.setMillMachine(null);
+                    d.setGlobalLotNumber(null);
+                });
 
         // 7. Save all changes
         List<UnifiedDelivery> allDeliveriesToSave = new ArrayList<>();
         allDeliveriesToSave.addAll(deliveryMap.values());
         allDeliveriesToSave.addAll(currentlyAssignedDeliveries.stream()
-            .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
-            .toList());
-        
+                .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
+                .toList());
+
         deliveryRepo.saveAll(allDeliveriesToSave);
     }
 
@@ -140,7 +138,7 @@ public class PlanningService {
         List<UnifiedDelivery> deliveries = deliveryRepo.findByLotNumberIn(deliveryIds).stream()
                 .filter(d -> d.getStatus() != OliveLotStatus.COMPLETED)
                 .toList();
-                
+
         return deliveries.stream()
                 .collect(Collectors.toMap(UnifiedDelivery::getLotNumber, d -> d));
     }
@@ -157,8 +155,8 @@ public class PlanningService {
         log.info("Fetching current planning state at {}", new Date());
 
         // Get all mills
-       List<MillMachine> mills = millRepo.findAll();
-        List<MillMachineDto> millMachineDtos= mills.stream().map((element) -> modelMapper.map(element, MillMachineDto.class)).toList();
+        List<MillMachine> mills = millRepo.findAll();
+        List<MillMachineDto> millMachineDtos = mills.stream().map((element) -> modelMapper.map(element, MillMachineDto.class)).toList();
         List<MillPlanDTO> millPlans = new ArrayList<>();
         Set<String> assignedLotNumbers = new HashSet<>();
 
@@ -195,8 +193,9 @@ public class PlanningService {
 
         // Group deliveries by global lot
         List<UnifiedDelivery> allDeliveries = deliveryRepo.findOliveDeliveriesControlled()
-            .stream()
-            .filter(d -> d.getStatus() == OliveLotStatus.OLIVE_CONTROLLED).toList();        List<UnifiedDeliveryDTO> allDeliveryDtos = allDeliveries.stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).toList();
+                .stream()
+                .filter(d -> d.getStatus() == OliveLotStatus.OLIVE_CONTROLLED).toList();
+        List<UnifiedDeliveryDTO> allDeliveryDtos = allDeliveries.stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).toList();
         Map<String, List<UnifiedDeliveryDTO>> globalLotGroups = allDeliveryDtos.stream()
                 .filter(d -> d.getGlobalLotNumber() != null)
                 .collect(Collectors.groupingBy(UnifiedDeliveryDTO::getGlobalLotNumber));

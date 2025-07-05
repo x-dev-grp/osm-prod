@@ -21,7 +21,6 @@ public class QualityControlResultDto extends BaseDto<QualityControlResult> imple
     private UUID deliveryId;
 
 
-
     public QualityControlRuleDto getRule() {
         return rule;
     }

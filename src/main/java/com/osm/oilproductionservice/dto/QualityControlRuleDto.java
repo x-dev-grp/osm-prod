@@ -4,8 +4,6 @@ import com.osm.oilproductionservice.enums.RuleType;
 import com.osm.oilproductionservice.model.QualityControlRule;
 import com.xdev.xdevbase.dtos.BaseDto;
 
-import java.util.List;
-
 public class QualityControlRuleDto extends BaseDto<QualityControlRule> {
 
     private String ruleKey; // Technical key for the rule (e.g., "infestation_percentage")

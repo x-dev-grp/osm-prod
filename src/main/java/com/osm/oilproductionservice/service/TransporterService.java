@@ -23,7 +23,7 @@ public class TransporterService extends BaseServiceImpl<Transporter, Transporter
     @Override
     public Set<Action> actionsMapping(Transporter transporter) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE,Action.DELETE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
         return actions;
     }
 }

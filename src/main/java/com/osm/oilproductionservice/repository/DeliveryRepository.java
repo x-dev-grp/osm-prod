@@ -1,7 +1,5 @@
 package com.osm.oilproductionservice.repository;
 
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.xdev.xdevbase.repos.BaseRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,8 +17,11 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     double weightOfLot(@Param("id") String id);
 
     List<UnifiedDelivery> findByIdIn(Set<UUID> ids);
+
     List<UnifiedDelivery> findByLotNumberIn(Set<String> lotNumbers);
-     List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
+
+    List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
+
     List<UnifiedDelivery> findByMillMachineId(UUID mill);
 
     List<UnifiedDelivery> findByMillMachineIsNotNull();

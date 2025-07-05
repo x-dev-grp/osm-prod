@@ -53,5 +53,6 @@ public interface LotRepository extends JpaRepository<Lot, UUID> {
     Optional<Lot> findByLotNumber(String lotNumber);
 
     Optional<Lot> findByDeliveryId(UUID id);
+
     List<Lot> findByMillMachineId(UUID millMachineId);
 }

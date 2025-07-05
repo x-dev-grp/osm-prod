@@ -4,7 +4,6 @@ import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -25,7 +24,8 @@ public class GlobalLot extends BaseEntity {
     @OrderBy("sequence ASC")
     private Set<Lot> lots = new HashSet<>();
 
-    public GlobalLot() { }
+    public GlobalLot() {
+    }
 
     public GlobalLot(String globalLotNumber) {
         this.globalLotNumber = globalLotNumber;

@@ -3,7 +3,6 @@ package com.osm.oilproductionservice.controller;
 import com.osm.oilproductionservice.dto.StorageUnitDto;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
-import com.xdev.xdevbase.models.OSMModule;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.RequestMapping;

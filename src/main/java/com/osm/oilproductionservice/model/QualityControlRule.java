@@ -2,10 +2,12 @@ package com.osm.oilproductionservice.model;
 
 import com.osm.oilproductionservice.enums.RuleType;
 import com.xdev.xdevbase.entities.BaseEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
 
 import java.io.Serializable;
-import java.util.List;
 
 
 @Entity

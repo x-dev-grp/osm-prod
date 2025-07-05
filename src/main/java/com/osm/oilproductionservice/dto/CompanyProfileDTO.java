@@ -127,7 +127,6 @@ public class CompanyProfileDTO extends BaseDto<CompanyProfile> {
     }
 
 
-
     public String getLogoData() {
         return logoData;
     }

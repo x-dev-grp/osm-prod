@@ -119,7 +119,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         Set<Action> actions = new HashSet<>();
         switch (delivery.getStatus()) {
             case NEW -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE,Action.TO_PROD, Action.OLIVE_QUALITY));
+                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.TO_PROD, Action.OLIVE_QUALITY));
 
             }
             case IN_PROGRESS -> {
@@ -145,7 +145,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                         actions.add(Action.OIL_RECEPTION);
                     }
                     case EXCHANGE -> {
-                        actions.addAll(Set.of(Action.OIL_OUT_TRANSACTION,Action.OIL_RECEPTION));
+                        actions.addAll(Set.of(Action.OIL_OUT_TRANSACTION, Action.OIL_RECEPTION));
                     }
 
                 }
@@ -159,11 +159,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         Set<Action> actions = new HashSet<>();
         switch (delivery.getStatus()) {
             case NEW -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE,Action.OIL_QUALITY));
+                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
 
             }
             case OIL_CONTROLLED -> {
-                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY,Action.OIL_IN_TRANSACTION));
+                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.OIL_IN_TRANSACTION));
 
             }
         }

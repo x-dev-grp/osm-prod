@@ -172,5 +172,4 @@ public class CompanyProfile extends BaseEntity implements Serializable {
     }
 
 
-
 }

@@ -16,8 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-public class OilCeditFeignService extends BaseFeignService<OilCreditDto,OilCreditDto> {
+public class OilCeditFeignService extends BaseFeignService<OilCreditDto, OilCreditDto> {
     private final OilCreditFeignController oilCreditFeignController;
+
     public OilCeditFeignService(BaseFeignController<OilCreditDto, OilCreditDto> baseFeignController, OilCreditFeignController oilCreditFeignController) {
         super(baseFeignController);
         this.oilCreditFeignController = oilCreditFeignController;
@@ -47,6 +48,7 @@ public class OilCeditFeignService extends BaseFeignService<OilCreditDto,OilCredi
             });
         }
     }
+
     public CompletableFuture<?> approveOilCreditFallBack(UUID id, Exception ex) {
         log.warn("Fallback approving oilCredit by id: {}, error: {}", id, ex.getMessage());
         return CompletableFuture.completedFuture(

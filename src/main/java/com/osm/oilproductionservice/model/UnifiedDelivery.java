@@ -3,7 +3,6 @@ package com.osm.oilproductionservice.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.xdev.communicator.models.production.enums.OperationType;
@@ -11,19 +10,12 @@ import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-
-
-
 import org.springframework.format.annotation.DateTimeFormat;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-
 
 
 /**
@@ -69,6 +61,38 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     @Column(name = "has_quality_control")
     private boolean hasQualityControl = false;
+    // --- Oil Delivery Specific Fields ---
+    // Note: globalLotNumber is common to both oil and olive deliveries.
+    private String globalLotNumber;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oilVariety; // The variety of oil
+    private Double oilQuantity;   // In appropriate unit, e.g., liters
+    private Double unitPrice;
+    private Double price;
+    private Double paidAmount;
+    private Double unpaidAmount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private StorageUnit storageUnit;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oilType;   // E.g., Extra Virgin, Virgin, etc.
+    // --- Olive Delivery Specific Fields ---
+    private LocalDateTime trtDate;   // Treatment date for olive delivery
+    /*   @ManyToOne(fetch = FetchType.LAZY)
+       private BaseType operationType;
+   */
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oliveVariety;
+    private int sackCount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oliveType;
+    @Enumerated(EnumType.STRING)
+    private OliveLotStatus status;  // Status of the olive lot
+    // Additional fields found in the UnifiedDelivery constructor, if needed
+    private Double rendement; // Yield or performance measure
+    @ManyToOne(fetch = FetchType.LAZY)
+    private MillMachine millMachine;
+    private Double oliveQuantity;
+    private String parcel;
 
     public boolean isHasQualityControl() {
         return hasQualityControl;
@@ -77,47 +101,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setHasQualityControl(boolean hasQualityControl) {
         this.hasQualityControl = hasQualityControl;
     }
-
-    // --- Oil Delivery Specific Fields ---
-    // Note: globalLotNumber is common to both oil and olive deliveries.
-    private String globalLotNumber;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oilVariety; // The variety of oil
-    private Double oilQuantity;   // In appropriate unit, e.g., liters
-
-    private Double unitPrice;
-    private Double price;
-    private Double paidAmount;
-    private Double unpaidAmount;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private StorageUnit storageUnit;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oilType;   // E.g., Extra Virgin, Virgin, etc.
-
-    // --- Olive Delivery Specific Fields ---
-    private LocalDateTime trtDate;   // Treatment date for olive delivery
- /*   @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType operationType;
-*/
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oliveVariety;
-    private int sackCount;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oliveType;
-
-    @Enumerated(EnumType.STRING)
-    private OliveLotStatus status;  // Status of the olive lot
-
-    // Additional fields found in the UnifiedDelivery constructor, if needed
-    private Double rendement; // Yield or performance measure
-    @ManyToOne(fetch = FetchType.LAZY)
-    private MillMachine millMachine;
-    private Double oliveQuantity;
-    private String parcel;
 
     public String getLotOliveNumber() {
         return lotOliveNumber;
@@ -151,9 +134,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     // --- Getters and Setters ---
     // Common getters and setters
-
-
-
     public String getDeliveryNumber() {
         return deliveryNumber;
     }

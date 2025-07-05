@@ -38,6 +38,7 @@ public class PlanningController {
             return ResponseEntity.badRequest().body("Failed to save planning: " + e.getMessage());
         }
     }
+
     /* ───── NEW: mark LOT completed ───── */
     @PostMapping("/planning/lots/{lotNumber}/completed")
     public ResponseEntity<Void> completeLot(@PathVariable String lotNumber) {
