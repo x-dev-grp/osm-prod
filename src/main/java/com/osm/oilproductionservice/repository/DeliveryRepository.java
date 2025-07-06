@@ -31,8 +31,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
             FROM   delivery d
             WHERE  d.delivery_type = 'OLIVE'      -- DeliveryType.OLIVE
               AND  d.status        = 'CONTROLLED' -- OliveLotStatus.CONTROLLED
-            """,
-            nativeQuery = true)
+            """, nativeQuery = true)
     List<UnifiedDelivery> findOliveDeliveriesControlled();
 
     @Query("SELECT u FROM UnifiedDelivery u WHERE u.deliveryType IN :types AND u.qualityControlResults IS EMPTY")
@@ -44,51 +43,58 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     // Fully paid = both price and paidAmount are non-null, and paidAmount ≥ price
     @Query("""
-  SELECT d
-    FROM UnifiedDelivery d
-   WHERE d.supplier.id    = :supplierId
-     AND d.price          IS NOT NULL
-     AND d.paidAmount     IS NOT NULL
-     AND d.paidAmount    >= d.price
-""")
+              SELECT d
+                FROM UnifiedDelivery d
+               WHERE d.supplier.id    = :supplierId
+                 AND d.price          IS NOT NULL
+                 AND d.paidAmount     IS NOT NULL
+                 AND d.paidAmount    >= d.price
+                 AND d.deliveryType  = 'OLIVE'
+            
+            """)
     List<UnifiedDelivery> findFullyPaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
 
     // Not fully paid = either no payment or payment < price
     @Query("""
-  SELECT d
-    FROM UnifiedDelivery d
-   WHERE d.supplier.id = :supplierId
-     AND (
-           d.paidAmount IS NULL
-        OR d.price      IS NULL
-        OR d.paidAmount < d.price
-     )
-""")
+              SELECT d
+                FROM UnifiedDelivery d
+               WHERE d.supplier.id = :supplierId
+                 AND (
+                       d.paidAmount IS NULL
+                    OR d.price      IS NULL
+                    OR d.paidAmount < d.price
+                 )
+                 AND d.deliveryType  = 'OLIVE'
+            """)
     List<UnifiedDelivery> findUnpaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
 
     // Count only those deliveries where both price and paidAmount are non‐null
 // and paidAmount is at least the price (i.e. fully paid)
     @Query("""
-  SELECT COUNT(d)
-    FROM UnifiedDelivery d
-   WHERE d.supplier.id    = :supplierId
-     AND d.price IS NOT NULL
-     AND d.paidAmount IS NOT NULL
-     AND d.paidAmount >= d.price
-""")
+              SELECT COUNT(d)
+                FROM UnifiedDelivery d
+               WHERE d.supplier.id    = :supplierId
+                 AND d.price IS NOT NULL
+                 AND d.paidAmount IS NOT NULL
+                 AND d.paidAmount >= d.price
+                 AND d.deliveryType  = 'OLIVE'
+            
+            """)
     long countFullyPaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
 
     // Count deliveries that are either never paid or paid less than the price
     @Query("""
-  SELECT COUNT(d)
-    FROM UnifiedDelivery d
-   WHERE d.supplier.id = :supplierId
-     AND (
-           d.paidAmount IS NULL
-        OR d.price IS    NULL
-        OR d.paidAmount < d.price
-     )
-""")
+              SELECT COUNT(d)
+                FROM UnifiedDelivery d
+               WHERE d.supplier.id = :supplierId
+                 AND (
+                       d.paidAmount IS NULL
+                    OR d.price IS    NULL
+                    OR d.paidAmount < d.price
+                 )
+                  AND d.deliveryType  = 'OLIVE'
+            
+            """)
     long countUnpaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
 
     @Query(value = "SELECT * FROM delivery d WHERE d.mill_machine_id = :mill AND d.status = :status", nativeQuery = true)
