@@ -101,7 +101,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     // Get paid deliveries by supplier ID
     public List<UnifiedDeliveryDTO> getPaidDeliveriesBySupplier(UUID supplierId) {
-        return deliveryRepository.findPaidDeliveriesBySupplierId(supplierId).stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).collect(Collectors.toList());
+        return deliveryRepository.findFullyPaidDeliveriesBySupplierId(supplierId).stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).collect(Collectors.toList());
     }
 
     // Get unpaid deliveries by supplier ID

@@ -60,68 +60,90 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             return Collections.emptyList();
         }
 
-        // 1. Preload all Rule IDs and validate in batch
-        Set<UUID> ruleIds = dtos.stream().map(dto -> {
-            if (dto.getRule() == null || dto.getRule().getId() == null) {
-                throw new IllegalArgumentException("Rule is required for QualityControlResult");
-            }
-            return dto.getRule().getId();
-        }).collect(Collectors.toSet());
+        // 1. Collect and validate Rule IDs
+        Set<UUID> ruleIds = dtos.stream()
+                .peek(dto -> {
+                    if (dto.getRule() == null || dto.getRule().getId() == null) {
+                        throw new IllegalArgumentException("Rule is required for QualityControlResult");
+                    }
+                })
+                .map(dto -> dto.getRule().getId())
+                .collect(Collectors.toSet());
 
-        Map<UUID, QualityControlRule> ruleMap = ruleRepository.findAllById(ruleIds).stream().collect(Collectors.toMap(QualityControlRule::getId, rule -> rule));
+        Map<UUID, QualityControlRule> ruleMap = ruleRepository
+                .findAllById(ruleIds)
+                .stream()
+                .collect(Collectors.toMap(QualityControlRule::getId, rule -> rule));
 
         if (ruleMap.size() != ruleIds.size()) {
             throw new IllegalArgumentException("One or more Rules not found for provided IDs");
         }
 
-        // 2. Preload all Delivery IDs
-        Set<UUID> deliveryUuids = dtos.stream().map(QualityControlResultDto::getDeliveryId).collect(Collectors.toSet());
+        // 2. Collect and validate Delivery IDs
+        Set<UUID> deliveryIds = dtos.stream()
+                .map(QualityControlResultDto::getDeliveryId)
+                .collect(Collectors.toSet());
 
-        Map<UUID, UnifiedDelivery> deliveryMap = this.deliveryRepo.findAllById(deliveryUuids).stream().collect(Collectors.toMap(UnifiedDelivery::getId, delivery -> delivery));
+        Map<UUID, UnifiedDelivery> deliveryMap = deliveryRepo
+                .findAllById(deliveryIds)
+                .stream()
+                .collect(Collectors.toMap(UnifiedDelivery::getId, d -> d));
 
-        if (deliveryMap.size() != deliveryUuids.size()) {
+        if (deliveryMap.size() != deliveryIds.size()) {
             throw new IllegalArgumentException("One or more Deliveries not found for provided IDs");
         }
 
-        // 3. Process DTOs
-        List<QualityControlResult> entities = new ArrayList<>();
-        for (QualityControlResultDto dto : dtos) {
-            QualityControlResult entity = new QualityControlResult();
+        // 3. If it's an oil reception, create one OilTransaction per delivery
+        //    (you could also choose to do this per-DTO, but typically there's one per delivery)
+        deliveryMap.values().stream()
+                .filter(d -> d.getDeliveryType() == DeliveryType.OIL)
+                .forEach(oilDelivery -> {
+                    OilTransaction tx = new OilTransaction();
+                    tx.setStorageUnitDestination(oilDelivery.getStorageUnit());
+                    tx.setStorageUnitSource(null);
+                    tx.setTransactionType(TransactionType.RECEPTION_IN);
+                    tx.setTransactionState(TransactionState.COMPLETED);
+                    tx.setQuantityKg(oilDelivery.getOilQuantity());
+                    tx.setUnitPrice(oilDelivery.getUnitPrice());
+                    tx.setReception(oilDelivery);
+                    tx.setOilType(oilDelivery.getOilType());
+                    oilTransactionService.save(
+                            modelMapper.map(tx, OilTransactionDTO.class)
+                    );
+                });
 
-            // Get Rule
-            QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+        // 4. Map DTO → entity, validate measured value, collect
+        List<QualityControlResult> entities = dtos.stream()
+                .map(dto -> {
+                    QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+                    validateMeasuredValue(dto.getMeasuredValue(), rule);
 
-            // Validate measured value
-            validateMeasuredValue(dto.getMeasuredValue(), rule);
+                    QualityControlResult e = new QualityControlResult();
+                    e.setRule(rule);
+                    e.setMeasuredValue(dto.getMeasuredValue());
+                    e.setDelivery(deliveryMap.get(dto.getDeliveryId()));
+                    return e;
+                })
+                .toList();
 
-            entity.setRule(rule);
-            entity.setMeasuredValue(dto.getMeasuredValue());
-
-            // Get Delivery
-            UUID deliveryId = dto.getDeliveryId();
-            UnifiedDelivery delivery = deliveryMap.get(deliveryId);
-            entity.setDelivery(delivery);
-
-            entities.add(entity);
-        }
-
-        // 4. Save all entities in one go
         log.debug("Saving {} QualityControlResult entities", entities.size());
-        List<QualityControlResult> savedEntities = repository.saveAll(entities);
+        List<QualityControlResult> saved = repository.saveAll(entities);
 
-        // 5. Update hasQualityControl flag
-        for (UnifiedDelivery delivery : deliveryMap.values()) {
-            delivery.setHasQualityControl(true);
-            if (delivery.getDeliveryType() == DeliveryType.OIL)// since we just added new results
-                delivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
-            else
-                delivery.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
-
-        }
+        // 5. Update each delivery’s QC flag and status, then persist
+        deliveryMap.values().forEach(d -> {
+            d.setHasQualityControl(true);
+            if (d.getDeliveryType() == DeliveryType.OIL) {
+                d.setStatus(OliveLotStatus.OIL_CONTROLLED);
+            } else {
+                d.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
+            }
+        });
         deliveryRepo.saveAll(deliveryMap.values());
 
-        // 6. Map to DTO
-        return savedEntities.stream().map(entity -> modelMapper.map(entity, QualityControlResultDto.class)).collect(Collectors.toList());
+        // 6. Map back to DTOs
+        return saved.stream()
+                .map(e -> modelMapper.map(e, QualityControlResultDto.class))
+                .toList();
     }
 
     // ✅ extracted validation

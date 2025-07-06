@@ -43,7 +43,7 @@ public class SupplierTypeService extends BaseServiceImpl<Supplier, SupplierDto, 
         OSMLogger.logMethodEntry(this.getClass(), "getPaidPaymentsCount", supplierId);
 
         try {
-            long count = deliveryRepository.countPaidDeliveriesBySupplierId(supplierId);
+            long count = deliveryRepository.countFullyPaidDeliveriesBySupplierId(supplierId);
 
             OSMLogger.logDataAccess(this.getClass(), "PAID_PAYMENTS_COUNT", "Supplier");
             OSMLogger.logBusinessEvent(this.getClass(), "SUPPLIER_PAID_PAYMENTS_QUERIED",

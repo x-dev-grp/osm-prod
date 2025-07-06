@@ -45,7 +45,7 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         log.debug("Received save-batch request with {} DTOs", dtos.size());
         try {
 
-            ApiResponse<QualityControlResult, QualityControlResultDto> ff = new ApiResponse<>(true, "", qualityControlResultService.savebatch(dtos));
+            ApiResponse<QualityControlResult, QualityControlResultDto> ff = new ApiResponse<>(true, "", qualityControlResultService.saveAll(dtos));
             return ResponseEntity.ok(ff);
         } catch (IllegalArgumentException e) {
             log.error("Bad request: {}", e.getMessage());
