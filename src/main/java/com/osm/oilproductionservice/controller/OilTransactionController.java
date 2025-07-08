@@ -8,6 +8,7 @@ import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,22 +37,38 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
     public ResponseEntity<ApiResponse<OilTransaction, OilTransactionDTO>> getByStorageUnit(
             @PathVariable UUID storageUnitId) {
 
-        ApiResponse<OilTransaction, OilTransactionDTO> ff = new ApiResponse<>(true, "", oilTransactionService
-                .findByStorageUnitId(storageUnitId)
-                .stream()
-                .map(tx -> modelMapper.map(tx, OilTransactionDTO.class))
-                .collect(Collectors.toList()));
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "getByStorageUnit", storageUnitId);
+        try {
+            ApiResponse<OilTransaction, OilTransactionDTO> ff = new ApiResponse<>(true, "", oilTransactionService
+                    .findByStorageUnitId(storageUnitId)
+                    .stream()
+                    .map(tx -> modelMapper.map(tx, OilTransactionDTO.class))
+                    .collect(Collectors.toList()));
 
-        return ResponseEntity.ok(ff);
+            return ResponseEntity.ok(ff);
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "getByStorageUnit", e);
+            throw e;
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "getByStorageUnit", null);
+            OSMLogger.logPerformance(this.getClass(), "getByStorageUnit", startTime, System.currentTimeMillis());
+        }
     }
 
     @PutMapping("/approve")
     public ResponseEntity<ApiSingleResponse<OilTransaction, OilTransactionDTO>> approveOilTransaction(@RequestBody OilTransactionDTO dto) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "approveOilTransaction", dto);
         try {
             OilTransactionDTO oilTransaction = oilTransactionService.approveOilTransaction(dto);
             return ResponseEntity.ok(new ApiSingleResponse<>(true, "", oilTransaction));
         } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+            OSMLogger.logException(this.getClass(), "approveOilTransaction", e);
+            throw e;
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "approveOilTransaction", null);
+            OSMLogger.logPerformance(this.getClass(), "approveOilTransaction", startTime, System.currentTimeMillis());
         }
 
     }

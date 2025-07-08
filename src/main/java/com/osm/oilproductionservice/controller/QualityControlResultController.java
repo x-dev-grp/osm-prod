@@ -10,6 +10,7 @@ import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,8 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
 
     @PostMapping("/save-batch")
     public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> saveBatch(@RequestBody List<QualityControlResultDto> dtos) {
-        log.debug("Received save-batch request with {} DTOs", dtos.size());
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "saveBatch", dtos.size());
         try {
 
             ApiResponse<QualityControlResult, QualityControlResultDto> ff = new ApiResponse<>(true, "", qualityControlResultService.saveAll(dtos));
@@ -56,12 +58,16 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         } catch (Exception e) {
             log.error("Unexpected error: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "saveBatch", null);
+            OSMLogger.logPerformance(this.getClass(), "saveBatch", startTime, System.currentTimeMillis());
         }
     }
 
     @GetMapping("/fetchByDelivery/{deliveryId}")
     public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getResultsByDelivery(@PathVariable UUID deliveryId) {
-        log.debug("Received request to fetch quality control results for deliveryId: {}", deliveryId);
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "getResultsByDelivery", deliveryId);
         try {
             List<QualityControlResultDto> results = qualityControlResultService.findByDeliveryId(deliveryId);
             log.debug("Successfully fetched {} results for deliveryId: {}", results.size(), deliveryId);
@@ -72,6 +78,9 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         } catch (Exception e) {
             log.error("Unexpected error: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "getResultsByDelivery", null);
+            OSMLogger.logPerformance(this.getClass(), "getResultsByDelivery", startTime, System.currentTimeMillis());
         }
     }
 

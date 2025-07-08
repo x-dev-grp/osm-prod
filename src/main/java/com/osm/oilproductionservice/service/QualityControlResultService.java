@@ -14,6 +14,7 @@ import com.osm.oilproductionservice.repository.QualityControlRuleRepository;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,67 +54,62 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         this.oilTransactionService = oilTransactionService;
     }
 
+    @Override
+    public List<QualityControlResultDto> findAll() {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "findAll", null);
+        try {
+            throw new UnsupportedOperationException("Not implemented yet");
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "findAll", e);
+            throw e;
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "findAll", null);
+            OSMLogger.logPerformance(this.getClass(), "findAll", startTime, System.currentTimeMillis());
+        }
+    }
+
+    @Override
+    public Set<Action> actionsMapping(QualityControlResult result) {
+        Set<Action> actions = new HashSet<>();
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
+
+        return actions;
+    }
+
     @Transactional
     public List<QualityControlResultDto> saveAll(List<QualityControlResultDto> dtos) {
-        log.debug("Processing saveAll for {} DTOs", dtos.size());
-
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "saveAll", dtos);
         if (dtos.isEmpty()) {
+            OSMLogger.logMethodExit(this.getClass(), "saveAll", Collections.emptyList());
+            OSMLogger.logPerformance(this.getClass(), "saveAll", startTime, System.currentTimeMillis());
             return Collections.emptyList();
         }
 
-        // 1. Collect and validate Rule IDs
-        Set<UUID> ruleIds = dtos.stream()
-                .peek(dto -> {
-                    if (dto.getRule() == null || dto.getRule().getId() == null) {
-                        throw new IllegalArgumentException("Rule is required for QualityControlResult");
-                    }
-                })
-                .map(dto -> dto.getRule().getId())
-                .collect(Collectors.toSet());
-
-        Map<UUID, QualityControlRule> ruleMap = ruleRepository
-                .findAllById(ruleIds)
-                .stream()
-                .collect(Collectors.toMap(QualityControlRule::getId, rule -> rule));
-
-        if (ruleMap.size() != ruleIds.size()) {
-            throw new IllegalArgumentException("One or more Rules not found for provided IDs");
+        // 1) Ensure all DTOs point to the same delivery
+        UUID deliveryId = dtos.getFirst().getDeliveryId();
+        if (dtos.stream().anyMatch(dto -> !deliveryId.equals(dto.getDeliveryId()))) {
+            throw new IllegalArgumentException(
+                    "All QualityControlResultDto must reference the same delivery"
+            );
         }
 
-        // 2. Collect and validate Delivery IDs
-        Set<UUID> deliveryIds = dtos.stream()
-                .map(QualityControlResultDto::getDeliveryId)
-                .collect(Collectors.toSet());
+        // 2) Load that delivery
+        UnifiedDelivery delivery = deliveryRepo.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Delivery not found for ID " + deliveryId
+                ));
 
-        Map<UUID, UnifiedDelivery> deliveryMap = deliveryRepo
-                .findAllById(deliveryIds)
-                .stream()
-                .collect(Collectors.toMap(UnifiedDelivery::getId, d -> d));
+        // 3) Load & validate rules
+        Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
 
-        if (deliveryMap.size() != deliveryIds.size()) {
-            throw new IllegalArgumentException("One or more Deliveries not found for provided IDs");
+        // 4) If it’s an OIL delivery AND NOT still waiting for pricing, create exactly one transaction now.
+        if (unifiedDeliveryService.isValidForTransaction(delivery)) {
+            oilTransactionService.createSingleOilTransaction(delivery);
         }
 
-        // 3. If it's an oil reception, create one OilTransaction per delivery
-        //    (you could also choose to do this per-DTO, but typically there's one per delivery)
-        deliveryMap.values().stream()
-                .filter(d -> d.getDeliveryType() == DeliveryType.OIL)
-                .forEach(oilDelivery -> {
-                    OilTransaction tx = new OilTransaction();
-                    tx.setStorageUnitDestination(oilDelivery.getStorageUnit());
-                    tx.setStorageUnitSource(null);
-                    tx.setTransactionType(TransactionType.RECEPTION_IN);
-                    tx.setTransactionState(TransactionState.COMPLETED);
-                    tx.setQuantityKg(oilDelivery.getOilQuantity());
-                    tx.setUnitPrice(oilDelivery.getUnitPrice());
-                    tx.setReception(oilDelivery);
-                    tx.setOilType(oilDelivery.getOilType());
-                    oilTransactionService.save(
-                            modelMapper.map(tx, OilTransactionDTO.class)
-                    );
-                });
-
-        // 4. Map DTO → entity, validate measured value, collect
+        // 5) Map each DTO → entity
         List<QualityControlResult> entities = dtos.stream()
                 .map(dto -> {
                     QualityControlRule rule = ruleMap.get(dto.getRule().getId());
@@ -121,33 +118,62 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
                     QualityControlResult e = new QualityControlResult();
                     e.setRule(rule);
                     e.setMeasuredValue(dto.getMeasuredValue());
-                    e.setDelivery(deliveryMap.get(dto.getDeliveryId()));
+                    e.setDelivery(delivery);
                     return e;
                 })
                 .toList();
 
-        log.debug("Saving {} QualityControlResult entities", entities.size());
+        // 6) Persist QC results
         List<QualityControlResult> saved = repository.saveAll(entities);
 
-        // 5. Update each delivery’s QC flag and status, then persist
-        deliveryMap.values().forEach(d -> {
-            d.setHasQualityControl(true);
-            if (d.getDeliveryType() == DeliveryType.OIL) {
-                d.setStatus(OliveLotStatus.OIL_CONTROLLED);
-            } else {
-                d.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
-            }
-        });
-        deliveryRepo.saveAll(deliveryMap.values());
+        // 7) Mark delivery as quality-checked
+        delivery.setHasQualityControl(true);
+        delivery.setStatus(
+                delivery.getDeliveryType() == DeliveryType.OIL
+                        ? OliveLotStatus.OIL_CONTROLLED
+                        : OliveLotStatus.OLIVE_CONTROLLED
+        );
+        deliveryRepo.save(delivery);
 
-        // 6. Map back to DTOs
-        return saved.stream()
+        // 8) Map back to DTOs
+        List<QualityControlResultDto> resultDtos = saved.stream()
                 .map(e -> modelMapper.map(e, QualityControlResultDto.class))
                 .toList();
+        OSMLogger.logMethodExit(this.getClass(), "saveAll", resultDtos);
+        OSMLogger.logPerformance(this.getClass(), "saveAll", startTime, System.currentTimeMillis());
+        return resultDtos;
+    }
+
+    // ——————————————————————————————————
+
+    // Helper: fetch & validate rule IDs
+    private Map<UUID, QualityControlRule> fetchAndValidateRules(List<QualityControlResultDto> dtos) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "fetchAndValidateRules", dtos);
+        Set<UUID> ruleIds = dtos.stream()
+                .peek(dto -> {
+                    if (dto.getRule() == null || dto.getRule().getId() == null) {
+                        throw new IllegalArgumentException("Each DTO must reference a valid Rule ID");
+                    }
+                })
+                .map(dto -> dto.getRule().getId())
+                .collect(Collectors.toSet());
+
+        List<QualityControlRule> rules = ruleRepository.findAllById(ruleIds);
+        if (rules.size() != ruleIds.size()) {
+            throw new IllegalArgumentException("One or more provided Rule IDs were not found");
+        }
+        Map<UUID, QualityControlRule> ruleMap = rules.stream()
+                .collect(Collectors.toMap(QualityControlRule::getId, Function.identity()));
+        OSMLogger.logMethodExit(this.getClass(), "fetchAndValidateRules", ruleMap);
+        OSMLogger.logPerformance(this.getClass(), "fetchAndValidateRules", startTime, System.currentTimeMillis());
+        return ruleMap;
     }
 
     // ✅ extracted validation
     private void validateMeasuredValue(String measuredValue, QualityControlRule rule) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "validateMeasuredValue", measuredValue, rule);
         RuleType ruleType = rule.getRuleType();
 
         switch (ruleType) {
@@ -184,16 +210,15 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             default:
                 throw new IllegalArgumentException("Unknown rule type: " + ruleType);
         }
+        OSMLogger.logMethodExit(this.getClass(), "validateMeasuredValue", null);
+        OSMLogger.logPerformance(this.getClass(), "validateMeasuredValue", startTime, System.currentTimeMillis());
     }
 
-
-    @Override
-    public List<QualityControlResultDto> findAll() {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 
     @Transactional(readOnly = true)
     public List<QualityControlResultDto> findByDeliveryId(UUID deliveryId) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "findByDeliveryId", deliveryId);
         log.debug("Fetching quality control results for deliveryId: {}", deliveryId);
         if (deliveryId == null) {
             log.error("Delivery ID is null");
@@ -203,18 +228,15 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         List<QualityControlResult> results = repository.findByDeliveryId(deliveryId);
         log.debug("Found {} quality control results for deliveryId: {}", results.size(), deliveryId);
 
-        return results.stream().map(entity -> modelMapper.map(entity, QualityControlResultDto.class)).collect(Collectors.toList());
-    }
-
-    @Override
-    public Set<Action> actionsMapping(QualityControlResult result) {
-        Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
-
-        return actions;
+        List<QualityControlResultDto> resultDtos = results.stream().map(entity -> modelMapper.map(entity, QualityControlResultDto.class)).collect(Collectors.toList());
+        OSMLogger.logMethodExit(this.getClass(), "findByDeliveryId", resultDtos);
+        OSMLogger.logPerformance(this.getClass(), "findByDeliveryId", startTime, System.currentTimeMillis());
+        return resultDtos;
     }
 
     public List<QualityControlResultDto> savebatch(List<QualityControlResultDto> dtos) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "savebatch", dtos);
         UnifiedDelivery sod = deliveryRepo.findById(dtos.getFirst().getDeliveryId()).orElse(null);
         if (Objects.nonNull(sod) && sod.getDeliveryType() == DeliveryType.OIL) {
             OilTransaction oilTransaction = new OilTransaction();
@@ -241,6 +263,9 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         deliveryRepo.save(sod);
 
         List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);
-        return savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();
+        List<QualityControlResultDto> resultDtos = savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();
+        OSMLogger.logMethodExit(this.getClass(), "savebatch", resultDtos);
+        OSMLogger.logPerformance(this.getClass(), "savebatch", startTime, System.currentTimeMillis());
+        return resultDtos;
     }
 }

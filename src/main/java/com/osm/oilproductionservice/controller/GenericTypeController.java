@@ -7,6 +7,7 @@ import com.osm.oilproductionservice.service.GenericTypeService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +46,8 @@ public class GenericTypeController extends
     // Get all types (e.g., all WasteTypes, SupplierTypes, OliveLotStatusTypes)
     @GetMapping("/{type}")
     public ResponseEntity<ApiResponse<BaseType, BaseTypeDto>> getAllTypes(@PathVariable TypeCategory type) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "getAllTypes", type);
         try {
             List<BaseType> types = this.genericTypeService.getAllTypes(type);
             List<BaseTypeDto> typeDtos = types.stream().map((element) -> modelMapper.map(element, BaseTypeDto.class)).toList();
@@ -52,8 +55,12 @@ public class GenericTypeController extends
             ApiResponse<BaseType, BaseTypeDto> response = new ApiResponse<>(true, "Types fetched successfully", typeDtos);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
+            OSMLogger.logException(this.getClass(), "getAllTypes", e);
             ApiResponse<BaseType, BaseTypeDto> response = new ApiResponse<>(false, "Error fetching types: " + e.getMessage(), null);
             return ResponseEntity.badRequest().body(response);
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "getAllTypes", null);
+            OSMLogger.logPerformance(this.getClass(), "getAllTypes", startTime, System.currentTimeMillis());
         }
     }
 

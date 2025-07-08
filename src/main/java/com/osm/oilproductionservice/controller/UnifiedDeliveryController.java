@@ -64,6 +64,12 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/createOilRecFromOliveRec/{uuid}")
+    public ResponseEntity<ApiResponse<UUID>> createOilRecFromOliveRec(@PathVariable UUID uuid) {
+        ApiResponse<UUID> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.createOilRecFromOliveRecImpl(uuid));
+        return ResponseEntity.ok(response);
+    }
+
     @Override
     protected String getResourceName() {
         return "UNIFIEDDELIVERY".toUpperCase();

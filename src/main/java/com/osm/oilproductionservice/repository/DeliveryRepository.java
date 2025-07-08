@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
             SELECT d.*
             FROM   delivery d
             WHERE  d.delivery_type = 'OLIVE'      -- DeliveryType.OLIVE
-              AND  d.status        = 'CONTROLLED' -- OliveLotStatus.CONTROLLED
+              AND  d.status        = 'OLIVE_CONTROLLED' -- OliveLotStatus.CONTROLLED
             """, nativeQuery = true)
     List<UnifiedDelivery> findOliveDeliveriesControlled();
 
@@ -99,4 +100,6 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     @Query(value = "SELECT * FROM delivery d WHERE d.mill_machine_id = :mill AND d.status = :status", nativeQuery = true)
     List<UnifiedDelivery> findByMillMachineIdAndStatus(@Param("mill") UUID mill, @Param("status") String status);
+
+    Optional<UnifiedDelivery> findTopByOrderByCreatedDateDesc();
 }

@@ -5,6 +5,7 @@ import com.osm.oilproductionservice.model.MachinePlan;
 import com.osm.oilproductionservice.repository.MachinePlanRepository;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 

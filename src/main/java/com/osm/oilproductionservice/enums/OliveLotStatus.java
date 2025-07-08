@@ -11,6 +11,8 @@ public enum OliveLotStatus {
     IN_PROGRESS,
     OLIVE_CONTROLLED,
     OIL_CONTROLLED,
+    WAITING_FOR_PRICING,
+
     COMPLETED,
     REFUSED,
     CANCELLED,
