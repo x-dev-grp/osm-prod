@@ -171,17 +171,21 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         Set<Action> actions = new HashSet<>();
         switch (delivery.getStatus()) {
             case NEW -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.TO_PROD, Action.OLIVE_QUALITY));
+                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE , Action.OLIVE_QUALITY));
 
             }
             case IN_PROGRESS -> {
                 actions.add(Action.COMPLETE);
             }
             case OLIVE_CONTROLLED -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.TO_PROD, Action.UPDATE_OLIVE_QUALITY));
+                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE,   Action.UPDATE_OLIVE_QUALITY));
                 switch (delivery.getOperationType()) {
                     case EXCHANGE -> {
-                        actions.add(Action.OIL_OUT_TRANSACTION);
+                        actions.addAll(Set.of(Action.OIL_OUT_TRANSACTION,Action.SET_PRICE));
+                    }
+                    case OLIVE_PURCHASE -> {
+                        actions.add(Action.SET_PRICE);
+
                     }
 
                 }
@@ -219,7 +223,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             }
             case OIL_CONTROLLED -> {
-                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.OIL_IN_TRANSACTION));
+                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.OIL_IN_TRANSACTION,Action.SET_PRICE));
 
             }
         }
@@ -297,5 +301,18 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     boolean isValidForTransaction(UnifiedDelivery delivery) {
         return (delivery.getDeliveryType() == DeliveryType.OIL && (delivery.getOilQuantity()!=null && delivery.getOilQuantity() > 0)&& (delivery.getPrice() != null && delivery.getPrice() > 0) && delivery.getStorageUnit() != null && (delivery.getUnitPrice() != null && delivery.getUnitPrice() > 0));
+    }
+
+    @Transactional
+    public void updateStatus(UUID id, OliveLotStatus status) {
+        try {
+            repository.findById(id).ifPresent(delivery -> {
+                delivery.setStatus(status);
+                deliveryRepository.save(delivery);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }

@@ -1,15 +1,18 @@
 package com.osm.oilproductionservice.controller;
 
+import com.osm.oilproductionservice.dto.ChildLotCompletionDto;
 import com.osm.oilproductionservice.dto.PlanningSaveRequest;
 import com.osm.oilproductionservice.service.PlanningService;
+import com.xdev.xdevbase.utils.OSMLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
-import com.xdev.xdevbase.utils.OSMLogger;
 
 @RestController
 @RequestMapping("/api/production")
@@ -56,7 +59,8 @@ public class PlanningController {
         try {
             Double oilQuantity = body.get("oilQuantity") != null ? ((Number) body.get("oilQuantity")).doubleValue() : null;
             Double rendement = body.get("rendement") != null ? ((Number) body.get("rendement")).doubleValue() : null;
-            planningService.markLotCompleted(lotNumber, oilQuantity, rendement);
+            Double unpaidPrice = body.get("unpaidPrice") != null ? ((Number) body.get("unpaidPrice")).doubleValue() : null;
+            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice);
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "completeLot", e);
             log.error("Error completing lot: {}", e.getMessage());
@@ -68,16 +72,18 @@ public class PlanningController {
 
     /* ───── NEW: mark GLOBAL-LOT completed ───── */
     @PostMapping("/planning/globalLots/{globalLotNumber}/completed")
-    public void completeGlobalLot(@PathVariable String globalLotNumber, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<Void> completeGlobalLot(@PathVariable String globalLotNumber, @RequestBody List<ChildLotCompletionDto> childLots) {
+
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "completeGlobalLot", new Object[]{globalLotNumber, body});
+        OSMLogger.logMethodEntry(this.getClass(), "completeGlobalLot", globalLotNumber, childLots);
+
         try {
-            Double oilQuantity = body.get("oilQuantity") != null ? ((Number) body.get("oilQuantity")).doubleValue() : null;
-            Double rendement = body.get("rendement") != null ? ((Number) body.get("rendement")).doubleValue() : null;
-            planningService.markGlobalLotCompleted(globalLotNumber, oilQuantity, rendement);
+            planningService.markGlobalLotCompleted(globalLotNumber, childLots);
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "completeGlobalLot", e);
-            log.error("Error completing global lot: {}", e.getMessage());
+            log.error("Error completing global lot {}: {}", globalLotNumber, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {
             OSMLogger.logMethodExit(this.getClass(), "completeGlobalLot", null);
             OSMLogger.logPerformance(this.getClass(), "completeGlobalLot", startTime, System.currentTimeMillis());

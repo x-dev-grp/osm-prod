@@ -8,11 +8,10 @@ package com.osm.oilproductionservice.enums;
 public enum OliveLotStatus {
 
     NEW,
-    IN_PROGRESS,
     OLIVE_CONTROLLED,
     OIL_CONTROLLED,
     WAITING_FOR_PRICING,
-
+    IN_PROGRESS,
     COMPLETED,
     REFUSED,
     CANCELLED,

@@ -3,6 +3,7 @@ package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.ApiResponse;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
+import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
@@ -57,6 +58,20 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/updateStatue/{id}/{status}")
+    public ResponseEntity<ApiResponse<Void>> updateStatue(@PathVariable("id") UUID id, @PathVariable("status") OliveLotStatus status) {
+        // delegate to your service
+       try{
+           this.UnifiedDeliveryService.updateStatus(id, status);
+           ApiResponse<Void> response = new ApiResponse<>(true, "Status updated successfully", null);
+           return ResponseEntity.ok(response);
+       } catch (Exception e) {
+
+           throw new RuntimeException(e);
+       }
+
+
+    }
     // Get unpaid deliveries by supplier ID
     @GetMapping("/supplier/{supplierId}/unpaid")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getUnpaidDeliveriesBySupplier(@PathVariable UUID supplierId) {

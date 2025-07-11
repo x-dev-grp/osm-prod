@@ -27,12 +27,19 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     List<UnifiedDelivery> findByMillMachineIsNotNull();
 
-    @Query(value = """
-            SELECT d.*
-            FROM   delivery d
-            WHERE  d.delivery_type = 'OLIVE'      -- DeliveryType.OLIVE
-              AND  d.status        = 'OLIVE_CONTROLLED' -- OliveLotStatus.CONTROLLED
-            """, nativeQuery = true)
+    /**
+     * Find all olive deliveries that have already been quality-controlled,
+     * or simple receptions that are either NEW or OLIVE_CONTROLLED.
+     */
+    @Query("SELECT d " +
+            "FROM UnifiedDelivery d " +
+            "WHERE d.deliveryType = 'OLIVE'" +
+            " and (d.operationType = 'BASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
+            " OR  (d.operationType  = 'OLIVE_PURCHASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
+            " OR  (d.operationType  = 'PAYMENT' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
+            "  OR (d.operationType  = 'EXCHANGE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS') and d.unitPrice <>0 )" +
+            " OR  (d.operationType  = 'SIMPLE_RECEPTION' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))"
+    )
     List<UnifiedDelivery> findOliveDeliveriesControlled();
 
     @Query("SELECT u FROM UnifiedDelivery u WHERE u.deliveryType IN :types AND u.qualityControlResults IS EMPTY")
@@ -102,4 +109,6 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     List<UnifiedDelivery> findByMillMachineIdAndStatus(@Param("mill") UUID mill, @Param("status") String status);
 
     Optional<UnifiedDelivery> findTopByOrderByCreatedDateDesc();
+
+
 }

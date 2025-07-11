@@ -55,6 +55,7 @@ public class PlanningService {
                 log.info("No lots assigned in request, clearing all mill assignments");
                 currentlyAssignedDeliveries.forEach(d -> {
                     d.setMillMachine(null);
+                    d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
                     d.setGlobalLotNumber(null);
                 });
                 deliveryRepo.saveAll(currentlyAssignedDeliveries);
@@ -73,6 +74,7 @@ public class PlanningService {
                                 if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
                                     MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
                                             .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
+//                                    delivery.setStatus(OliveLotStatus.IN_PROGRESS);
                                     delivery.setMillMachine(mill);
                                     processedLotNumbers.add(delivery.getLotNumber());
                                 }
@@ -92,6 +94,7 @@ public class PlanningService {
                                             UnifiedDelivery delivery = deliveryMap.get(lotDto.getLotNumber());
                                             if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
                                                 delivery.setMillMachine(mill);
+//                                                delivery.setStatus(OliveLotStatus.IN_PROGRESS);
                                                 delivery.setGlobalLotNumber(globalLot.getGlobalLotNumber());
                                                 processedLotNumbers.add(delivery.getLotNumber());
                                             }
@@ -105,6 +108,7 @@ public class PlanningService {
                     .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
                     .forEach(d -> {
                         d.setMillMachine(null);
+//                        d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
                         d.setGlobalLotNumber(null);
                     });
 
@@ -180,6 +184,7 @@ public class PlanningService {
         try {
             deliveries.forEach(d -> {
                 d.setMillMachine(null);
+//                d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
                 d.setGlobalLotNumber(null);
             });
         } catch (Exception e) {
@@ -293,7 +298,7 @@ public class PlanningService {
         }
     }
     @Transactional
-    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement) {
+    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "markLotCompleted", lotNumber, oilQuantity, rendement);
         try {
@@ -305,6 +310,7 @@ public class PlanningService {
             lot.setStatus(OliveLotStatus.COMPLETED);
             lot.setOilQuantity(oilQuantity);
             lot.setRendement(rendement);
+            lot.setUnpaidAmount(unpaidPrice);
             deliveryRepo.save(lot);
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "markLotCompleted", e);
@@ -316,20 +322,20 @@ public class PlanningService {
     }
 
     @Transactional
-    public void markGlobalLotCompleted(String globalLotNumber, Double oilQuantity, Double rendement) {
+
+    public void markGlobalLotCompleted(String globalLotNumber, List<ChildLotCompletionDto> childLots) {
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "markGlobalLotCompleted", globalLotNumber, oilQuantity, rendement);
+        OSMLogger.logMethodEntry(this.getClass(), "markGlobalLotCompleted", globalLotNumber, childLots);
+
         try {
-            List<UnifiedDelivery> list = deliveryRepo.findByGlobalLotNumber(globalLotNumber);
-            if (list.isEmpty()) {
+            // verify global lot exists
+            List<UnifiedDelivery> existing = deliveryRepo.findByGlobalLotNumber(globalLotNumber);
+            if (existing.isEmpty()) {
                 throw new EntityNotFoundException("Global lot not found: " + globalLotNumber);
             }
-            for (UnifiedDelivery d : list) {
-                d.setStatus(OliveLotStatus.COMPLETED);
-                d.setOilQuantity(oilQuantity); // or distribute as needed
-                d.setRendement(rendement);     // or distribute as needed
-            }
-            deliveryRepo.saveAll(list);
+
+            // delegate each child
+            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice()));
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "markGlobalLotCompleted", e);
             throw e;
