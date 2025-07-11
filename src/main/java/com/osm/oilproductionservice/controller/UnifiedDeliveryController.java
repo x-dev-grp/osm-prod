@@ -71,6 +71,19 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
        }
 
 
+    }@GetMapping("/updateprice/{id}/{updateprice}")
+    public ResponseEntity<ApiResponse<Void>> updatePrice(@PathVariable("id") UUID id, @PathVariable("updateprice") Double unitPrice) {
+        // delegate to your service
+       try{
+           this.UnifiedDeliveryService.updateprice(id, unitPrice);
+           ApiResponse<Void> response = new ApiResponse<>(true, "price  updated successfully", null);
+           return ResponseEntity.ok(response);
+       } catch (Exception e) {
+
+           throw new RuntimeException(e);
+       }
+
+
     }
     // Get unpaid deliveries by supplier ID
     @GetMapping("/supplier/{supplierId}/unpaid")

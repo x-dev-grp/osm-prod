@@ -1,11 +1,13 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.*;
+import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.MillMachineRepository;
+import com.xdev.communicator.models.production.enums.OperationType;
 import com.xdev.xdevbase.utils.OSMLogger;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -55,11 +57,14 @@ public class PlanningService {
                 log.info("No lots assigned in request, clearing all mill assignments");
                 currentlyAssignedDeliveries.forEach(d -> {
                     d.setMillMachine(null);
-                    d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
+                    if (d.getOperationType() == OperationType.BASE) {
+                        d.setStatus(OliveLotStatus.PROD_READY);
+                    } else {
+                        d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
+                    }
                     d.setGlobalLotNumber(null);
                 });
                 deliveryRepo.saveAll(currentlyAssignedDeliveries);
-                return;
             }
 
             // 5. Process assignments for each mill
@@ -118,7 +123,9 @@ public class PlanningService {
             allDeliveriesToSave.addAll(currentlyAssignedDeliveries.stream()
                     .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
                     .toList());
-
+            allDeliveriesToSave.forEach(d -> {
+                d.setStatus(OliveLotStatus.IN_PROGRESS);
+            });
             deliveryRepo.saveAll(allDeliveriesToSave);
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "savePlanning", e);
@@ -184,7 +191,11 @@ public class PlanningService {
         try {
             deliveries.forEach(d -> {
                 d.setMillMachine(null);
-//                d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
+                if (d.getOperationType() == OperationType.BASE) {
+                    d.setStatus(OliveLotStatus.PROD_READY);
+                } else {
+                    d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
+                }
                 d.setGlobalLotNumber(null);
             });
         } catch (Exception e) {
@@ -241,9 +252,7 @@ public class PlanningService {
             }
 
             // Group deliveries by global lot
-            List<UnifiedDelivery> allDeliveries = deliveryRepo.findOliveDeliveriesControlled()
-                    .stream()
-                    .filter(d -> d.getStatus() == OliveLotStatus.OLIVE_CONTROLLED).toList();
+            List<UnifiedDelivery> allDeliveries = deliveryRepo.findOliveDeliveriesControlled();
             List<UnifiedDeliveryDTO> allDeliveryDtos = allDeliveries.stream().map((element) -> modelMapper.map(element, UnifiedDeliveryDTO.class)).toList();
             Map<String, List<UnifiedDeliveryDTO>> globalLotGroups = allDeliveryDtos.stream()
                     .filter(d -> d.getGlobalLotNumber() != null)

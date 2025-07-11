@@ -169,6 +169,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "mapOliveDeliveryActions", delivery);
         Set<Action> actions = new HashSet<>();
+        actions.add(Action.READ);
+        actions.add(Action.GEN_PDF);
         switch (delivery.getStatus()) {
             case NEW -> {
                 actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE , Action.OLIVE_QUALITY));
@@ -177,7 +179,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case IN_PROGRESS -> {
                 actions.add(Action.COMPLETE);
             }
-            case OLIVE_CONTROLLED -> {
+            case OLIVE_CONTROLLED , PROD_READY -> {
                 actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE,   Action.UPDATE_OLIVE_QUALITY));
                 switch (delivery.getOperationType()) {
                     case EXCHANGE -> {
@@ -192,7 +194,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             }
             case COMPLETED -> {
-                actions.add(Action.UPDATE);
                 switch (delivery.getOperationType()) {
                     case SIMPLE_RECEPTION -> {
                         actions.add(Action.OIL_QUALITY);
@@ -217,6 +218,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "mapOilDeliveryActions", delivery);
         Set<Action> actions = new HashSet<>();
+        actions.add(Action.READ);
         switch (delivery.getStatus()) {
             case NEW -> {
                 actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
@@ -315,4 +317,27 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         }
 
     }
+
+    public void updateprice(UUID id, Double unitPrice) {
+        try {
+            repository.findById(id).ifPresent(delivery -> {
+                delivery.setUnitPrice(unitPrice);
+                switch (delivery.getDeliveryType()) {
+                    case OIL -> {
+                        delivery.setPrice(unitPrice * delivery.getOilQuantity());
+                        delivery.setStatus(OliveLotStatus.STOCK_READY);
+
+                    }
+                    case OLIVE -> {
+                        delivery.setPrice(unitPrice * delivery.getPoidsNet());
+                        delivery.setStatus(OliveLotStatus.PROD_READY);
+                    }
+                    case null, default -> {}
+                }
+
+                deliveryRepository.save(delivery);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } }
 }
