@@ -107,7 +107,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
         // 4) If it’s an OIL delivery AND NOT still waiting for pricing, create exactly one transaction now.
         if (unifiedDeliveryService.isValidForTransaction(delivery)) {
-            oilTransactionService.createSingleOilTransaction(delivery);
+            oilTransactionService.createSingleOilTransactionIn(delivery);
         }
 
         // 5) Map each DTO → entity

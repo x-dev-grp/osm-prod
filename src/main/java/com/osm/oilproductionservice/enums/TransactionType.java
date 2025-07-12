@@ -6,4 +6,5 @@ public enum TransactionType {
     PAYMENT,
     LOAN,
     SALE,
+    EXCHANGE,
 }

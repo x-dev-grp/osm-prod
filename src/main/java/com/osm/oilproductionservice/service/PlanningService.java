@@ -43,19 +43,22 @@ public class PlanningService {
 
             validateRequest(req);
 
-            // 1. Get all deliveries that are currently assigned to mills
-            List<UnifiedDelivery> currentlyAssignedDeliveries = deliveryRepo.findByMillMachineIsNotNull();
-
-            // 2. Load all deliveries referenced in the request
+            // 1. Load all deliveries (both in request and currently assigned)
             Map<String, UnifiedDelivery> deliveryMap = loadDeliveries(req);
 
-            // 3. Clear assignments for deliveries that are in the request
+            // 2. Store original statuses for unassigned lots
+            Map<String, OliveLotStatus> originalStatuses = new HashMap<>();
+            deliveryMap.values().forEach(d -> {
+                originalStatuses.put(d.getLotNumber(), d.getStatus());
+            });
+
+            // 3. Clear assignments for all deliveries first
             clearAssignments(deliveryMap.values());
 
             // 4. If no lots are assigned in the request, clear all mill assignments
             if (req.getMills().stream().allMatch(m -> m.getItems().isEmpty())) {
                 log.info("No lots assigned in request, clearing all mill assignments");
-                currentlyAssignedDeliveries.forEach(d -> {
+                deliveryMap.values().forEach(d -> {
                     d.setMillMachine(null);
                     if (d.getOperationType() == OperationType.BASE) {
                         d.setStatus(OliveLotStatus.PROD_READY);
@@ -64,7 +67,8 @@ public class PlanningService {
                     }
                     d.setGlobalLotNumber(null);
                 });
-                deliveryRepo.saveAll(currentlyAssignedDeliveries);
+                deliveryRepo.saveAll(deliveryMap.values());
+                return; // Exit early since no assignments
             }
 
             // 5. Process assignments for each mill
@@ -73,21 +77,21 @@ public class PlanningService {
                 if (millPlan.getItems() != null && !millPlan.getItems().isEmpty()) {
                     // Process regular lots
                     millPlan.getItems().stream()
-                            .filter(item -> item.getType().equals(PlanItemType.LOT.toString()))
+                            .filter(item -> item.getType().equals("LOT"))
                             .forEach(item -> {
                                 UnifiedDelivery delivery = deliveryMap.get(item.getId());
                                 if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
                                     MillMachine mill = millRepo.findById(millPlan.getMillMachineId())
                                             .orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millPlan.getMillMachineId()));
-//                                    delivery.setStatus(OliveLotStatus.IN_PROGRESS);
                                     delivery.setMillMachine(mill);
+                                    delivery.setStatus(OliveLotStatus.IN_PROGRESS); // Set assigned lots to IN_PROGRESS
                                     processedLotNumbers.add(delivery.getLotNumber());
                                 }
                             });
 
                     // Process global lots
                     millPlan.getItems().stream()
-                            .filter(item -> item.getType().equals(PlanItemType.GLOBAL_LOT.toString()))
+                            .filter(item -> item.getType().equals("GLOBAL_LOT"))
                             .forEach(item -> req.getGlobalLots().stream()
                                     .filter(gl -> gl.getGlobalLotNumber().equals(item.getId()))
                                     .findFirst()
@@ -99,8 +103,8 @@ public class PlanningService {
                                             UnifiedDelivery delivery = deliveryMap.get(lotDto.getLotNumber());
                                             if (delivery != null && delivery.getStatus() != OliveLotStatus.COMPLETED) {
                                                 delivery.setMillMachine(mill);
-//                                                delivery.setStatus(OliveLotStatus.IN_PROGRESS);
                                                 delivery.setGlobalLotNumber(globalLot.getGlobalLotNumber());
+                                                delivery.setStatus(OliveLotStatus.IN_PROGRESS); // Set assigned lots to IN_PROGRESS
                                                 processedLotNumbers.add(delivery.getLotNumber());
                                             }
                                         });
@@ -108,25 +112,27 @@ public class PlanningService {
                 }
             });
 
-            // 6. Clear assignments for lots that were previously assigned but not in the current request
-            currentlyAssignedDeliveries.stream()
+            // 6. Handle unassigned lots - revert to their previous status
+            deliveryMap.values().stream()
                     .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
                     .forEach(d -> {
                         d.setMillMachine(null);
-//                        d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
                         d.setGlobalLotNumber(null);
+                        
+                        // Revert to previous status based on operation type and quality control
+                        if (d.getOperationType() == OperationType.BASE) {
+                            d.setStatus(OliveLotStatus.PROD_READY);
+                        } else {
+                            d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
+                        }
                     });
 
             // 7. Save all changes
-            List<UnifiedDelivery> allDeliveriesToSave = new ArrayList<>();
-            allDeliveriesToSave.addAll(deliveryMap.values());
-            allDeliveriesToSave.addAll(currentlyAssignedDeliveries.stream()
-                    .filter(d -> !processedLotNumbers.contains(d.getLotNumber()))
-                    .toList());
-            allDeliveriesToSave.forEach(d -> {
-                d.setStatus(OliveLotStatus.IN_PROGRESS);
-            });
-            deliveryRepo.saveAll(allDeliveriesToSave);
+            deliveryRepo.saveAll(deliveryMap.values());
+            
+            log.info("Planning saved successfully. {} lots assigned to mills, {} lots unassigned", 
+                    processedLotNumbers.size(), 
+                    deliveryMap.size() - processedLotNumbers.size());
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "savePlanning", e);
             throw e;
@@ -156,26 +162,15 @@ public class PlanningService {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "loadDeliveries", req);
         try {
-            // Get all delivery IDs (lotNumbers) from mill assignments
-            Set<String> deliveryIds = req.getMills().stream()
-                    .flatMap(m -> m.getItems().stream())
-                    .filter(item -> item.getType().equals("LOT"))
-                    .map(PlanItemDTO::getId)
-                    .collect(Collectors.toSet());
-
-            // Get all delivery IDs (lotNumbers) from global lots
-            deliveryIds.addAll(req.getGlobalLots().stream()
-                    .flatMap(g -> g.getLots().stream())
-                    .map(UnifiedDeliveryDTO::getLotNumber)
-                    .collect(Collectors.toSet()));
-
-            // Load deliveries by lotNumber, filtering out completed ones
-            List<UnifiedDelivery> deliveries = deliveryRepo.findByLotNumberIn(deliveryIds).stream()
+            // Load all available deliveries for planning (those that can be assigned to mills)
+            List<UnifiedDelivery> allAvailableDeliveries = deliveryRepo.findOliveDeliveriesControlled();
+            
+            // Filter out completed deliveries
+            List<UnifiedDelivery> deliveries = allAvailableDeliveries.stream()
                     .filter(d -> d.getStatus() != OliveLotStatus.COMPLETED)
                     .toList();
 
-            return deliveries.stream()
-                    .collect(Collectors.toMap(UnifiedDelivery::getLotNumber, d -> d));
+            return deliveries.stream().collect(Collectors.toMap(UnifiedDelivery::getLotNumber, d -> d));
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "loadDeliveries", e);
             throw e;
@@ -191,12 +186,14 @@ public class PlanningService {
         try {
             deliveries.forEach(d -> {
                 d.setMillMachine(null);
+                d.setGlobalLotNumber(null);
+                
+                // Set appropriate status based on operation type and quality control
                 if (d.getOperationType() == OperationType.BASE) {
                     d.setStatus(OliveLotStatus.PROD_READY);
                 } else {
                     d.setStatus(!d.getQualityControlResults().isEmpty() ? OliveLotStatus.OLIVE_CONTROLLED : OliveLotStatus.NEW);
                 }
-                d.setGlobalLotNumber(null);
             });
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "clearAssignments", e);
@@ -227,7 +224,7 @@ public class PlanningService {
 
             // Assign deliveries to mills
             for (MillMachineDto mill : millMachineDtos) {
-                List<UnifiedDelivery> deliveries = deliveryRepo.findByMillMachineIdAndStatus(mill.getId(), OliveLotStatus.OLIVE_CONTROLLED.name());
+                List<UnifiedDelivery> deliveries = deliveryRepo.findByMillMachineIdAndStatus(mill.getId(), OliveLotStatus.IN_PROGRESS.name());
                 if (!deliveries.isEmpty()) {
                     MillPlanDTO millPlan = millPlans.stream()
                             .filter(mp -> mp.getMillMachineId().equals(mill.getId()))
@@ -311,6 +308,23 @@ public class PlanningService {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "markLotCompleted", lotNumber, oilQuantity, rendement);
         try {
+            // Validate input parameters
+            if (lotNumber == null || lotNumber.trim().isEmpty()) {
+                throw new IllegalArgumentException("Lot number cannot be null or empty");
+            }
+            
+            if (oilQuantity != null && oilQuantity < 0) {
+                throw new IllegalArgumentException("Oil quantity cannot be negative");
+            }
+            
+            if (rendement != null && (rendement < 0 || rendement > 100)) {
+                throw new IllegalArgumentException("Rendement must be between 0 and 100");
+            }
+            
+            if (unpaidPrice != null && unpaidPrice < 0) {
+                throw new IllegalArgumentException("Unpaid price cannot be negative");
+            }
+            
             List<UnifiedDelivery> delivery = deliveryRepo.findByLotNumberIn(Set.of(lotNumber));
             if (delivery.isEmpty()) {
                 throw new EntityNotFoundException("Lot not found: " + lotNumber);
@@ -321,6 +335,9 @@ public class PlanningService {
             lot.setRendement(rendement);
             lot.setUnpaidAmount(unpaidPrice);
             deliveryRepo.save(lot);
+            
+            log.info("Lot {} marked as completed with oilQuantity: {}, rendement: {}, unpaidPrice: {}", 
+                    lotNumber, oilQuantity, rendement, unpaidPrice);
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "markLotCompleted", e);
             throw e;
@@ -337,6 +354,15 @@ public class PlanningService {
         OSMLogger.logMethodEntry(this.getClass(), "markGlobalLotCompleted", globalLotNumber, childLots);
 
         try {
+            // Validate input parameters
+            if (globalLotNumber == null || globalLotNumber.trim().isEmpty()) {
+                throw new IllegalArgumentException("Global lot number cannot be null or empty");
+            }
+            
+            if (childLots == null || childLots.isEmpty()) {
+                throw new IllegalArgumentException("Child lots list cannot be null or empty");
+            }
+            
             // verify global lot exists
             List<UnifiedDelivery> existing = deliveryRepo.findByGlobalLotNumber(globalLotNumber);
             if (existing.isEmpty()) {
@@ -345,6 +371,8 @@ public class PlanningService {
 
             // delegate each child
             childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice()));
+            
+            log.info("Global lot {} completed with {} child lots", globalLotNumber, childLots.size());
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "markGlobalLotCompleted", e);
             throw e;

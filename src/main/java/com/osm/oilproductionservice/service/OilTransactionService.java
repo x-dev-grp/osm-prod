@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.service;
 
+import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
@@ -100,10 +101,25 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         return actions;
     }
 
+    private static OilTransaction getOilTransaction(UnifiedDelivery delivery, ExchangePricingDto dto) {
+        OilTransaction tx = new OilTransaction();
+        tx.setStorageUnitDestination(null);
+        tx.setStorageUnitSource(null);
+        tx.setTransactionType(TransactionType.EXCHANGE);
+        tx.setTransactionState(TransactionState.PENDING);
+        tx.setTotalPrice(dto.getOilTotalValue());
+        tx.setReception(delivery);
+        tx.setUnitPrice(dto.getOilUnitPrice());
+        tx.setQualityGrade(dto.getQualityGrade());
+        tx.setOilType(delivery.getOliveType());
+        tx.setQuantityKg(dto.getOilQuantity());
+        return tx;
+    }
+
     // Helper: create exactly one oil reception for a single delivery
-    void createSingleOilTransaction(UnifiedDelivery delivery) {
+    void createSingleOilTransactionIn(UnifiedDelivery delivery) {
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransaction", delivery);
+        OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransactionIn", delivery);
         OilTransaction tx = new OilTransaction();
         tx.setStorageUnitDestination(delivery.getStorageUnit());
         tx.setStorageUnitSource(null);
@@ -117,7 +133,16 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         save(
                 modelMapper.map(tx, OilTransactionDTO.class)
         );
-        OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransaction", null);
-        OSMLogger.logPerformance(this.getClass(), "createSingleOilTransaction", startTime, System.currentTimeMillis());
+        OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransactionIn", null);
+        OSMLogger.logPerformance(this.getClass(), "createSingleOilTransactionIn", startTime, System.currentTimeMillis());
+    }
+
+    void createSingleOilTransactionOut(UnifiedDelivery delivery, ExchangePricingDto dto) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransactionOut", delivery);
+        OilTransaction tx = getOilTransaction(delivery, dto);
+        save(modelMapper.map(tx, OilTransactionDTO.class));
+        OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransactionOut", null);
+        OSMLogger.logPerformance(this.getClass(), "createSingleOilTransactionOut", startTime, System.currentTimeMillis());
     }
 }

@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Map;
 
@@ -51,42 +52,97 @@ public class PlanningController {
         }
     }
 
-    /* ───── NEW: mark LOT completed ───── */
+    /* ───── MARK LOT completed ───── */
     @PostMapping("/planning/lots/{lotNumber}/completed")
-    public void completeLot(@PathVariable String lotNumber, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<String> completeLot(
+            @PathVariable String lotNumber,
+            @RequestBody Map<String, Object> body) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "completeLot", new Object[]{lotNumber, body});
+
         try {
-            Double oilQuantity = body.get("oilQuantity") != null ? ((Number) body.get("oilQuantity")).doubleValue() : null;
-            Double rendement = body.get("rendement") != null ? ((Number) body.get("rendement")).doubleValue() : null;
-            Double unpaidPrice = body.get("unpaidPrice") != null ? ((Number) body.get("unpaidPrice")).doubleValue() : null;
+            if (body == null) {
+                return ResponseEntity
+                        .badRequest()
+                        .body("Request body cannot be null");
+            }
+
+            Double oilQuantity = getDouble(body, "oilQuantity");
+            Double rendement   = getDouble(body, "rendement");
+            Double unpaidPrice = getDouble(body, "unpaidPrice");
+
+            if (oilQuantity == null && rendement == null && unpaidPrice == null) {
+                return ResponseEntity
+                        .badRequest()
+                        .body("At least one of oilQuantity, rendement or unpaidPrice must be provided");
+            }
+
             planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice);
+            return ResponseEntity
+                    .ok("Lot completed successfully");
+
+        } catch (EntityNotFoundException e) {
+            log.error("Lot not found: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Lot not found: " + e.getMessage());
+
         } catch (Exception e) {
-            OSMLogger.logException(this.getClass(), "completeLot", e);
             log.error("Error completing lot: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to complete lot: " + e.getMessage());
+
         } finally {
             OSMLogger.logMethodExit(this.getClass(), "completeLot", null);
-            OSMLogger.logPerformance(this.getClass(), "completeLot", startTime, System.currentTimeMillis());
+            OSMLogger.logPerformance(
+                    this.getClass(), "completeLot", startTime, System.currentTimeMillis());
         }
     }
 
-    /* ───── NEW: mark GLOBAL-LOT completed ───── */
+    /* ───── MARK GLOBAL-LOT completed ───── */
     @PostMapping("/planning/globalLots/{globalLotNumber}/completed")
-    public ResponseEntity<Void> completeGlobalLot(@PathVariable String globalLotNumber, @RequestBody List<ChildLotCompletionDto> childLots) {
-
+    public ResponseEntity<String> completeGlobalLot(
+            @PathVariable String globalLotNumber,
+            @RequestBody List<ChildLotCompletionDto> childLots) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "completeGlobalLot", globalLotNumber, childLots);
 
         try {
+            if (childLots == null || childLots.isEmpty()) {
+                return ResponseEntity
+                        .badRequest()
+                        .body("Child lot details must be provided");
+            }
+
             planningService.markGlobalLotCompleted(globalLotNumber, childLots);
-            return ResponseEntity.ok().build();
+            return ResponseEntity
+                    .ok("Global lot completed successfully");
+
+        } catch (EntityNotFoundException e) {
+            log.error("Global lot not found: {}", e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Global lot not found: " + e.getMessage());
+
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "completeGlobalLot", e);
             log.error("Error completing global lot {}: {}", globalLotNumber, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to complete global lot: " + e.getMessage());
+
         } finally {
             OSMLogger.logMethodExit(this.getClass(), "completeGlobalLot", null);
-            OSMLogger.logPerformance(this.getClass(), "completeGlobalLot", startTime, System.currentTimeMillis());
+            OSMLogger.logPerformance(
+                    this.getClass(), "completeGlobalLot", startTime, System.currentTimeMillis());
         }
     }
+
+    /** helper to safely extract a Double from the request body */
+    private Double getDouble(Map<String, Object> body, String key) {
+        Object v = body.get(key);
+        return (v instanceof Number) ? ((Number) v).doubleValue() : null;
+    }
+
 }

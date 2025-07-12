@@ -2,6 +2,7 @@ package com.osm.oilproductionservice.controller;
 
 
 import com.osm.oilproductionservice.dto.ApiResponse;
+import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -97,7 +99,23 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         ApiResponse<UUID> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.createOilRecFromOliveRecImpl(uuid));
         return ResponseEntity.ok(response);
     }
+//    @GetMapping("/createOilTransactionFromExchange/{uuid}")
+//    public ResponseEntity<ApiResponse<UUID>> createOilTransactionFromExchange(@PathVariable UUID uuid) {
+//        ApiResponse<UUID> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully",
+//                this.UnifiedDeliveryService.createOilTransactionFromExchange(uuid));
+//        return ResponseEntity.ok(response);
+//    }
+    @PostMapping("/update-exchange-pricing")
+    public ResponseEntity<?> updateExchangePricingAndCreateOilTransactionOut(
+            @RequestBody ExchangePricingDto dto) {
+      try{
+          this.UnifiedDeliveryService.updateExchangePricingAndCreateOilTransactionOut(dto)   ;
+          return ResponseEntity.ok(new ApiResponse<>(true, "Pricing updated successfully", null));
+      }catch (Exception e) {
+          throw new RuntimeException(e);
+      }
 
+    }
     @Override
     protected String getResourceName() {
         return "UNIFIEDDELIVERY".toUpperCase();

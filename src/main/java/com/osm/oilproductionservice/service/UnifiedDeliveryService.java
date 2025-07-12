@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.service;
 
+import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
@@ -12,6 +13,7 @@ import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import com.xdev.xdevbase.utils.OSMLogger;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
@@ -92,7 +94,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         // 4. Persist changes
         UnifiedDelivery updated = deliveryRepository.saveAndFlush(existing);
         if(isValidForTransaction(updated)){
-            oilTransactionService.createSingleOilTransaction(updated);
+            oilTransactionService.createSingleOilTransactionIn(updated);
         }
         // 5. Map back to DTO and return
         OSMLogger.logMethodExit(this.getClass(), "update", updated);
@@ -183,7 +185,10 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE,   Action.UPDATE_OLIVE_QUALITY));
                 switch (delivery.getOperationType()) {
                     case EXCHANGE -> {
-                        actions.addAll(Set.of(Action.OIL_OUT_TRANSACTION,Action.SET_PRICE));
+                        actions.add(Action.SET_PRICE);
+                        if (delivery.getStatus() == OliveLotStatus.PROD_READY) {
+                            actions.add(Action.OIL_OUT_TRANSACTION);
+                        }
                     }
                     case OLIVE_PURCHASE -> {
                         actions.add(Action.SET_PRICE);
@@ -265,6 +270,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         return null;
     }
 
+    public UUID createOilTransactionFromExchange(UUID uuid,UnifiedDelivery delivery) {
+        long startTime = System.currentTimeMillis();
+
+        OSMLogger.logMethodExit(this.getClass(), "createOilTransactionFromExchange", null);
+        OSMLogger.logPerformance(this.getClass(), "createOilTransactionFromExchange", startTime, System.currentTimeMillis());
+        return null;
+    }
+
     private Map<String, Object> generateDeliveryNumber(UnifiedDelivery del) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "generateDeliveryNumber", del);
@@ -340,4 +353,21 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         } catch (Exception e) {
             throw new RuntimeException(e);
         } }
+
+    @Transactional
+    public void updateExchangePricingAndCreateOilTransactionOut(ExchangePricingDto dto) {
+        UnifiedDelivery delivery = deliveryRepository.findById(dto.getDeliveryId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Delivery not found: " + dto.getDeliveryId())
+                );
+
+        // 1) update pricing on the Delivery
+        delivery.setUnitPrice(dto.getUnitPrice());
+        delivery.setPrice(dto.getPrice());
+        delivery.setStatus(OliveLotStatus.PROD_READY);
+//        delivery.setQualityGrade(dto.getQualityGrade());
+        deliveryRepository.save(delivery);
+        oilTransactionService.createSingleOilTransactionOut(delivery, dto);
+
+    }
 }

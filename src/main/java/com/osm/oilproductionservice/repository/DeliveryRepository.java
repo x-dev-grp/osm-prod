@@ -34,11 +34,11 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     @Query("SELECT d " +
             "FROM UnifiedDelivery d " +
             "WHERE d.deliveryType = 'OLIVE'" +
-            " and (d.operationType = 'BASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
-            " OR  (d.operationType  = 'OLIVE_PURCHASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
-            " OR  (d.operationType  = 'PAYMENT' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))" +
-            "  OR (d.operationType  = 'EXCHANGE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS') and d.unitPrice <>0 )" +
-            " OR  (d.operationType  = 'SIMPLE_RECEPTION' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS'))"
+            " and (d.operationType = 'BASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))" +
+            " OR  (d.operationType  = 'OLIVE_PURCHASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))" +
+            " OR  (d.operationType  = 'PAYMENT' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))" +
+            "  OR (d.operationType  = 'EXCHANGE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY') and d.unitPrice <>0 )" +
+            " OR  (d.operationType  = 'SIMPLE_RECEPTION' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))"
     )
     List<UnifiedDelivery> findOliveDeliveriesControlled();
 
