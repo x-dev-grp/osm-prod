@@ -230,8 +230,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             }
             case OIL_CONTROLLED -> {
-                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.OIL_IN_TRANSACTION,Action.SET_PRICE));
+                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.SET_PRICE));
 
+            }
+            case PROD_READY -> {
+                actions.add(Action.OIL_IN_TRANSACTION);
             }
         }
         OSMLogger.logMethodExit(this.getClass(), "mapOilDeliveryActions", actions);

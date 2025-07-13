@@ -8,6 +8,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
@@ -109,7 +111,8 @@ public class OilTransaction extends BaseEntity implements Serializable {
     }
 
     public void setTotalPrice() {
-        this.totalPrice = unitPrice * quantityKg;
+
+        this.totalPrice = (BigDecimal.valueOf(unitPrice).multiply(BigDecimal.valueOf(quantityKg)).setScale(2, RoundingMode.HALF_UP)).doubleValue();
     }
 
     public UnifiedDelivery getReception() {
