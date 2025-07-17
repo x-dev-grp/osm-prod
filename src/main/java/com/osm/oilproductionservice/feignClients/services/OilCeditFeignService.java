@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 @Service
 public class OilCeditFeignService extends BaseFeignService<OilCreditDto, OilCreditDto> {
@@ -55,4 +56,30 @@ public class OilCeditFeignService extends BaseFeignService<OilCreditDto, OilCred
                 null
         );
     }
+
+//    @CircuitBreaker(name = "genericService", fallbackMethod = "approveOilCreditFallBack")
+//    @Retry(name = "genericService")
+//    @TimeLimiter(name = "genericService")
+//    public CompletionStage<Object> approveOilSale(UUID externalId) {
+//        if (super.feignExecutor != null) {
+//            return CompletableFuture.supplyAsync(() -> {
+//                try {
+//                    return oilCreditFeignController.approveOilSale(externalId);
+//                } catch (Exception e) {
+//                    log.error("Error approving OilSale by id: {}", externalId, e);
+//                    throw new ServiceException("Error approving oilCredit by id", e);
+//                }
+//            }, feignExecutor);
+//        } else {
+//            return CompletableFuture.supplyAsync(() -> {
+//                try {
+//                    return oilCreditFeignController.approveOilSale(externalId);
+//                } catch (Exception e) {
+//                    log.error("Error approving OilSale by id: {}", externalId, e);
+//                    throw new ServiceException("Error approving oilCredit by id", e);
+//                }
+//            });
+//        }
+//
+//    }
 }

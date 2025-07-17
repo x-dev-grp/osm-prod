@@ -64,6 +64,31 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         }
     }
 
+    @PostMapping("/save-batch-direct/{idx}")
+    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> saveBatchDirect(
+            @PathVariable UUID idx,
+            @RequestBody List<QualityControlResultDto> dtos) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "saveBatchDirect", dtos.size());
+        try {
+            // Call a new service method (to be implemented) that saves results for idx
+            ApiResponse<QualityControlResult, QualityControlResultDto> response = new ApiResponse<>(true, "", qualityControlResultService.saveOilQcForOliveRec(idx, dtos));
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Bad request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error saving quality control results: " + e.getMessage(), null));
+        } catch (HttpMessageNotWritableException e) {
+            log.error("Serialization error: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error serializing response: " + e.getMessage(), null));
+        } catch (Exception e) {
+            log.error("Unexpected error: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        } finally {
+            OSMLogger.logMethodExit(this.getClass(), "saveBatchDirect", null);
+            OSMLogger.logPerformance(this.getClass(), "saveBatchDirect", startTime, System.currentTimeMillis());
+        }
+    }
+
     @GetMapping("/fetchByDelivery/{deliveryId}")
     public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getResultsByDelivery(@PathVariable UUID deliveryId) {
         long startTime = System.currentTimeMillis();
@@ -84,23 +109,23 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         }
     }
 
-//    @PutMapping("/update-batch")
-//    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> updateBatch(@RequestBody List<QualityControlResultDto> dtos) {
-//        log.debug("Received update-batch request with {} DTOs", dtos.size());
+//    @GetMapping("/fetchByOilDeliveryOfOliveDelivery/{oliveLotNUmber}")
+//    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getOilResultsByOliveDelivery(@PathVariable String oliveLotNUmber) {
+//        long startTime = System.currentTimeMillis();
+//        OSMLogger.logMethodEntry(this.getClass(), "getOilResultsByOliveDelivery", oliveLotNUmber);
 //        try {
-//            List<QualityControlResultDto> updatedDtos = qualityControlResultService.updateAll(dtos);
-//            log.debug("Successfully updated {} DTOs", updatedDtos.size());
-//            ApiResponse<QualityControlResult, QualityControlResultDto> response = new ApiResponse<>(true, "", updatedDtos);
-//            return ResponseEntity.ok(response);
+//            List<QualityControlResultDto> results = qualityControlResultService.findOilResultsByOliveDeliveryFromOliveLotNumber(oliveLotNUmber);
+//            log.debug("Successfully fetched {} oil QC results for deliveryId: {}", results.size(), oliveLotNUmber);
+//            return ResponseEntity.ok(new ApiResponse<>(true, "", results));
 //        } catch (IllegalArgumentException e) {
 //            log.error("Bad request: {}", e.getMessage());
-//            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error updating quality control results: " + e.getMessage(), null));
-//        } catch (HttpMessageNotWritableException e) {
-//            log.error("Serialization error: {}", e.getMessage(), e);
-//            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error serializing response: " + e.getMessage(), null));
+//            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error fetching oil QC results: " + e.getMessage(), null));
 //        } catch (Exception e) {
 //            log.error("Unexpected error: {}", e.getMessage(), e);
 //            return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+//        } finally {
+//            OSMLogger.logMethodExit(this.getClass(), "getOilResultsByOliveDelivery", null);
+//            OSMLogger.logPerformance(this.getClass(), "getOilResultsByOliveDelivery", startTime, System.currentTimeMillis());
 //        }
 //    }
 

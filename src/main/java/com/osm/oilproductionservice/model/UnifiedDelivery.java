@@ -31,6 +31,9 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     // --- Common Fields ---
     private String deliveryNumber;
+    private String categoryOliveOil;
+
+
 
     @Enumerated(EnumType.STRING)
     private DeliveryType deliveryType;
@@ -121,7 +124,13 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public Supplier getSupplier() {
         return supplier;
     }
+    public String getCategoryOliveOil() {
+        return categoryOliveOil;
+    }
 
+    public void setCategoryOliveOil(String categoryOlivOil) {
+        this.categoryOliveOil = categoryOlivOil;
+    }
     public void setSupplier(Supplier supplier) {
         this.supplier = supplier;
     }

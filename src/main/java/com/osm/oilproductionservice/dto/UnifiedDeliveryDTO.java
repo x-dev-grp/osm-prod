@@ -22,6 +22,9 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     // --- Common Fields ---
     private String deliveryNumber;
 
+
+    private String categoryOliveOil;
+
     @NotNull(message = "Delivery type is required")
     private DeliveryType deliveryType;
     private OperationType operationType;
@@ -138,6 +141,13 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     public void setQualityControlResults(Set<QualityControlResultDto> qualityControlResults) {
         this.qualityControlResults = qualityControlResults;
+    }
+    public String getCategoryOliveOil() {
+        return categoryOliveOil;
+    }
+
+    public void setCategoryOliveOil(String categoryOliveOil) {
+        this.categoryOliveOil = categoryOliveOil;
     }
 
     public StorageUnitDto getStorageUnit() {

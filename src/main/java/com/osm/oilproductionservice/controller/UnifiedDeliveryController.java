@@ -51,6 +51,15 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesBySupplier(@PathVariable UUID supplierId) {
         ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getDeliveriesBySupplier(supplierId));
         return ResponseEntity.ok(response);
+    }// Get deliveries by supplier ID
+    @GetMapping("/getDeliveryByOliveLotNumber/{id}")
+    public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByOliveLotNumber(@PathVariable UUID id) {
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByOliveLotNumber(id));
+        return ResponseEntity.ok(response);
+    } @GetMapping("/getDeliveryByLotNumber/{lotNumber}")
+    public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber) {
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumber(lotNumber));
+        return ResponseEntity.ok(response);
     }
 
     // Get paid deliveries by supplier ID
@@ -94,22 +103,23 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/createOilRecFromOliveRec/{uuid}")
-    public ResponseEntity<ApiResponse<UUID>> createOilRecFromOliveRec(@PathVariable UUID uuid) {
-        ApiResponse<UUID> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.createOilRecFromOliveRecImpl(uuid));
-        return ResponseEntity.ok(response);
-    }
-//    @GetMapping("/createOilTransactionFromExchange/{uuid}")
-//    public ResponseEntity<ApiResponse<UUID>> createOilTransactionFromExchange(@PathVariable UUID uuid) {
-//        ApiResponse<UUID> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully",
-//                this.UnifiedDeliveryService.createOilTransactionFromExchange(uuid));
-//        return ResponseEntity.ok(response);
-//    }
+
     @PostMapping("/update-exchange-pricing")
     public ResponseEntity<?> updateExchangePricingAndCreateOilTransactionOut(
             @RequestBody ExchangePricingDto dto) {
       try{
           this.UnifiedDeliveryService.updateExchangePricingAndCreateOilTransactionOut(dto)   ;
+          return ResponseEntity.ok(new ApiResponse<>(true, "Pricing updated successfully", null));
+      }catch (Exception e) {
+          throw new RuntimeException(e);
+      }
+
+    }
+    @PostMapping("/update-payment-pricing")
+    public ResponseEntity<?> updatePrincingForPaymentreception(
+            @RequestBody ExchangePricingDto dto) {
+      try{
+          this.UnifiedDeliveryService.updatePrincingForPaymentreception(dto)   ;
           return ResponseEntity.ok(new ApiResponse<>(true, "Pricing updated successfully", null));
       }catch (Exception e) {
           throw new RuntimeException(e);

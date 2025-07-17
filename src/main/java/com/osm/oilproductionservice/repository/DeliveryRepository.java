@@ -17,9 +17,22 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     @Query("select coalesce(d.oliveQuantity, 0) from UnifiedDelivery d where d.id = :id")
     double weightOfLot(@Param("id") String id);
 
-    List<UnifiedDelivery> findByIdIn(Set<UUID> ids);
+    @Query(value = """
+        SELECT *
+          FROM delivery d
+         WHERE d.lot_olive_number = (
+                   SELECT d2.lot_number
+                     FROM delivery d2
+                    WHERE d2.id = :deliveryId
+               )
+        """,
+            nativeQuery = true)
+    UnifiedDelivery findByLotOliveNumber(@Param("deliveryId") UUID deliveryId);
+
+
 
     List<UnifiedDelivery> findByLotNumberIn(Set<String> lotNumbers);
+    UnifiedDelivery findByLotNumber(String lotNumbers);
 
     List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
 
@@ -38,7 +51,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
             " OR  (d.operationType  = 'OLIVE_PURCHASE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))" +
             " OR  (d.operationType  = 'PAYMENT' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))" +
             "  OR (d.operationType  = 'EXCHANGE' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY') and d.unitPrice <>0 )" +
-            " OR  (d.operationType  = 'SIMPLE_RECEPTION' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))"
+            " OR  (d.operationType  = 'SIMPLE_RECEPTION' and d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY','NEW'))"
     )
     List<UnifiedDelivery> findOliveDeliveriesControlled();
 

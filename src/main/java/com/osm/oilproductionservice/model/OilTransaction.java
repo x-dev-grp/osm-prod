@@ -112,8 +112,12 @@ public class OilTransaction extends BaseEntity implements Serializable {
 
     public void setTotalPrice() {
 
+        if (unitPrice == null || quantityKg == null) {
+            this.totalPrice = 0.0;
+            return;
+        }
         this.totalPrice = (BigDecimal.valueOf(unitPrice).multiply(BigDecimal.valueOf(quantityKg)).setScale(2, RoundingMode.HALF_UP)).doubleValue();
-    }
+        }
 
     public UnifiedDelivery getReception() {
         return reception;

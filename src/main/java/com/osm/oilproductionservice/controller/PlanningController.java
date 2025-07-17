@@ -3,6 +3,8 @@ package com.osm.oilproductionservice.controller;
 import com.osm.oilproductionservice.dto.ChildLotCompletionDto;
 import com.osm.oilproductionservice.dto.PlanningSaveRequest;
 import com.osm.oilproductionservice.service.PlanningService;
+import com.xdev.xdevbase.apiDTOs.ApiResponse;
+import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.utils.OSMLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +56,7 @@ public class PlanningController {
 
     /* ───── MARK LOT completed ───── */
     @PostMapping("/planning/lots/{lotNumber}/completed")
-    public ResponseEntity<String> completeLot(
-            @PathVariable String lotNumber,
-            @RequestBody Map<String, Object> body) {
+    public ResponseEntity<String> completeLot(@PathVariable String lotNumber, @RequestBody Map<String, Object> body) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "completeLot", new Object[]{lotNumber, body});
 

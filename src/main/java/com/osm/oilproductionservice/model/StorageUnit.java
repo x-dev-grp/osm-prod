@@ -111,7 +111,11 @@ public class StorageUnit extends BaseEntity {
                 this.totalCost = rd.apply(this.totalCost + (volume * unitPrice));
             }
 
-            this.avgCost = rd.apply(this.totalCost / this.currentVolume);
+            if (this.currentVolume == 0) {
+                this.avgCost = 0.0;
+            } else {
+                this.avgCost = rd.apply(this.totalCost / this.currentVolume);
+            }
         }
     }
 

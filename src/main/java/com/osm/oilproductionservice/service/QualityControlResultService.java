@@ -1,9 +1,9 @@
 package com.osm.oilproductionservice.service;
 
-import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
-import com.osm.oilproductionservice.enums.*;
-import com.osm.oilproductionservice.model.OilTransaction;
+import com.osm.oilproductionservice.enums.DeliveryType;
+import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.enums.RuleType;
 import com.osm.oilproductionservice.model.QualityControlResult;
 import com.osm.oilproductionservice.model.QualityControlRule;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 public class QualityControlResultService extends BaseServiceImpl<QualityControlResult, QualityControlResultDto, QualityControlResultDto> {
 
     private static final Logger log = LoggerFactory.getLogger(QualityControlResultService.class);
+    private final DeliveryRepository deliveryRepository;
+    Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
 
     private final QualityControlResultRepository repository;
 
@@ -43,7 +45,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     private final OilTransactionRepository oilTransactionRepository;
     private final OilTransactionService oilTransactionService;
 
-    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, QualityControlResultRepository qualityControlResultRepository, OilTransactionRepository oilTransactionRepository, OilTransactionService oilTransactionService) {
+    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, QualityControlResultRepository qualityControlResultRepository, OilTransactionRepository oilTransactionRepository, OilTransactionService oilTransactionService, DeliveryRepository deliveryRepository) {
         super(repository, modelMapper);
         this.repository = repository1;
         this.ruleRepository = ruleRepository;
@@ -53,6 +55,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         this.qualityControlResultRepository = qualityControlResultRepository;
         this.oilTransactionRepository = oilTransactionRepository;
         this.oilTransactionService = oilTransactionService;
+        this.deliveryRepository = deliveryRepository;
     }
 
     @Override
@@ -105,18 +108,12 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 3) Load & validate rules
         Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
 
-        // 4) If it’s an OIL delivery AND NOT still waiting for pricing, create exactly one transaction now.
-        if (unifiedDeliveryService.isValidForTransaction(delivery)) {
-            oilTransactionService.createSingleOilTransactionIn(delivery);
-            delivery.setStatus(OliveLotStatus.STOCK_READY);
-        }
 
         // 5) Map each DTO → entity
         List<QualityControlResult> entities = dtos.stream()
                 .map(dto -> {
                     QualityControlRule rule = ruleMap.get(dto.getRule().getId());
                     validateMeasuredValue(dto.getMeasuredValue(), rule);
-
                     QualityControlResult e = new QualityControlResult();
                     e.setRule(rule);
                     e.setMeasuredValue(dto.getMeasuredValue());
@@ -124,6 +121,17 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
                     return e;
                 })
                 .toList();
+
+        Optional<QualityControlResult> match = entities.stream()
+                // 2) match on measuredValue ∈ allowed
+                .filter(qcr -> allowedSet.contains(qcr.getMeasuredValue()))
+                // 3) grab the first match (or use findAny())
+                .findFirst();
+
+        if (match.isPresent()) {
+            QualityControlResult result = match.get();
+            delivery.setCategoryOliveOil(result.getMeasuredValue());
+        }
 
         // 6) Persist QC results
         List<QualityControlResult> saved = repository.saveAll(entities);
@@ -144,6 +152,43 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
                 .toList();
         OSMLogger.logMethodExit(this.getClass(), "saveAll", resultDtos);
         OSMLogger.logPerformance(this.getClass(), "saveAll", startTime, System.currentTimeMillis());
+        return resultDtos;
+    }
+
+    @Transactional
+    public List<QualityControlResultDto> saveOilQcForOliveRec(UUID idx, List<QualityControlResultDto> dtos) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "saveAllForIdx", idx, dtos);
+        if (dtos.isEmpty()) {
+            OSMLogger.logMethodExit(this.getClass(), "saveAllForIdx", Collections.emptyList());
+            OSMLogger.logPerformance(this.getClass(), "saveAllForIdx", startTime, System.currentTimeMillis());
+            return Collections.emptyList();
+        }
+        // You can add custom logic for idx here (e.g., link to a batch, etc.)
+      UnifiedDelivery newOIlRec=  unifiedDeliveryService.createOilRecFromOliveRecImpl(idx,true);
+        log.info("Saving QC results for idx: {} ({} results)", idx, dtos.size());
+        // Validate rules
+        Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
+        // Map each DTO → entity (no delivery linkage)
+        List<QualityControlResult> entities = dtos.stream()
+                .map(dto -> {
+                    QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+                    validateMeasuredValue(dto.getMeasuredValue(), rule);
+                    QualityControlResult e = new QualityControlResult();
+                    e.setRule(rule);
+                    e.setMeasuredValue(dto.getMeasuredValue());
+                    e.setDelivery(newOIlRec); // if you add an idx field to the entity
+                    return e;
+                })
+                .toList();
+        // Persist QC results
+        List<QualityControlResult> saved = repository.saveAll(entities);
+        // Map back to DTOs
+        List<QualityControlResultDto> resultDtos = saved.stream()
+                .map(e -> modelMapper.map(e, QualityControlResultDto.class))
+                .toList();
+        OSMLogger.logMethodExit(this.getClass(), "saveAllForIdx", resultDtos);
+        OSMLogger.logPerformance(this.getClass(), "saveAllForIdx", startTime, System.currentTimeMillis());
         return resultDtos;
     }
 
@@ -237,38 +282,18 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         return resultDtos;
     }
 
-    public List<QualityControlResultDto> savebatch(List<QualityControlResultDto> dtos) {
-        long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "savebatch", dtos);
-        UnifiedDelivery sod = deliveryRepo.findById(dtos.getFirst().getDeliveryId()).orElse(null);
-        if (Objects.nonNull(sod) && sod.getDeliveryType() == DeliveryType.OIL) {
-            OilTransaction oilTransaction = new OilTransaction();
-            oilTransaction.setStorageUnitDestination(sod.getStorageUnit());
-            oilTransaction.setStorageUnitSource(null);
-            oilTransaction.setTransactionType(TransactionType.RECEPTION_IN);
-            oilTransaction.setQualityGrade(null);
-            oilTransaction.setTransactionState(TransactionState.COMPLETED);
-            oilTransaction.setQuantityKg(sod.getOilQuantity());
-            oilTransaction.setUnitPrice(sod.getUnitPrice());
-            oilTransaction.setReception(sod);
-            oilTransaction.setOilType(sod.getOilType());
-            oilTransactionService.save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
-        }
-
-        List<QualityControlResult> list = dtos.stream().map((element) -> modelMapper.map(element, QualityControlResult.class)).toList();
-
-        sod.setHasQualityControl(true);
-        // since we just added new results
-        if (sod.getDeliveryType() == DeliveryType.OIL)// since we just added new results
-            sod.setStatus(OliveLotStatus.OIL_CONTROLLED);
-        else
-            sod.setStatus(OliveLotStatus.OLIVE_CONTROLLED);
-        deliveryRepo.save(sod);
-
-        List<QualityControlResult> savedDtos = qualityControlResultRepository.saveAll(list);
-        List<QualityControlResultDto> resultDtos = savedDtos.stream().map((element) -> modelMapper.map(element, QualityControlResultDto.class)).toList();
-        OSMLogger.logMethodExit(this.getClass(), "savebatch", resultDtos);
-        OSMLogger.logPerformance(this.getClass(), "savebatch", startTime, System.currentTimeMillis());
-        return resultDtos;
-    }
+//    @Transactional(readOnly = true)
+//    public List<QualityControlResultDto> findOilResultsByOliveDeliveryFromOliveLotNumber(String oliveLotNUmber) {
+//        long startTime = System.currentTimeMillis();
+//        OSMLogger.logMethodEntry(this.getClass(), "findOilResultsByOliveDeliveryFromOliveLotNumber", oliveLotNUmber);
+////UUID oilRecFromOliveRec_Lotnumber = deliveryRepository.findByLotOliveNumber(oliveLotNUmber).getFirst().getQualityControlResults()
+////        List<QualityControlResult> results = repository.findByDeliveryIdAndRule_OilQcTrue(deliveryId);
+//         List<QualityControlResult> results = (List<QualityControlResult>) deliveryRepository.findByLotOliveNumber(oliveLotNUmber).getFirst().getQualityControlResults();
+//        List<QualityControlResultDto> resultDtos = results.stream()
+//                .map(e -> modelMapper.map(e, QualityControlResultDto.class))
+//                .toList();
+//        OSMLogger.logMethodExit(this.getClass(), "findOilResultsByOliveDeliveryFromOliveLotNumber", resultDtos);
+//        OSMLogger.logPerformance(this.getClass(), "findOilResultsByOliveDeliveryFromOliveLotNumber", startTime, System.currentTimeMillis());
+//        return resultDtos;
+//    }
 }

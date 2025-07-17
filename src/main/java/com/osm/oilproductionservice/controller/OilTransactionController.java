@@ -61,7 +61,7 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "approveOilTransaction", dto);
         try {
-            OilTransactionDTO oilTransaction = oilTransactionService.approveOilTransaction(dto);
+            OilTransactionDTO oilTransaction = oilTransactionService.approveOilTransaction2(dto);
             return ResponseEntity.ok(new ApiSingleResponse<>(true, "", oilTransaction));
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "approveOilTransaction", e);
