@@ -421,11 +421,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionOut] Creating oil transaction out for delivery %s (Type: %s, Status: %s, Operation: %s)", delivery.getLotNumber(), delivery.getDeliveryType(), delivery.getStatus(), delivery.getOperationType());
         
         try {
-            // Validate delivery type
-            if (delivery.getDeliveryType() != DeliveryType.OIL) {
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Invalid delivery type for oil transaction out: %s (expected OIL)", delivery.getDeliveryType());
-                throw new IllegalArgumentException("Oil transaction out can only be created for OIL deliveries");
-            }
+
             
             // Validate operation type for exchange
             if (delivery.getOperationType() != OperationType.EXCHANGE) {

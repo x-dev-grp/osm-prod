@@ -7,11 +7,11 @@ REPLACE FUNCTION add_basic_permissions(
 ) RETURNS void AS $$
 BEGIN
 -- Add basic CRUD permissions
-INSERT INTO permission (id, permission_name, entity, module, created_at, updated_at)
-VALUES (gen_random_uuid(), 'CREATE', p_entity_name, p_module_value, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       (gen_random_uuid(), 'READ', p_entity_name, p_module_value, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       (gen_random_uuid(), 'UPDATE', p_entity_name, p_module_value, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-       (gen_random_uuid(), 'DELETE', p_entity_name, p_module_value, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO permission (id, permission_name, entity, module, tenant_id,create_date_time, modified_date_time,external_id)
+VALUES (gen_random_uuid(), 'CREATE', p_entity_name, p_module_value, null,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,gen_random_uuid()),
+       (gen_random_uuid(), 'READ', p_entity_name, p_module_value, null,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,gen_random_uuid()),
+       (gen_random_uuid(), 'UPDATE', p_entity_name, p_module_value, null,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,gen_random_uuid()),
+       (gen_random_uuid(), 'DELETE', p_entity_name, p_module_value, null,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,gen_random_uuid());
 END;
 $$ LANGUAGE plpgsql;
 
@@ -24,13 +24,13 @@ REPLACE FUNCTION add_custom_permission(
 ) RETURNS void AS $$
 BEGIN
 -- Add custom permission
-INSERT INTO permission (id, permission_name, entity, module, created_at, updated_at)
+INSERT INTO permission (id, permission_name, entity, module, tenant_id,create_date_time, modified_date_time,external_id)
 VALUES (gen_random_uuid(),
         p_permission_name,
         p_entity_name,
         p_module_value,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP);
+        null, CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,gen_random_uuid());
 END;
 $$ LANGUAGE plpgsql;
 

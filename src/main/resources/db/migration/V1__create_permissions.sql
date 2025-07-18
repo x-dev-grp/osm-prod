@@ -1,5 +1,5 @@
--- Supplier Permissions
-INSERT INTO permissions (name, description, type, entity, module, custom_permission)
+-- Supplier permission
+INSERT INTO permission (name, description, type, entity, module, custom_permission)
 VALUES ('CREATE_Supplier', 'Permission to create supplier', 'CREATE', 'Supplier', 'PRODUCTION', NULL),
        ('READ_Supplier', 'Permission to read supplier', 'READ', 'Supplier', 'PRODUCTION', NULL),
        ('UPDATE_Supplier', 'Permission to update supplier', 'UPDATE', 'Supplier', 'PRODUCTION', NULL),
@@ -8,8 +8,8 @@ VALUES ('CREATE_Supplier', 'Permission to create supplier', 'CREATE', 'Supplier'
        ('MANAGE_SUPPLIER_CONTRACTS', 'Permission to manage supplier contracts', 'CUSTOM', 'Supplier', 'PRODUCTION',
         'MANAGE_SUPPLIER_CONTRACTS');
 
--- Quality Control Rule Permissions
-INSERT INTO permissions (name, description, type, entity, module, custom_permission)
+-- Quality Control Rule permission
+INSERT INTO permission (name, description,tenent_id, type, entity, module, custom_permission)
 VALUES ('CREATE_QualityControlRule', 'Permission to create quality control rule', 'CREATE', 'QualityControlRule',
         'PRODUCTION', NULL),
        ('READ_QualityControlRule', 'Permission to read quality control rule', 'READ', 'QualityControlRule',
@@ -25,8 +25,8 @@ VALUES ('CREATE_QualityControlRule', 'Permission to create quality control rule'
        ('VIEW_QUALITY_RULE_HISTORY', 'Permission to view quality rule history', 'CUSTOM', 'QualityControlRule',
         'PRODUCTION', 'VIEW_QUALITY_RULE_HISTORY');
 
--- Machine Plan Permissions
-INSERT INTO permissions (name, description, type, entity, module, custom_permission)
+-- Machine Plan permission
+INSERT INTO permission (name, description, type, entity, module, custom_permission)
 VALUES ('CREATE_MachinePlan', 'Permission to create machine plan', 'CREATE', 'MachinePlan', 'PRODUCTION', NULL),
        ('READ_MachinePlan', 'Permission to read machine plan', 'READ', 'MachinePlan', 'PRODUCTION', NULL),
        ('UPDATE_MachinePlan', 'Permission to update machine plan', 'UPDATE', 'MachinePlan', 'PRODUCTION', NULL),
@@ -38,8 +38,8 @@ VALUES ('CREATE_MachinePlan', 'Permission to create machine plan', 'CREATE', 'Ma
        ('MANAGE_MACHINE_SCHEDULE', 'Permission to manage machine schedule', 'CUSTOM', 'MachinePlan', 'PRODUCTION',
         'MANAGE_MACHINE_SCHEDULE');
 
--- Transporter Permissions
-INSERT INTO permissions (name, description, type, entity, module, custom_permission)
+-- Transporter permission
+INSERT INTO permission (name, description, type, entity, module, custom_permission)
 VALUES ('CREATE_Transporter', 'Permission to create transporter', 'CREATE', 'Transporter', 'PRODUCTION', NULL),
        ('READ_Transporter', 'Permission to read transporter', 'READ', 'Transporter', 'PRODUCTION', NULL),
        ('UPDATE_Transporter', 'Permission to update transporter', 'UPDATE', 'Transporter', 'PRODUCTION', NULL),
@@ -54,8 +54,8 @@ VALUES ('CREATE_Transporter', 'Permission to create transporter', 'CREATE', 'Tra
        ('RATE_TRANSPORTER', 'Permission to rate transporter', 'CUSTOM', 'Transporter', 'PRODUCTION',
         'RATE_TRANSPORTER');
 
--- Base Type Permissions
-INSERT INTO permissions (name, description, type, entity, module, custom_permission)
+-- Base Type permission
+INSERT INTO permission (name, description, type, entity, module, custom_permission)
 VALUES ('CREATE_BaseType', 'Permission to create base type', 'CREATE', 'BaseType', 'PRODUCTION', NULL),
        ('READ_BaseType', 'Permission to read base type', 'READ', 'BaseType', 'PRODUCTION', NULL),
        ('UPDATE_BaseType', 'Permission to update base type', 'UPDATE', 'BaseType', 'PRODUCTION', NULL),

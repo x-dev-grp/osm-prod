@@ -902,11 +902,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateExchangePricingAndCreateOilTransactionOut] Found delivery %s (Status: %s, Type: %s, Operation: %s)", delivery.getLotNumber(), delivery.getStatus(), delivery.getDeliveryType(), delivery.getOperationType());
 
-            // Validate delivery type
-            if (delivery.getDeliveryType() != DeliveryType.OIL) {
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateExchangePricingAndCreateOilTransactionOut] Invalid delivery type for exchange pricing: %s (expected OIL)", delivery.getDeliveryType());
-                throw new IllegalArgumentException("Exchange pricing can only be processed for OIL deliveries");
-            }
+
 
             // Validate operation type for exchange
             if (delivery.getOperationType() != OperationType.EXCHANGE) {
