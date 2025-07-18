@@ -841,6 +841,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Updating pricing for delivery %s: unitPrice=%.2f, price=%.2f", delivery.getLotNumber(), dto.getUnitPrice(), dto.getPrice());
 
             delivery.setUnitPrice(dto.getUnitPrice());
+            delivery.setOilQuantity(dto.getOilQuantity());
             delivery.setPrice(dto.getPrice());
             delivery.setStatus(OliveLotStatus.STOCK_READY);
 
@@ -850,7 +851,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Create oil transaction
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Creating oil transaction for delivery " + delivery.getLotNumber());
-            oilTransactionService.createSingleOilTransactionIn(delivery);
+            oilTransactionService.createSingleOilTransactionIn(savedDelivery);
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Successfully completed payment reception processing for delivery %s", delivery.getLotNumber());
 

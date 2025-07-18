@@ -38,6 +38,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     private final StorageUnitRepo storageUnitRepo;
     private final OilCeditFeignService oilCeditFeignService;
     private final DeliveryRepository unifiedDeliveryRepo;
+    private final DeliveryRepository deliveryRepository;
 
     /**
      * Constructs the OilTransactionService with required dependencies.
@@ -47,12 +48,13 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
      * @param storageUnitRepo      StorageUnitRepo for storage unit persistence
      * @param oilCeditFeignService Feign client for oil credit operations
      */
-    public OilTransactionService(OilTransactionRepository repository, ModelMapper modelMapper, StorageUnitRepo storageUnitRepo, OilCeditFeignService oilCeditFeignService, DeliveryRepository unifiedDeliveryRepo) {
+    public OilTransactionService(OilTransactionRepository repository, ModelMapper modelMapper, StorageUnitRepo storageUnitRepo, OilCeditFeignService oilCeditFeignService, DeliveryRepository unifiedDeliveryRepo, DeliveryRepository deliveryRepository) {
         super(repository, modelMapper);
         this.oilTransactionRepository = repository;
         this.storageUnitRepo = storageUnitRepo;
         this.oilCeditFeignService = oilCeditFeignService;
         this.unifiedDeliveryRepo = unifiedDeliveryRepo;
+        this.deliveryRepository = deliveryRepository;
     }
 
     /**
@@ -88,6 +90,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         tx.setQuantityKg(delivery.getOilQuantity());
         tx.setQualityGrade(delivery.getCategoryOliveOil());
         tx.setUnitPrice(delivery.getUnitPrice());
+        tx.setTotalPrice(delivery.getUnitPrice()*delivery.getOilQuantity());
         tx.setReception(delivery);
         tx.setOilType(delivery.getOilType());
         return tx;
@@ -371,6 +374,10 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             
             // Save the transaction
             OilTransactionDTO savedTx = save(modelMapper.map(tx, OilTransactionDTO.class));
+            UnifiedDelivery originalDelivery=deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
+            originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
+            originalDelivery.setPrice(savedTx.getTotalPrice()-originalDelivery.getUnpaidAmount());
+            deliveryRepository.save(originalDelivery);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionIn] Successfully saved oil transaction %s for delivery %s", savedTx.getId(), delivery.getLotNumber());
             
         } catch (IllegalArgumentException e) {
