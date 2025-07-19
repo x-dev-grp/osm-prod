@@ -12,6 +12,4 @@ import java.util.UUID;
 @Repository
 public interface GenericRepository extends BaseRepository<BaseType> {
     List<BaseType> findAllByType(TypeCategory type);
-
-    Optional<BaseType> findById(UUID regionId);
 }

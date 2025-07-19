@@ -57,25 +57,7 @@ PERFORM add_basic_permissions('ROLE', 0);
 PERFORM add_basic_permissions('PERMISSION', 0);
 PERFORM add_basic_permissions('MODULE', 0);
 PERFORM add_basic_permissions('EMPLOYEE', 0);
-PERFORM add_basic_permissions('DEPARTMENT', 0);
-    
-    -- Reception Service Entities (1)
-PERFORM add_basic_permissions('VISITOR', 1);
-PERFORM add_basic_permissions('APPOINTMENT', 1);
-PERFORM add_basic_permissions('VISITOR_LOG', 1);
-    
-    -- Finance Service Entities (3)
-PERFORM add_basic_permissions('INVOICE', 3);
-PERFORM add_basic_permissions('PAYMENT', 3);
-PERFORM add_basic_permissions('EXPENSE', 3);
-PERFORM add_basic_permissions('BUDGET', 3);
-    
-    -- Habilitation Service Entities (4)
-PERFORM add_basic_permissions('CERTIFICATE', 4);
-PERFORM add_basic_permissions('TRAINING', 4);
-PERFORM add_basic_permissions('SKILL', 4);
-PERFORM add_basic_permissions('COMPETENCY', 4);
-    
+
     -- Example of how to add custom permissions (commented out for now)
     /*
     -- Example: Add custom permission for DELIVERY entity
