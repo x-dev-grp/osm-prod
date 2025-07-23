@@ -90,7 +90,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         tx.setQuantityKg(delivery.getOilQuantity());
         tx.setQualityGrade(delivery.getCategoryOliveOil());
         tx.setUnitPrice(delivery.getUnitPrice());
-        tx.setTotalPrice(delivery.getUnitPrice()*delivery.getOilQuantity());
+        tx.setTotalPrice(delivery.getUnitPrice() * delivery.getOilQuantity());
         tx.setReception(delivery);
         tx.setOilType(delivery.getOilType());
         return tx;
@@ -330,56 +330,64 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
      *
      * @param delivery UnifiedDelivery entity
      * @throws IllegalArgumentException if delivery is null or invalid
-     * @throws RuntimeException if there's an error during processing
+     * @throws RuntimeException         if there's an error during processing
      */
     @Transactional
     void createSingleOilTransactionIn(UnifiedDelivery delivery) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransactionIn", delivery);
-        
+
         // Validate input parameters
         if (delivery == null) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Delivery is null");
             throw new IllegalArgumentException("Delivery cannot be null");
         }
-        
+
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionIn] Creating oil transaction for delivery %s (Type: %s, Status: %s)", delivery.getLotNumber(), delivery.getDeliveryType(), delivery.getStatus());
-        
+
         try {
             // Validate delivery type
             if (delivery.getDeliveryType() != DeliveryType.OIL) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Invalid delivery type for oil transaction: %s (expected OIL)", delivery.getDeliveryType());
                 throw new IllegalArgumentException("Oil transaction can only be created for OIL deliveries");
             }
-            
+
             // Validate delivery state
             if (delivery.getStatus() == OliveLotStatus.IN_STOCK) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[createSingleOilTransactionIn] Creating oil transaction for delivery %s that is already IN_STOCK", delivery.getLotNumber());
             }
-            
+
             // Validate required fields
             if (delivery.getOilQuantity() == null || delivery.getOilQuantity() <= 0) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Invalid oil quantity for delivery %s: %s", delivery.getLotNumber(), delivery.getOilQuantity());
                 throw new IllegalArgumentException("Oil quantity must be positive for oil transaction creation");
             }
-            
+
             if (delivery.getUnitPrice() == null || delivery.getUnitPrice() <= 0) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Invalid unit price for delivery %s: %s", delivery.getLotNumber(), delivery.getUnitPrice());
                 throw new IllegalArgumentException("Unit price must be positive for oil transaction creation");
             }
-            
+
             // Create oil transaction
             OilTransaction tx = getOilTransaction(delivery);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionIn] Created oil transaction for delivery %s with quantity %.2f and unit price %.2f", delivery.getLotNumber(), tx.getQuantityKg(), tx.getUnitPrice());
-            
+
             // Save the transaction
             OilTransactionDTO savedTx = save(modelMapper.map(tx, OilTransactionDTO.class));
-            UnifiedDelivery originalDelivery=deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
-            originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
-            originalDelivery.setPrice(savedTx.getTotalPrice()-originalDelivery.getUnpaidAmount());
-            deliveryRepository.save(originalDelivery);
+            if (delivery.getOperationType() != OperationType.OIL_PURCHASE) {
+                UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
+                originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
+                originalDelivery.setPrice(originalDelivery.getUnpaidAmount() != null ? Double.valueOf(savedTx.getTotalPrice() - originalDelivery.getUnpaidAmount()) : savedTx.getTotalPrice());
+                deliveryRepository.save(originalDelivery);
+
+            }else {
+                UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotNumber());
+                originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
+                originalDelivery.setPrice(savedTx.getUnitPrice()* savedTx.getQuantityKg());
+                deliveryRepository.save(originalDelivery);
+            }
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionIn] Successfully saved oil transaction %s for delivery %s", savedTx.getId(), delivery.getLotNumber());
-            
+
         } catch (IllegalArgumentException e) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Validation error: %s", e.getMessage());
             throw e;
@@ -387,7 +395,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionIn] Unexpected error during oil transaction creation: %s", e.getMessage(), e);
             throw new RuntimeException("Failed to create oil transaction", e);
         }
-        
+
         OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransactionIn", null);
         OSMLogger.logPerformance(this.getClass(), "createSingleOilTransactionIn", startTime, System.currentTimeMillis());
     }
@@ -399,64 +407,63 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
      * @param delivery UnifiedDelivery entity
      * @param dto      ExchangePricingDto with pricing details
      * @throws IllegalArgumentException if delivery or dto is null or invalid
-     * @throws RuntimeException if there's an error during processing
+     * @throws RuntimeException         if there's an error during processing
      */
     @Transactional
     void createSingleOilTransactionOut(UnifiedDelivery delivery, ExchangePricingDto dto) {
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransactionOut", 
-            String.format("delivery=%s, dto=%s", delivery != null ? delivery.getLotNumber() : "null", dto));
-        
+        OSMLogger.logMethodEntry(this.getClass(), "createSingleOilTransactionOut", String.format("delivery=%s, dto=%s", delivery != null ? delivery.getLotNumber() : "null", dto));
+
         // Validate input parameters
         if (delivery == null) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Delivery is null");
             throw new IllegalArgumentException("Delivery cannot be null");
         }
-        
+
         if (dto == null) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] ExchangePricingDto is null");
             throw new IllegalArgumentException("ExchangePricingDto cannot be null");
         }
-        
+
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionOut] Creating oil transaction out for delivery %s (Type: %s, Status: %s, Operation: %s)", delivery.getLotNumber(), delivery.getDeliveryType(), delivery.getStatus(), delivery.getOperationType());
-        
+
         try {
 
-            
+
             // Validate operation type for exchange
             if (delivery.getOperationType() != OperationType.EXCHANGE) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[createSingleOilTransactionOut] Creating oil transaction out for non-exchange operation: %s", delivery.getOperationType());
             }
-            
+
             // Validate delivery state
             if (delivery.getStatus() == OliveLotStatus.IN_STOCK) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[createSingleOilTransactionOut] Creating oil transaction out for delivery %s that is already IN_STOCK", delivery.getLotNumber());
             }
-            
+
             // Validate pricing data
             if (dto.getOilQuantity() == null || dto.getOilQuantity() <= 0) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Invalid oil quantity in DTO for delivery %s: %s", delivery.getLotNumber(), dto.getOilQuantity());
                 throw new IllegalArgumentException("Oil quantity must be positive for oil transaction out creation");
             }
-            
+
             if (dto.getOilUnitPrice() == null || dto.getOilUnitPrice() <= 0) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Invalid oil unit price in DTO for delivery %s: %s", delivery.getLotNumber(), dto.getOilUnitPrice());
                 throw new IllegalArgumentException("Oil unit price must be positive for oil transaction out creation");
             }
-            
+
             if (dto.getOilTotalValue() == null || dto.getOilTotalValue() <= 0) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Invalid oil total value in DTO for delivery %s: %s", delivery.getLotNumber(), dto.getOilTotalValue());
                 throw new IllegalArgumentException("Oil total value must be positive for oil transaction out creation");
             }
-            
+
             // Create oil transaction
             OilTransaction tx = getOilTransaction(delivery, dto);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionOut] Created oil transaction out for delivery %s with quantity %.2f, unit price %.2f, total value %.2f", delivery.getLotNumber(), tx.getQuantityKg(), tx.getUnitPrice(), tx.getTotalPrice());
-            
+
             // Save the transaction
             OilTransactionDTO savedTx = save(modelMapper.map(tx, OilTransactionDTO.class));
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionOut] Successfully saved oil transaction out %s for delivery %s", savedTx.getId(), delivery.getLotNumber());
-            
+
         } catch (IllegalArgumentException e) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Validation error: %s", e.getMessage());
             throw e;
@@ -464,7 +471,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createSingleOilTransactionOut] Unexpected error during oil transaction out creation: %s", e.getMessage(), e);
             throw new RuntimeException("Failed to create oil transaction out", e);
         }
-        
+
         OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransactionOut", null);
         OSMLogger.logPerformance(this.getClass(), "createSingleOilTransactionOut", startTime, System.currentTimeMillis());
     }

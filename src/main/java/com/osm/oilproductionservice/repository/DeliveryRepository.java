@@ -71,6 +71,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
                  AND d.paidAmount     IS NOT NULL
                  AND d.paidAmount    >= d.price
                  AND d.deliveryType  = 'OLIVE'
+                 AND d.operationType = 'SIMPLE_RECEPTION'
             
             """)
     List<UnifiedDelivery> findFullyPaidDeliveriesBySupplierId(@Param("supplierId") UUID supplierId);
