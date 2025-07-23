@@ -76,8 +76,11 @@ public class PlanningController {
                         .badRequest()
                         .body("At least one of oilQuantity, rendement or unpaidPrice must be provided");
             }
-
-            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice);
+            boolean autoSetStorage=false;
+            if(body.get("autoSetStorage")!=null && body.get("autoSetStorage") instanceof Boolean b) {
+               autoSetStorage= b;
+            }
+            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice,autoSetStorage);
             return ResponseEntity
                     .ok("Lot completed successfully");
 

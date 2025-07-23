@@ -110,7 +110,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         dto.setStatus(existing.getStatus());
         BeanUtils.copyProperties(dto, existing, "id", "supplier", "storageUnit", "externalId");
-
         // 3. Resolve and set the Supplier relationship
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
             Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
@@ -222,14 +221,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         actions.add(Action.GEN_PDF);
         switch (delivery.getStatus()) {
             case NEW -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
+                actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
 
             }
             case IN_PROGRESS -> {
                 actions.add(Action.COMPLETE);
             }
             case OLIVE_CONTROLLED, PROD_READY -> {
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.UPDATE_OLIVE_QUALITY));
+                actions.addAll(Set.of(Action.DELETE, Action.UPDATE));
                 switch (delivery.getOperationType()) {
                     case EXCHANGE -> {
                         actions.add(Action.SET_PRICE);
@@ -298,11 +297,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         switch (delivery.getStatus()) {
             case NEW -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding NEW status actions for oil delivery " + delivery.getLotNumber());
-                actions.addAll(Set.of(Action.CANCEL, Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
+                actions.addAll(Set.of( Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
             }
             case OIL_CONTROLLED -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding OIL_CONTROLLED status actions for oil delivery " + delivery.getLotNumber());
-                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.SET_PRICE));
+                actions.addAll(Set.of( Action.SET_PRICE));
             }
             case PROD_READY -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding PROD_READY status actions for oil delivery " + delivery.getLotNumber());
@@ -314,7 +313,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
             case WAITING_FOR_PAYMENT_DETAILS -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding WAITING_FOR_PAYMENT_DETAILS status actions for oil delivery " + delivery.getLotNumber());
-                actions.addAll(Set.of(Action.UPDATE_OIL_QUALITY, Action.COMPLETE_PAYMENT_DETAILS));
+                actions.addAll(Set.of( Action.COMPLETE_PAYMENT_DETAILS));
             }
         }
 

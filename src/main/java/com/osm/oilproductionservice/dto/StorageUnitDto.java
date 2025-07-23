@@ -2,6 +2,7 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.osm.oilproductionservice.model.StorageUnit;
+import com.osm.oilproductionservice.model.Supplier;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,15 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
 
     private LocalDateTime lastFillDate;
     private LocalDateTime lastEmptyDate;
+    private SupplierDto supplier;
+
+    public SupplierDto getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(SupplierDto supplier) {
+        this.supplier = supplier;
+    }
 
     public StorageUnitDto(String name, String location, String description, Double maxCapacity, Double currentVolume, LocalDateTime nextMaintenanceDate, LocalDateTime lastInspectionDate, BaseTypeDto oilType, StorageStatus status, LocalDateTime lastFillDate, LocalDateTime lastEmptyDate) {
         this.name = name;

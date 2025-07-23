@@ -33,6 +33,17 @@ public class StorageUnit extends BaseEntity {
 
     private LocalDateTime lastFillDate;
     private LocalDateTime lastEmptyDate;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id", unique = true)
+    private Supplier supplier;
+
+    public Supplier getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(Supplier supplier) {
+        this.supplier = supplier;
+    }
 
     public StorageUnit() {
     }

@@ -2,6 +2,8 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.*;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.enums.TransactionState;
+import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
@@ -22,7 +24,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PlanningService {
 
     public static final String MILL_NOT_FOUND = "Mill not found: ";
@@ -33,6 +34,14 @@ public class PlanningService {
     private final DeliveryRepository deliveryRepo;
     private final ModelMapper modelMapper;
     private final UnifiedDeliveryService unifiedDeliveryService;
+    private final OilTransactionService oilTransactionService;
+    public PlanningService(MillMachineRepository millRepo, DeliveryRepository deliveryRepo, ModelMapper modelMapper, UnifiedDeliveryService unifiedDeliveryService, OilTransactionService oilTransactionService) {
+        this.millRepo = millRepo;
+        this.deliveryRepo = deliveryRepo;
+        this.modelMapper = modelMapper;
+        this.unifiedDeliveryService = unifiedDeliveryService;
+        this.oilTransactionService = oilTransactionService;
+    }
 
     @Transactional
     public void savePlanning(PlanningSaveRequest req) {
@@ -273,7 +282,7 @@ public class PlanningService {
     }
 
     @Transactional
-    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice) {
+    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice,boolean autoSetStorage ) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "markLotCompleted", lotNumber, oilQuantity, rendement);
         try {
@@ -310,6 +319,21 @@ public class PlanningService {
                     lot.getOperationType() == OperationType.OLIVE_PURCHASE) {
 
                 unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(),false);
+
+            }
+            if(autoSetStorage ) {
+                if(lot.getSupplier() != null && lot.getSupplier().getStorageUnit() != null) {
+                    OilTransactionDTO oilTransaction = new OilTransactionDTO();
+                    oilTransaction.setTransactionState(TransactionState.COMPLETED);
+                    oilTransaction.setOilType(modelMapper.map(lot.getOliveType(),BaseTypeDto.class));
+                    oilTransaction.setTransactionType(TransactionType.TRANSFER_IN);
+                    oilTransaction.setReception(modelMapper.map(lot,UnifiedDeliveryDTO.class));
+                    oilTransaction.setQuantityKg(lot.getOilQuantity());
+                    oilTransaction.setUnitPrice(0.0);
+                    oilTransaction.setTotalPrice(0.0);
+                    oilTransaction.setStorageUnitDestination(modelMapper.map(lot.getSupplier().getStorageUnit(),StorageUnitDto.class));
+                    oilTransactionService.save(oilTransaction);
+                }
 
             }
             lot.setStatus(OliveLotStatus.COMPLETED);
@@ -349,7 +373,7 @@ public class PlanningService {
             }
 
             // delegate each child
-            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice()));
+            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice(),false));
 
             log.info("Global lot {} completed with {} child lots", globalLotNumber, childLots.size());
         } catch (Exception e) {

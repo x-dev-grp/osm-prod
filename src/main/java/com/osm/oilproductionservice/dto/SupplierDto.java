@@ -1,7 +1,9 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
 import com.xdev.xdevbase.dtos.BaseDto;
+import jakarta.persistence.OneToOne;
 
 /**
  * DTO for {@link Supplier}
@@ -10,7 +12,24 @@ import com.xdev.xdevbase.dtos.BaseDto;
 public class SupplierDto extends BaseDto<Supplier> {
     private SupplierInfoDto supplierInfo;
     private BaseTypeDto genericSupplierType;
+    private Boolean hasStorage;
+    private StorageUnitDto storageUnit;
 
+    public Boolean getHasStorage() {
+        return hasStorage;
+    }
+
+    public void setHasStorage(Boolean hasStorage) {
+        this.hasStorage = hasStorage;
+    }
+
+    public StorageUnitDto getStorageUnit() {
+        return storageUnit;
+    }
+
+    public void setStorageUnit(StorageUnitDto storageUnit) {
+        this.storageUnit = storageUnit;
+    }
 
     public SupplierInfoDto getSupplierInfo() {
         return supplierInfo;
