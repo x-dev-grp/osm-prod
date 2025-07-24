@@ -109,15 +109,20 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         OSMLogger.logMethodEntry(this.getClass(), "save", request);
         OilTransaction oilTransaction = modelMapper.map(request, OilTransaction.class);
         boolean isTransfertIN = oilTransaction.getTransactionType() == TransactionType.TRANSFER_IN;
+        if (request.getStorageUnitSource() != null && request.getStorageUnitSource().getId() != null) {
+
+            StorageUnit src = storageUnitRepo.findById(request.getStorageUnitSource().getId()).orElse(null);
+            oilTransaction.setStorageUnitSource(src);
+            if (isTransfertIN){
+                oilTransaction.setUnitPrice(src.getAvgCost());
+            }
+        }
         // Always fetch and set StorageUnit entities by ID to avoid natural identifier errors
         if (request.getStorageUnitDestination() != null && request.getStorageUnitDestination().getId() != null) {
             StorageUnit dest = storageUnitRepo.findById(request.getStorageUnitDestination().getId()).orElse(null);
             oilTransaction.setStorageUnitDestination(dest);
         }
-        if (request.getStorageUnitSource() != null && request.getStorageUnitSource().getId() != null) {
-            StorageUnit src = storageUnitRepo.findById(request.getStorageUnitSource().getId()).orElse(null);
-            oilTransaction.setStorageUnitSource(src);
-        }
+
 
         oilTransaction.setTotalPrice();
         oilTransaction = oilTransactionRepository.save(oilTransaction);
@@ -126,14 +131,11 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         // Update destination storage unit if present
         if (storageUnitDestination != null) {
             storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
-            if (storageUnitDestination.getAvgCost() == 0 && isTransfertIN) {
-                storageUnitDestination.setAvgCost(storageUnitSource.getAvgCost());
-                storageUnitDestination.setAvgCost(rd.apply(rd.apply(oilTransaction.getQuantityKg()) * rd.apply(storageUnitSource.getAvgCost())));
-            }
+
             storageUnitRepo.save(storageUnitDestination);
         }
         // Update source storage unit if present
-        if (storageUnitSource != null) {
+         if (storageUnitSource != null) {
             storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(), 0, null);
 
             storageUnitRepo.save(storageUnitSource);
@@ -251,7 +253,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     private void handleLoan(OilTransaction oilTransaction, OilTransactionDTO dto) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "handleLoan", oilTransaction);
-        if (dto.getStorageUnitSource() != null && dto.getStorageUnitDestination() != null) {
+        if (dto.getStorageUnitSource() != null) {
             StorageUnit source = storageUnitRepo.findById(dto.getStorageUnitSource().getId()).orElseThrow();
             oilTransaction.setStorageUnitSource(source);
             oilTransaction.setUnitPrice(source.getAvgCost());

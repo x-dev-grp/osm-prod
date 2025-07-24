@@ -18,7 +18,7 @@ public class Supplier extends BaseEntity {
     @JoinColumn(name = "generic_suppliertype_id", nullable = false)
     private BaseType genericSupplierType;
     private Boolean hasStorage=false;
-    @OneToOne(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "supplier",fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
 
     public Boolean getHasStorage() {

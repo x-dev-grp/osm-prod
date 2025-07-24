@@ -13,7 +13,6 @@ public class SupplierDto extends BaseDto<Supplier> {
     private SupplierInfoDto supplierInfo;
     private BaseTypeDto genericSupplierType;
     private Boolean hasStorage;
-    private StorageUnitDto storageUnit;
 
     public Boolean getHasStorage() {
         return hasStorage;
@@ -23,13 +22,7 @@ public class SupplierDto extends BaseDto<Supplier> {
         this.hasStorage = hasStorage;
     }
 
-    public StorageUnitDto getStorageUnit() {
-        return storageUnit;
-    }
 
-    public void setStorageUnit(StorageUnitDto storageUnit) {
-        this.storageUnit = storageUnit;
-    }
 
     public SupplierInfoDto getSupplierInfo() {
         return supplierInfo;

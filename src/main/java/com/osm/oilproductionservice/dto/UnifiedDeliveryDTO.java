@@ -28,6 +28,15 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     @NotNull(message = "Delivery type is required")
     private DeliveryType deliveryType;
     private OperationType operationType;
+    private Boolean paid;
+
+    public Boolean getPaid() {
+        return paid;
+    }
+
+    public void setPaid(Boolean paid) {
+        this.paid = paid;
+    }
 
     private String lotNumber;
     private String lotOliveNumber;

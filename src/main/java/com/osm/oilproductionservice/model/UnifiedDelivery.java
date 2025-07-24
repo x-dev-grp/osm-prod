@@ -34,7 +34,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private String categoryOliveOil;
 
 
-
     @Enumerated(EnumType.STRING)
     private DeliveryType deliveryType;
 
@@ -55,13 +54,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     private String matriculeCamion;
     private String etatCamion;
-
+    private Boolean paid=false;
     @ManyToOne(fetch = FetchType.LAZY)
     private Supplier supplier;
-
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QualityControlResult> qualityControlResults = new HashSet<>();
-
     @Column(name = "has_quality_control")
     private boolean hasQualityControl = false;
     // --- Oil Delivery Specific Fields ---
@@ -97,6 +94,14 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private Double oliveQuantity;
     private String parcel;
 
+    public Boolean getPaid() {
+        return paid;
+    }
+
+    public void setPaid(Boolean paid) {
+        this.paid = paid;
+    }
+
     public boolean isHasQualityControl() {
         return hasQualityControl;
     }
@@ -124,15 +129,17 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public Supplier getSupplier() {
         return supplier;
     }
+
+    public void setSupplier(Supplier supplier) {
+        this.supplier = supplier;
+    }
+
     public String getCategoryOliveOil() {
         return categoryOliveOil;
     }
 
     public void setCategoryOliveOil(String categoryOlivOil) {
         this.categoryOliveOil = categoryOlivOil;
-    }
-    public void setSupplier(Supplier supplier) {
-        this.supplier = supplier;
     }
 
     /**

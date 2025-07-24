@@ -128,7 +128,7 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     }
     @Override
     protected String getResourceName() {
-        return "UNIFIEDDELIVERY".toUpperCase();
+        return "DELIVERY".toUpperCase();
     }
 
 }
