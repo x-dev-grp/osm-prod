@@ -32,6 +32,29 @@ public class SupplierInfo extends BaseEntity {
     @Transient
     private Float totalDebt;
 
+    public Float getTotalOliveQuantity() {
+        return totalOliveQuantity;
+    }
+
+    public void setTotalOliveQuantity(Float totalOliveQuantity) {
+        this.totalOliveQuantity = totalOliveQuantity;
+    }
+
+    public Float getTotalOilQuantity() {
+        return totalOilQuantity;
+    }
+
+    public Float getTotalPaidAmount() {
+        return totalPaidAmount;
+    }
+
+    public Float getTotalUnpaidAmount() {
+        return totalUnpaidAmount;
+    }
+
+    public Float getTotalDebt() {
+        return totalDebt;
+    }
 
     public String getName() {
         return name;

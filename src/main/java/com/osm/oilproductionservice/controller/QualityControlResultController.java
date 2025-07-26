@@ -131,6 +131,6 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
 
     @Override
     protected String getResourceName() {
-        return "QualityControlResult".toUpperCase();
+        return "QUALITY_CONTROL_RESULT";
     }
 }

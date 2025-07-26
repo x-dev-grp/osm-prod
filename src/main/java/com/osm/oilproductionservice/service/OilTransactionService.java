@@ -185,12 +185,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             case EXCHANGE -> handleExchange(oilTransaction, dto);
             default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
         }
-        if (oilTransaction.getReception() != null) {
-            UUID reception = oilTransaction.getReception().getId();
-            UnifiedDelivery unifiedDelivery = unifiedDeliveryRepo.findById(reception).orElseThrow();
-            unifiedDelivery.setStatus(OliveLotStatus.IN_STOCK);
-            unifiedDeliveryRepo.save(unifiedDelivery);
-        }
+
         // Save the updated transaction
         save(modelMapper.map(oilTransaction, OilTransactionDTO.class));
         OSMLogger.logMethodExit(this.getClass(), "handleApprovalLogicByType", oilTransaction);
@@ -207,6 +202,15 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             StorageUnit dest = storageUnitRepo.findById(dto.getStorageUnitDestination().getId()).orElseThrow();
             oilTransaction.setStorageUnitDestination(dest);
             oilTransaction.setTransactionState(TransactionState.COMPLETED);
+        }
+        if (oilTransaction.getReception() != null && oilTransaction.getReception().getId() != null) {
+            UUID reception = oilTransaction.getReception().getId();
+            UnifiedDelivery unifiedDelivery = unifiedDeliveryRepo.findById(reception).orElse(null);
+             if (unifiedDelivery != null) {
+                 unifiedDelivery.setStatus(OliveLotStatus.IN_STOCK);
+                 unifiedDeliveryRepo.save(unifiedDelivery);
+             }
+
         }
         OSMLogger.logMethodExit(this.getClass(), "handleReceptionIn", oilTransaction);
         OSMLogger.logPerformance(this.getClass(), "handleReceptionIn", startTime, System.currentTimeMillis());
@@ -275,9 +279,23 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         if (dto.getStorageUnitSource() != null) {
             StorageUnit source = storageUnitRepo.findById(dto.getStorageUnitSource().getId()).orElseThrow();
             oilTransaction.setStorageUnitSource(source);
-            oilTransaction.setUnitPrice(source.getAvgCost());
-            oilTransaction.setTotalPrice();
+//            oilTransaction.setUnitPrice(source.getAvgCost());
+//            oilTransaction.setTotalPrice();
             oilTransaction.setTransactionState(TransactionState.COMPLETED);
+            UUID reception = oilTransaction.getReception().getId();
+            UnifiedDelivery unifiedDelivery = unifiedDeliveryRepo.findById(reception).orElse(null);
+            if (unifiedDelivery != null) {
+                unifiedDelivery.setPaid(true);
+                unifiedDeliveryRepo.save(unifiedDelivery);
+            }
+        }
+        if (oilTransaction.getReception() != null && oilTransaction.getReception().getId() != null) {
+            UUID reception = oilTransaction.getReception().getId();
+            UnifiedDelivery unifiedDelivery = unifiedDeliveryRepo.findById(reception).orElse(null);
+            if (unifiedDelivery != null) {
+                unifiedDelivery.setStatus(OliveLotStatus.PROD_READY);
+                unifiedDeliveryRepo.save(unifiedDelivery);
+            }
         }
         OSMLogger.logMethodExit(this.getClass(), "handleExchange", oilTransaction);
         OSMLogger.logPerformance(this.getClass(), "handleExchange", startTime, System.currentTimeMillis());

@@ -17,6 +17,7 @@ public class Supplier extends BaseEntity {
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "generic_suppliertype_id", nullable = false)
     private BaseType genericSupplierType;
+    
     private Boolean hasStorage=false;
     @OneToOne(mappedBy = "supplier",fetch = FetchType.LAZY)
     private StorageUnit storageUnit;

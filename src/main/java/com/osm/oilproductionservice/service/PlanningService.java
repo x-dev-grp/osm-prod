@@ -311,14 +311,21 @@ public class PlanningService {
 
             lot.setOilQuantity(oilQuantity);
             lot.setRendement(rendement);
+            lot.setPaid(false);
             lot.setOilType(lot.getOliveType());
             lot.setOilVariety(lot.getOliveVariety());
-            lot.setUnpaidAmount(unpaidPrice);
+            lot.setStatus(OliveLotStatus.COMPLETED);
+
+            deliveryRepo.save(lot);
             if (lot.getOperationType() == OperationType.EXCHANGE ||
                     lot.getOperationType() == OperationType.BASE ||
                     lot.getOperationType() == OperationType.OLIVE_PURCHASE) {
 
                 unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(),false);
+
+            }
+            if(lot.getOperationType()==OperationType.SIMPLE_RECEPTION){
+                lot.setUnpaidAmount(unpaidPrice);
 
             }
             if(autoSetStorage ) {
@@ -336,9 +343,7 @@ public class PlanningService {
                 }
 
             }
-            lot.setStatus(OliveLotStatus.COMPLETED);
 
-            deliveryRepo.save(lot);
 
             log.info("Lot {} marked as completed with oilQuantity: {}, rendement: {}, unpaidPrice: {}", lotNumber, oilQuantity, rendement, unpaidPrice);
         } catch (Exception e) {

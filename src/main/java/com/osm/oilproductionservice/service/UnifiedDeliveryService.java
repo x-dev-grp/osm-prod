@@ -927,7 +927,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             delivery.setUnitPrice(dto.getUnitPrice());
             delivery.setPrice(dto.getPrice());
-            delivery.setStatus(OliveLotStatus.PROD_READY);
+
 
             // TODO: Uncomment when quality grade is implemented
             // delivery.setQualityGrade(dto.getQualityGrade());

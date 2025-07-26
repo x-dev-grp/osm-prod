@@ -54,7 +54,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     private String matriculeCamion;
     private String etatCamion;
-    private Boolean paid=false;
+    private boolean paid=false;
     @ManyToOne(fetch = FetchType.LAZY)
     private Supplier supplier;
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -94,11 +94,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private Double oliveQuantity;
     private String parcel;
 
-    public Boolean getPaid() {
+    public boolean getPaid() {
         return paid;
     }
 
-    public void setPaid(Boolean paid) {
+    public void setPaid(boolean paid) {
         this.paid = paid;
     }
 
