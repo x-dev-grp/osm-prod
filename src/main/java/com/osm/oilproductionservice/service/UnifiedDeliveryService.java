@@ -225,19 +225,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             }
             case IN_PROGRESS -> {
-                actions.add(Action.COMPLETE);
+                break;
             }
             case OLIVE_CONTROLLED, PROD_READY -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE));
                 switch (delivery.getOperationType()) {
-                    case EXCHANGE -> {
+                    case EXCHANGE,OLIVE_PURCHASE -> {
                         actions.add(Action.SET_PRICE);
-                        if (delivery.getStatus() == OliveLotStatus.PROD_READY) {
-                            actions.add(Action.OIL_OUT_TRANSACTION);
-                        }
-                    }
-                    case OLIVE_PURCHASE -> {
-                        actions.add(Action.SET_PRICE);
+
                     }
                 }
             }
@@ -740,11 +735,13 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateprice] Invalid oil quantity for delivery %s: %s", delivery.getLotNumber(), delivery.getOilQuantity());
                         throw new IllegalArgumentException("Oil quantity must be positive for OIL deliveries");
                     }
-
+                    UnifiedDelivery originalOliveReception = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
                     double totalPrice = unitPrice * delivery.getOilQuantity();
                     delivery.setPrice(totalPrice);
                     delivery.setStatus(OliveLotStatus.STOCK_READY);
-
+                    if(originalOliveReception.getOperationType() == OperationType.BASE) {
+                        originalOliveReception.setUnpaidAmount(totalPrice);
+                    }
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OIL delivery %s: unitPrice=%.2f, oilQuantity=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getOilQuantity(), totalPrice);
 
                     // Create oil transaction

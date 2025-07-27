@@ -20,13 +20,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/production/oil_transaction")
 public class OilTransactionController extends BaseControllerImpl<OilTransaction, OilTransactionDTO, OilTransactionDTO> {
 
-    private final com.osm.oilproductionservice.service.UnifiedDeliveryService UnifiedDeliveryService;
-    private final OilTransactionService oilTransactionService;
+     private final OilTransactionService oilTransactionService;
 
-    public OilTransactionController(BaseService<OilTransaction, OilTransactionDTO, OilTransactionDTO> baseService, ModelMapper modelMapper, UnifiedDeliveryService UnifiedDeliveryService, OilTransactionService oilTransactionService) {
+    public OilTransactionController(BaseService<OilTransaction, OilTransactionDTO, OilTransactionDTO> baseService, ModelMapper modelMapper,   OilTransactionService oilTransactionService) {
         super(baseService, modelMapper);
-        this.UnifiedDeliveryService = UnifiedDeliveryService;
-        this.oilTransactionService = oilTransactionService;
+         this.oilTransactionService = oilTransactionService;
     }
 
     /**

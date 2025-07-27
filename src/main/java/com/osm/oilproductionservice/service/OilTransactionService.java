@@ -115,6 +115,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             oilTransaction.setStorageUnitSource(src);
             if (isTransfertIN){
                 oilTransaction.setUnitPrice(src.getAvgCost());
+                oilTransaction.setTransactionState(TransactionState.COMPLETED);
             }
         }
         // Always fetch and set StorageUnit entities by ID to avoid natural identifier errors
@@ -394,15 +395,14 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
             // Save the transaction
             OilTransactionDTO savedTx = save(modelMapper.map(tx, OilTransactionDTO.class));
+            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
             if (delivery.getOperationType() != OperationType.OIL_PURCHASE) {
-                UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
                 originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
                 originalDelivery.setPrice(originalDelivery.getUnpaidAmount() != null ? Double.valueOf(savedTx.getTotalPrice() - originalDelivery.getUnpaidAmount()) : savedTx.getTotalPrice());
                 deliveryRepository.save(originalDelivery);
 
             }else {
-                UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotNumber());
-                originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
+                 originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
                 originalDelivery.setPrice(savedTx.getUnitPrice()* savedTx.getQuantityKg());
                 deliveryRepository.save(originalDelivery);
             }

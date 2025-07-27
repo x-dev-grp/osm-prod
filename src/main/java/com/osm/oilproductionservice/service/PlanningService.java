@@ -320,7 +320,6 @@ public class PlanningService {
             if (lot.getOperationType() == OperationType.EXCHANGE ||
                     lot.getOperationType() == OperationType.BASE ||
                     lot.getOperationType() == OperationType.OLIVE_PURCHASE) {
-
                 unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(),false);
 
             }
