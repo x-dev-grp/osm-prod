@@ -16,6 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/production/parameter")
 public class ParameterController extends BaseControllerImpl<Parameter, ParameterDto, ParameterDto> {
+    public static final String X_TENANT_ID = "X-Tenant-ID";
     private final ParameterService parameterService;
 
     public ParameterController(BaseService<Parameter, ParameterDto, ParameterDto> baseService, ModelMapper modelMapper, ParameterService parameterService) {
@@ -24,7 +25,7 @@ public class ParameterController extends BaseControllerImpl<Parameter, Parameter
     }
 
     @GetMapping("/code/{code}")
-    public ResponseEntity<ApiResponse<Parameter, ParameterDto>> getByCode(@PathVariable String code, @RequestHeader("X-Tenant-ID") UUID tenantId // or resolve from token
+    public ResponseEntity<ApiResponse<Parameter, ParameterDto>> getByCode(@PathVariable String code, @RequestHeader(X_TENANT_ID) UUID tenantId // or resolve from token
     ) {
          ApiResponse<Parameter, ParameterDto> ff = new ApiResponse<>(true, "", List.of(modelMapper.map(parameterService.getByCode(code, tenantId), ParameterDto.class)));
 

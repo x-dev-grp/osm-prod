@@ -22,6 +22,10 @@ import java.util.Map;
 public class PlanningController {
 
     private static final Logger log = LoggerFactory.getLogger(PlanningController.class);
+    public static final String OIL_QUANTITY = "oilQuantity";
+    public static final String RENDEMENT = "rendement";
+    public static final String UNPAID_PRICE = "unpaidPrice";
+    public static final String AUTO_SET_STORAGE = "autoSetStorage";
 
     private final PlanningService planningService;
 
@@ -67,9 +71,9 @@ public class PlanningController {
                         .body("Request body cannot be null");
             }
 
-            Double oilQuantity = getDouble(body, "oilQuantity");
-            Double rendement   = getDouble(body, "rendement");
-            Double unpaidPrice = getDouble(body, "unpaidPrice");
+            Double oilQuantity = getDouble(body, OIL_QUANTITY);
+            Double rendement   = getDouble(body, RENDEMENT);
+            Double unpaidPrice = getDouble(body, UNPAID_PRICE);
 
             if (oilQuantity == null && rendement == null && unpaidPrice == null) {
                 return ResponseEntity
@@ -77,7 +81,7 @@ public class PlanningController {
                         .body("At least one of oilQuantity, rendement or unpaidPrice must be provided");
             }
             boolean autoSetStorage=false;
-            if(body.get("autoSetStorage")!=null && body.get("autoSetStorage") instanceof Boolean b) {
+            if(body.get(AUTO_SET_STORAGE)!=null && body.get(AUTO_SET_STORAGE) instanceof Boolean b) {
                autoSetStorage= b;
             }
             planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice,autoSetStorage);

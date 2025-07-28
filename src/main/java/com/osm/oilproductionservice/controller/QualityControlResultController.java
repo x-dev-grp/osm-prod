@@ -27,18 +27,12 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
 
     private static final Logger log = LoggerFactory.getLogger(QualityControlResultController.class);
     private final QualityControlResultService qualityControlResultService;
-    private final UnifiedDeliveryService unifiedDeliveryService;
-    private final StorageUnitService storageUnitService;
-    private final StorageUnitRepo storageUnitRepo;
-    private final OilTransactionService oilTransactionService;
 
-    public QualityControlResultController(BaseService<QualityControlResult, QualityControlResultDto, QualityControlResultDto> baseService, ModelMapper modelMapper, QualityControlResultService qualityControlResultService, UnifiedDeliveryService unifiedDeliveryService, StorageUnitService storageUnitService, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService) {
+
+    public QualityControlResultController(BaseService<QualityControlResult, QualityControlResultDto, QualityControlResultDto> baseService, ModelMapper modelMapper, QualityControlResultService qualityControlResultService) {
         super(baseService, modelMapper);
         this.qualityControlResultService = qualityControlResultService;
-        this.unifiedDeliveryService = unifiedDeliveryService;
-        this.storageUnitService = storageUnitService;
-        this.storageUnitRepo = storageUnitRepo;
-        this.oilTransactionService = oilTransactionService;
+
     }
 
     @PostMapping("/save-batch")
@@ -108,27 +102,6 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
             OSMLogger.logPerformance(this.getClass(), "getResultsByDelivery", startTime, System.currentTimeMillis());
         }
     }
-
-//    @GetMapping("/fetchByOilDeliveryOfOliveDelivery/{oliveLotNUmber}")
-//    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getOilResultsByOliveDelivery(@PathVariable String oliveLotNUmber) {
-//        long startTime = System.currentTimeMillis();
-//        OSMLogger.logMethodEntry(this.getClass(), "getOilResultsByOliveDelivery", oliveLotNUmber);
-//        try {
-//            List<QualityControlResultDto> results = qualityControlResultService.findOilResultsByOliveDeliveryFromOliveLotNumber(oliveLotNUmber);
-//            log.debug("Successfully fetched {} oil QC results for deliveryId: {}", results.size(), oliveLotNUmber);
-//            return ResponseEntity.ok(new ApiResponse<>(true, "", results));
-//        } catch (IllegalArgumentException e) {
-//            log.error("Bad request: {}", e.getMessage());
-//            return ResponseEntity.badRequest().body(new ApiResponse<>(false, "Error fetching oil QC results: " + e.getMessage(), null));
-//        } catch (Exception e) {
-//            log.error("Unexpected error: {}", e.getMessage(), e);
-//            return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
-//        } finally {
-//            OSMLogger.logMethodExit(this.getClass(), "getOilResultsByOliveDelivery", null);
-//            OSMLogger.logPerformance(this.getClass(), "getOilResultsByOliveDelivery", startTime, System.currentTimeMillis());
-//        }
-//    }
-
     @Override
     protected String getResourceName() {
         return "QUALITY_CONTROL_RESULT";

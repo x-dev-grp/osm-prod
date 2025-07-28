@@ -24,7 +24,7 @@ public class MillMachineService extends BaseServiceImpl<MillMachine, MillMachine
     @Override
     public Set<Action> actionsMapping(MillMachine millMachine) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ, Action.MAINTENANCE));
         return actions;
     }
 }

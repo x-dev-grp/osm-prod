@@ -30,6 +30,10 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     public static final String DELIVERY_NUMBER = "deliveryNumber";
     public static final String D = "%04d";
     public static final String D1 = "%02d";
+    public static final String ID = "id";
+    public static final String SUPPLIER = "supplier";
+    public static final String STORAGE_UNIT = "storageUnit";
+    public static final String EXTERNAL_ID = "externalId";
     private final GenericRepository genericRepository;
     private final DeliveryRepository deliveryRepository;
     private final SupplierRepository supplierRepository;
@@ -109,7 +113,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
         dto.setStatus(existing.getStatus());
-        BeanUtils.copyProperties(dto, existing, "id", "supplier", "storageUnit", "externalId");
+        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID);
         // 3. Resolve and set the Supplier relationship
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
             Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
