@@ -957,6 +957,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     public UnifiedDeliveryDTO getByOliveLotNumber(UUID id) {
         var t = deliveryRepository.findByLotOliveNumber(id);
+        if(Objects.isNull(t)){
+            return null;
+        }
         return modelMapper.map(t, UnifiedDeliveryDTO.class);
     }
 
