@@ -311,7 +311,7 @@ public class PlanningService {
 
             lot.setOilQuantity(oilQuantity);
             lot.setRendement(rendement);
-            lot.setPaid(false);
+
             lot.setOilType(lot.getOliveType());
             lot.setOilVariety(lot.getOliveVariety());
             lot.setStatus(OliveLotStatus.COMPLETED);

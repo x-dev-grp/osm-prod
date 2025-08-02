@@ -3,7 +3,6 @@ package com.osm.oilproductionservice.controller;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.service.OilTransactionService;
-import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
@@ -53,6 +52,36 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
             OSMLogger.logPerformance(this.getClass(), "getByStorageUnit", startTime, System.currentTimeMillis());
         }
     }
+
+    /**
+     * POST /api/production/oil_transaction/create-for-sale
+     * Creates an oil transaction for a sale operation
+     * Takes oil sale data and creates a corresponding oil transaction
+     *
+     * @param oilTransactionDTO The oil transaction  data from the frontend form
+     * @return ResponseEntity with the created oil transaction
+     */
+    @PostMapping("/create-for-sale")
+    public ResponseEntity<ApiSingleResponse<OilTransaction, OilTransactionDTO>> createOilTransactionForSale(@RequestBody OilTransactionDTO oilTransactionDTO) {
+        OSMLogger.logMethodEntry(this.getClass(), "createOilTransactionForSale", oilTransactionDTO);
+
+        try {
+            if (oilTransactionDTO.getQuantityKg() == null || oilTransactionDTO.getQuantityKg().doubleValue() <= 0) {
+                return ResponseEntity.badRequest().body(new ApiSingleResponse<>(false, "Invalid quantity: must be greater than 0", null));
+            }
+
+            if (oilTransactionDTO.getUnitPrice() == null || oilTransactionDTO.getUnitPrice().doubleValue() <= 0) {
+                return ResponseEntity.badRequest().body(new ApiSingleResponse<>(false, "Invalid unit price: must be greater than 0", null));
+            }
+            OilTransactionDTO createdTransaction = oilTransactionService.createOilTransactionForSale(oilTransactionDTO);
+            return ResponseEntity.ok(new ApiSingleResponse<>(true, "Oil transaction created successfully for sale", createdTransaction));
+
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "Error creating oil transaction for sale", e);
+            return ResponseEntity.internalServerError().body(new ApiSingleResponse<>(false, "Error creating oil transaction for sale: " + e.getMessage(), null));
+        }
+    }
+
 
     @PutMapping("/approve")
     public ResponseEntity<ApiSingleResponse<OilTransaction, OilTransactionDTO>> approveOilTransaction(@RequestBody OilTransactionDTO dto) {

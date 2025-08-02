@@ -109,38 +109,40 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         OSMLogger.logMethodEntry(this.getClass(), "save", request);
         OilTransaction oilTransaction = modelMapper.map(request, OilTransaction.class);
         boolean isTransfertIN = oilTransaction.getTransactionType() == TransactionType.TRANSFER_IN;
-        if (request.getStorageUnitSource() != null && request.getStorageUnitSource().getId() != null) {
+            if (request.getStorageUnitSource() != null && request.getStorageUnitSource().getId() != null) {
 
-            StorageUnit src = storageUnitRepo.findById(request.getStorageUnitSource().getId()).orElse(null);
-            oilTransaction.setStorageUnitSource(src);
-            if (isTransfertIN){
-                oilTransaction.setUnitPrice(src.getAvgCost());
-                oilTransaction.setTransactionState(TransactionState.COMPLETED);
+                StorageUnit src = storageUnitRepo.findById(request.getStorageUnitSource().getId()).orElse(null);
+                oilTransaction.setStorageUnitSource(src);
+                if (isTransfertIN) {
+                    oilTransaction.setUnitPrice(src.getAvgCost());
+                    oilTransaction.setTransactionState(TransactionState.COMPLETED);
+                }
             }
-        }
-        // Always fetch and set StorageUnit entities by ID to avoid natural identifier errors
-        if (request.getStorageUnitDestination() != null && request.getStorageUnitDestination().getId() != null) {
-            StorageUnit dest = storageUnitRepo.findById(request.getStorageUnitDestination().getId()).orElse(null);
-            oilTransaction.setStorageUnitDestination(dest);
-        }
+            // Always fetch and set StorageUnit entities by ID to avoid natural identifier errors
+            if (request.getStorageUnitDestination() != null && request.getStorageUnitDestination().getId() != null) {
+                StorageUnit dest = storageUnitRepo.findById(request.getStorageUnitDestination().getId()).orElse(null);
+                oilTransaction.setStorageUnitDestination(dest);
+            }
 
 
-        oilTransaction.setTotalPrice();
-        oilTransaction = oilTransactionRepository.save(oilTransaction);
-        StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
-        StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
-        // Update destination storage unit if present
-        if (storageUnitDestination != null) {
-            storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
+            oilTransaction.setTotalPrice();
+            oilTransaction = oilTransactionRepository.save(oilTransaction);
+            StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
+            StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
+            // Update destination storage unit if present
+            if (storageUnitDestination != null) {
+                storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
 
-            storageUnitRepo.save(storageUnitDestination);
-        }
-        // Update source storage unit if present
-         if (storageUnitSource != null) {
-            storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(), 0, null);
+                storageUnitRepo.save(storageUnitDestination);
+            }
+            // Update source storage unit if present
+            if (storageUnitSource != null) {
+                storageUnitSource.updateCurrentVolume(oilTransaction.getQuantityKg(), 0, null);
 
-            storageUnitRepo.save(storageUnitSource);
-        }
+                storageUnitRepo.save(storageUnitSource);
+            }
+
+
         OSMLogger.logMethodExit(this.getClass(), "save", modelMapper.map(oilTransaction, OilTransactionDTO.class));
         OSMLogger.logPerformance(this.getClass(), "save", startTime, System.currentTimeMillis());
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
@@ -241,11 +243,10 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     private void handleSale(OilTransaction oilTransaction, OilTransactionDTO dto) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "handleSale", oilTransaction);
-        if (dto.getStorageUnitSource() != null && dto.getStorageUnitDestination() != null) {
+        if (dto.getStorageUnitSource() != null) {
             StorageUnit source = storageUnitRepo.findById(dto.getStorageUnitSource().getId()).orElseThrow();
             oilTransaction.setStorageUnitSource(source);
-            oilTransaction.setUnitPrice(source.getAvgCost());
-            oilTransaction.setTotalPrice();
+             oilTransaction.setTotalPrice();
             oilTransaction.setTransactionState(TransactionState.COMPLETED);
         }
         OSMLogger.logMethodExit(this.getClass(), "handleSale", oilTransaction);
@@ -395,17 +396,9 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
             // Save the transaction
             OilTransactionDTO savedTx = save(modelMapper.map(tx, OilTransactionDTO.class));
-            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
-            if (delivery.getOperationType() != OperationType.OIL_PURCHASE) {
-                originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
-                originalDelivery.setPrice(originalDelivery.getUnpaidAmount() != null ? Double.valueOf(savedTx.getTotalPrice() - originalDelivery.getUnpaidAmount()) : savedTx.getTotalPrice());
-                deliveryRepository.save(originalDelivery);
 
-            }else {
-                 originalDelivery.setUnpaidAmount(savedTx.getTotalPrice());
-                originalDelivery.setPrice(savedTx.getUnitPrice()* savedTx.getQuantityKg());
-                deliveryRepository.save(originalDelivery);
-            }
+
+            deliveryRepository.save(delivery);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createSingleOilTransactionIn] Successfully saved oil transaction %s for delivery %s", savedTx.getId(), delivery.getLotNumber());
 
         } catch (IllegalArgumentException e) {
@@ -494,5 +487,36 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
         OSMLogger.logMethodExit(this.getClass(), "createSingleOilTransactionOut", null);
         OSMLogger.logPerformance(this.getClass(), "createSingleOilTransactionOut", startTime, System.currentTimeMillis());
+    }
+
+    @Transactional
+    public OilTransactionDTO createOilTransactionForSale(OilTransactionDTO oilTransactionDTO) {
+        long startTime = System.currentTimeMillis();
+        OilTransactionDTO oilTransactionDTOforSale = new OilTransactionDTO();
+        oilTransactionDTOforSale.setTransactionType(TransactionType.SALE);
+
+        oilTransactionDTOforSale.setTransactionState(TransactionState.PENDING);
+
+        if (oilTransactionDTOforSale.getQuantityKg() != null) {
+            oilTransactionDTOforSale.setQuantityKg(oilTransactionDTO.getQuantityKg());
+        }
+
+        if (oilTransactionDTOforSale.getUnitPrice() != null) {
+            oilTransactionDTOforSale.setUnitPrice(oilTransactionDTO.getUnitPrice());
+        }
+
+        if (oilTransactionDTO.getUnitPrice() != null) {
+            oilTransactionDTOforSale.setUnitPrice(oilTransactionDTO.getUnitPrice());
+        }
+        if (oilTransactionDTO.getQuantityKg() != null) {
+            oilTransactionDTOforSale.setQuantityKg(oilTransactionDTO.getQuantityKg());
+        }
+
+        OilTransactionDTO createdTransaction = save(oilTransactionDTOforSale);
+
+        OSMLogger.logMethodExit(this.getClass(), "createOilTransactionForSale", createdTransaction);
+        OSMLogger.logPerformance(this.getClass(), "createOilTransactionForSale", startTime, System.currentTimeMillis());
+        OSMLogger.logDataAccess(this.getClass(), "CREATE_OIL_TRANSACTION_FOR_SALE", "OilTransaction");
+        return createdTransaction;
     }
 }

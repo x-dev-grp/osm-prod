@@ -139,7 +139,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 7) Mark delivery as quality-checked
         delivery.setHasQualityControl(true);
 
-        if (delivery.getOperationType() == OperationType.BASE) {
+        if (delivery.getOperationType() == OperationType.BASE && delivery.getDeliveryType() == DeliveryType.OLIVE ) {
             delivery.setStatus(OliveLotStatus.PROD_READY);
         } else {
             delivery.setStatus(delivery.getDeliveryType() == DeliveryType.OIL ? OliveLotStatus.OIL_CONTROLLED : OliveLotStatus.OLIVE_CONTROLLED);

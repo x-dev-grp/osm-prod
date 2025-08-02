@@ -34,19 +34,15 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     public static final String SUPPLIER = "supplier";
     public static final String STORAGE_UNIT = "storageUnit";
     public static final String EXTERNAL_ID = "externalId";
-    private final GenericRepository genericRepository;
     private final DeliveryRepository deliveryRepository;
     private final SupplierRepository supplierRepository;
-    private final SupplierInfoTypeRepository supplierInfoTypeRepository;
     private final StorageUnitRepo storageUnitRepo;
     private final OilTransactionService oilTransactionService;
 
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, GenericRepository genericRepository, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, SupplierInfoTypeRepository supplierInfoTypeRepository, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService) {
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper,  DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService) {
         super(repository, modelMapper);
-        this.genericRepository = genericRepository;
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
-        this.supplierInfoTypeRepository = supplierInfoTypeRepository;
         this.storageUnitRepo = storageUnitRepo;
         this.oilTransactionService = oilTransactionService;
     }
@@ -231,7 +227,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case IN_PROGRESS -> {
                 break;
             }
-            case OLIVE_CONTROLLED, PROD_READY -> {
+            case OLIVE_CONTROLLED -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE));
                 switch (delivery.getOperationType()) {
                     case EXCHANGE,OLIVE_PURCHASE -> {
@@ -260,10 +256,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
                         }
                     }
-                    case EXCHANGE -> {
-                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Adding EXCHANGE completion actions for delivery " + delivery.getLotNumber());
-                        actions.addAll(Set.of(Action.OIL_OUT_TRANSACTION, Action.OIL_RECEPTION));
-                    }
+
 
                 }
 
@@ -304,14 +297,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
             case OIL_CONTROLLED -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding OIL_CONTROLLED status actions for oil delivery " + delivery.getLotNumber());
-                actions.add(Action.SET_PRICE);
-            }
-            case PROD_READY -> {
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding PROD_READY status actions for oil delivery " + delivery.getLotNumber());
-                actions.add(Action.OIL_IN_TRANSACTION);
-            }
-            case WAITING_FOR_PRICING -> {
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding WAITING_FOR_PRICING status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.SET_PRICE);
             }
             case WAITING_FOR_PAYMENT_DETAILS -> {
@@ -465,7 +450,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setRegion(delivery.getRegion());
             newDelivery.setSupplier(delivery.getSupplier());
             newDelivery.setLotOliveNumber(delivery.getLotNumber()); // Link to original olive delivery
-            newDelivery.setOperationType(OperationType.INTERNAL_RECEPTION);
+            newDelivery.setOperationType(delivery.getOperationType());
             newDelivery.setOilVariety(delivery.getOliveVariety());
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[creatOilRecForOtherOPS] Created oil reception with operation type INTERNAL_RECEPTION, linked to olive lot: %s", delivery.getLotNumber());
@@ -574,13 +559,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         }
     }
 
-    public UUID createOilTransactionFromExchange(UUID uuid, UnifiedDelivery delivery) {
-        long startTime = System.currentTimeMillis();
-
-        OSMLogger.logMethodExit(this.getClass(), "createOilTransactionFromExchange", null);
-        OSMLogger.logPerformance(this.getClass(), "createOilTransactionFromExchange", startTime, System.currentTimeMillis());
-        return null;
-    }
 
     private Map<String, Object> generateDeliveryNumber(UnifiedDelivery del) {
         long startTime = System.currentTimeMillis();
@@ -617,9 +595,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         return map;
     }
 
-    boolean isValidForTransaction(UnifiedDelivery delivery) {
-        return (delivery.getDeliveryType() == DeliveryType.OIL && (delivery.getOilQuantity() != null && delivery.getOilQuantity() > 0) && (delivery.getPrice() != null && delivery.getPrice() > 0) && delivery.getStorageUnit() != null && (delivery.getUnitPrice() != null && delivery.getUnitPrice() > 0));
-    }
+
 
     /**
      * Updates the status of a delivery.
@@ -739,12 +715,16 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateprice] Invalid oil quantity for delivery %s: %s", delivery.getLotNumber(), delivery.getOilQuantity());
                         throw new IllegalArgumentException("Oil quantity must be positive for OIL deliveries");
                     }
-                    UnifiedDelivery originalOliveReception = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
                     double totalPrice = unitPrice * delivery.getOilQuantity();
                     delivery.setPrice(totalPrice);
                     delivery.setStatus(OliveLotStatus.STOCK_READY);
-                    if(originalOliveReception.getOperationType() == OperationType.BASE) {
-                        originalOliveReception.setUnpaidAmount(totalPrice);
+                    switch (delivery.getOperationType()) {
+                        case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
+                        case BASE ->  {
+                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
+                            originalDelivery.setUnpaidAmount(totalPrice);
+                            deliveryRepository.save(originalDelivery);
+                        }
                     }
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OIL delivery %s: unitPrice=%.2f, oilQuantity=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getOilQuantity(), totalPrice);
 
@@ -761,6 +741,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     double totalPrice = unitPrice * delivery.getPoidsNet();
                     delivery.setPrice(totalPrice);
                     delivery.setStatus(OliveLotStatus.PROD_READY);
+                    delivery.setUnpaidAmount(totalPrice);
 
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OLIVE delivery %s: unitPrice=%.2f, poidsNet=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getPoidsNet(), totalPrice);
                 }
@@ -928,6 +909,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             delivery.setUnitPrice(dto.getUnitPrice());
             delivery.setPrice(dto.getPrice());
+            delivery.setUnpaidAmount(dto.getPrice() * dto.getOilQuantity());
+            delivery.setStatus(OliveLotStatus.PROD_READY);
 
 
             // TODO: Uncomment when quality grade is implemented
@@ -939,7 +922,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Create oil transaction out
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateExchangePricingAndCreateOilTransactionOut] Creating oil transaction out for delivery " + delivery.getLotNumber());
-            oilTransactionService.createSingleOilTransactionOut(delivery, dto);
+            oilTransactionService.createSingleOilTransactionOut(savedDelivery, dto);
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateExchangePricingAndCreateOilTransactionOut] Successfully completed exchange pricing processing for delivery %s", delivery.getLotNumber());
 
