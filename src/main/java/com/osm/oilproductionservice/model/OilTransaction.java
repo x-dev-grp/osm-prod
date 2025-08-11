@@ -6,10 +6,12 @@ import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.UUID;
 
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
@@ -37,6 +39,16 @@ public class OilTransaction extends BaseEntity implements Serializable {
     private double totalPrice;
     @ManyToOne(fetch = FetchType.LAZY)
     private UnifiedDelivery reception;
+
+    private UUID oilSaleId;
+
+    public UUID getOilSaleId() {
+        return oilSaleId;
+    }
+
+    public void setOilSaleId(UUID oilSaleId) {
+        this.oilSaleId = oilSaleId;
+    }
 
     public BaseType getOilType() {
         return oilType;

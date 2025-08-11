@@ -8,7 +8,7 @@ import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.MillMachineRepository;
-import com.xdev.communicator.models.production.enums.OperationType;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.utils.OSMLogger;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;

@@ -8,7 +8,7 @@ import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.*;
-import com.xdev.communicator.models.production.enums.OperationType;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;

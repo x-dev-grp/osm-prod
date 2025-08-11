@@ -13,7 +13,7 @@ import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
-import com.xdev.communicator.models.production.enums.OperationType;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import com.xdev.xdevbase.utils.OSMLogger;
@@ -491,32 +491,9 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
     @Transactional
     public OilTransactionDTO createOilTransactionForSale(OilTransactionDTO oilTransactionDTO) {
-        long startTime = System.currentTimeMillis();
-        OilTransactionDTO oilTransactionDTOforSale = new OilTransactionDTO();
+        OilTransactionDTO oilTransactionDTOforSale = modelMapper.map(oilTransactionDTO, OilTransactionDTO.class);
         oilTransactionDTOforSale.setTransactionType(TransactionType.SALE);
-
         oilTransactionDTOforSale.setTransactionState(TransactionState.PENDING);
-
-        if (oilTransactionDTOforSale.getQuantityKg() != null) {
-            oilTransactionDTOforSale.setQuantityKg(oilTransactionDTO.getQuantityKg());
-        }
-
-        if (oilTransactionDTOforSale.getUnitPrice() != null) {
-            oilTransactionDTOforSale.setUnitPrice(oilTransactionDTO.getUnitPrice());
-        }
-
-        if (oilTransactionDTO.getUnitPrice() != null) {
-            oilTransactionDTOforSale.setUnitPrice(oilTransactionDTO.getUnitPrice());
-        }
-        if (oilTransactionDTO.getQuantityKg() != null) {
-            oilTransactionDTOforSale.setQuantityKg(oilTransactionDTO.getQuantityKg());
-        }
-
-        OilTransactionDTO createdTransaction = save(oilTransactionDTOforSale);
-
-        OSMLogger.logMethodExit(this.getClass(), "createOilTransactionForSale", createdTransaction);
-        OSMLogger.logPerformance(this.getClass(), "createOilTransactionForSale", startTime, System.currentTimeMillis());
-        OSMLogger.logDataAccess(this.getClass(), "CREATE_OIL_TRANSACTION_FOR_SALE", "OilTransaction");
-        return createdTransaction;
+        return save(oilTransactionDTOforSale);
     }
 }

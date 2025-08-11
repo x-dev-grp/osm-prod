@@ -11,7 +11,7 @@ import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.QualityControlResultRepository;
 import com.osm.oilproductionservice.repository.QualityControlRuleRepository;
-import com.xdev.communicator.models.production.enums.OperationType;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;

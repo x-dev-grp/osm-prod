@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
-import com.xdev.communicator.models.production.enums.OperationType;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.dtos.BaseDto;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;

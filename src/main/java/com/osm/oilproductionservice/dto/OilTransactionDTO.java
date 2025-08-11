@@ -5,6 +5,8 @@ import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.xdev.xdevbase.dtos.BaseDto;
 
+import java.util.UUID;
+
 public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private StorageUnitDto storageUnitDestination;
     private StorageUnitDto storageUnitSource;
@@ -13,9 +15,18 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private Double unitPrice;
     private Double totalPrice;
     private TransactionType transactionType;
-    private TransactionState transactionState;
+    private TransactionState transactionState ;
     private UnifiedDeliveryDTO reception;
     private BaseTypeDto oilType;
+    private UUID oilSaleId;
+
+    public UUID getOilSaleId() {
+        return oilSaleId;
+    }
+
+    public void setOilSaleId(UUID oilSaleId) {
+        this.oilSaleId = oilSaleId;
+    }
 
     public UnifiedDeliveryDTO getReception() {
         return reception;

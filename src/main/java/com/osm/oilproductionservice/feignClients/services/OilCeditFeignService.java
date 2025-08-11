@@ -5,7 +5,7 @@ import com.osm.oilproductionservice.feignClients.controllers.OilCreditFeignContr
 import com.xdev.communicator.exceptions.ServiceException;
 import com.xdev.communicator.feignControllers.BaseFeignController;
 import com.xdev.communicator.feignServices.BaseFeignService;
-import com.xdev.communicator.models.finance.dto.OilCreditDto;
+import com.xdev.communicator.models.shared.dto.OilCreditDto;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 @Service
 public class OilCeditFeignService extends BaseFeignService<OilCreditDto, OilCreditDto> {
@@ -57,29 +56,5 @@ public class OilCeditFeignService extends BaseFeignService<OilCreditDto, OilCred
         );
     }
 
-//    @CircuitBreaker(name = "genericService", fallbackMethod = "approveOilCreditFallBack")
-//    @Retry(name = "genericService")
-//    @TimeLimiter(name = "genericService")
-//    public CompletionStage<Object> approveOilSale(UUID externalId) {
-//        if (super.feignExecutor != null) {
-//            return CompletableFuture.supplyAsync(() -> {
-//                try {
-//                    return oilCreditFeignController.approveOilSale(externalId);
-//                } catch (Exception e) {
-//                    log.error("Error approving OilSale by id: {}", externalId, e);
-//                    throw new ServiceException("Error approving oilCredit by id", e);
-//                }
-//            }, feignExecutor);
-//        } else {
-//            return CompletableFuture.supplyAsync(() -> {
-//                try {
-//                    return oilCreditFeignController.approveOilSale(externalId);
-//                } catch (Exception e) {
-//                    log.error("Error approving OilSale by id: {}", externalId, e);
-//                    throw new ServiceException("Error approving oilCredit by id", e);
-//                }
-//            });
-//        }
-//
-//    }
+
 }
