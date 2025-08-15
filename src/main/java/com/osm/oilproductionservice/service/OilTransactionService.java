@@ -288,6 +288,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             UnifiedDelivery unifiedDelivery = unifiedDeliveryRepo.findById(reception).orElse(null);
             if (unifiedDelivery != null) {
                 unifiedDelivery.setPaid(true);
+                unifiedDelivery.setUnpaidAmount(0.0);
                 unifiedDeliveryRepo.save(unifiedDelivery);
             }
         }

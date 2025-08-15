@@ -312,7 +312,7 @@ public class PlanningService {
             lot.setOilQuantity(oilQuantity);
             lot.setRendement(rendement);
 
-            lot.setOilType(lot.getOliveType());
+            lot.setOilType(lot.getOilType());
             lot.setOilVariety(lot.getOliveVariety());
             lot.setStatus(OliveLotStatus.COMPLETED);
 
@@ -324,6 +324,7 @@ public class PlanningService {
 
             }
             if(lot.getOperationType()==OperationType.SIMPLE_RECEPTION){
+                lot.setPrice(unpaidPrice);
                 lot.setUnpaidAmount(unpaidPrice);
 
             }

@@ -3,6 +3,7 @@ package com.osm.oilproductionservice.dto;
 import com.xdev.communicator.models.shared.dto.BankAccountDto;
 import com.xdev.communicator.models.shared.dto.SupplierDto;
 import com.xdev.communicator.models.shared.enums.Currency;
+import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.communicator.models.shared.enums.PaymentMethod;
 
 import java.util.UUID;
@@ -12,6 +13,7 @@ public class PaymentDTO {
     private Double amount;
     private Currency currency;
     private PaymentMethod paymentMethod;
+
     private String checkNumber;
     private BankAccountDto bankAccount;
     private CustomerDto customer;

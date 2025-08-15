@@ -60,8 +60,8 @@ public class OilSaleDTO extends BaseDto<OilSale> {
     private String deliveryNotes;
     private boolean paid = false;
     private QualityGrades qualityGrade;
-    private Double paiedAmount;
-    private Double unpaiedAmount;
+    private Double paidAmount;
+    private Double unpaidAmount;
 
 
     public String getInvoiceNumber() {
@@ -233,18 +233,18 @@ public class OilSaleDTO extends BaseDto<OilSale> {
     }
 
     public Double getPaiedAmount() {
-        return paiedAmount;
+        return paidAmount;
     }
 
-    public void setPaiedAmount(Double paiedAmount) {
-        this.paiedAmount = paiedAmount;
+    public void setPaiedAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
     }
 
-    public Double getUnpaiedAmount() {
-        return unpaiedAmount;
+    public Double getUnpaidAmount() {
+        return unpaidAmount;
     }
 
-    public void setUnpaiedAmount(Double unpaiedAmount) {
-        this.unpaiedAmount = unpaiedAmount;
+    public void setUnpaidAmount(Double unpaidAmount) {
+        this.unpaidAmount = unpaidAmount;
     }
 }

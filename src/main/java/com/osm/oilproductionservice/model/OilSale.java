@@ -18,8 +18,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "oil_sales")
 public class OilSale extends BaseEntity implements Serializable {
-    private Double paiedAmount;
-    private Double unpaiedAmount;
+    private Double paidAmount;
+    private Double unpaidAmount;
 
     private boolean paid = false;
     // ==================== CORE SALE FIELDS ====================
@@ -166,19 +166,19 @@ public class OilSale extends BaseEntity implements Serializable {
     // ==================== CONSTRUCTORS ====================
 
     public Double getPaiedAmount() {
-        return paiedAmount;
+        return paidAmount;
     }
 
-    public void setPaiedAmount(Double paiedAmount) {
-        this.paiedAmount = paiedAmount;
+    public void setPaiedAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
     }
 
-    public Double getUnpaiedAmount() {
-        return unpaiedAmount;
+    public Double getUnpaidAmount() {
+        return unpaidAmount;
     }
 
-    public void setUnpaiedAmount(Double unpaiedAmount) {
-        this.unpaiedAmount = unpaiedAmount;
+    public void setUnpaidAmount(Double unpaidAmount) {
+        this.unpaidAmount = unpaidAmount;
     }
 
     public OilSale() {

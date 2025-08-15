@@ -3,6 +3,7 @@ package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.ApiResponse;
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
+import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
@@ -29,7 +30,16 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         super(baseService, modelMapper);
         this.UnifiedDeliveryService = UnifiedDeliveryService;
     }
-
+    @PostMapping("/payment")
+    public ResponseEntity<?> processPayment(@RequestBody PaymentDTO paymentDTO) {
+        try {
+            this.UnifiedDeliveryService.processPayment(paymentDTO);
+            return ResponseEntity.ok().build();
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error processing payment: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/planning")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getPlanning() {

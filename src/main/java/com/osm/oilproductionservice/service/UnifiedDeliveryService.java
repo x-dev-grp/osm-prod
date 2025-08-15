@@ -1,14 +1,20 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
+import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
-import com.osm.oilproductionservice.repository.*;
-import com.xdev.communicator.models.shared.enums.OperationType;
+import com.osm.oilproductionservice.repository.DeliveryRepository;
+import com.osm.oilproductionservice.repository.StorageUnitRepo;
+import com.osm.oilproductionservice.repository.SupplierRepository;
+import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
+import com.xdev.communicator.models.shared.enums.*;
+import com.xdev.communicator.models.shared.enums.Currency;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
@@ -19,6 +25,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,13 +45,15 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     private final SupplierRepository supplierRepository;
     private final StorageUnitRepo storageUnitRepo;
     private final OilTransactionService oilTransactionService;
+    private final FinancialTransactionFeignService financialTransactionFeignService;
 
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper,  DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService) {
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService) {
         super(repository, modelMapper);
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
         this.storageUnitRepo = storageUnitRepo;
         this.oilTransactionService = oilTransactionService;
+        this.financialTransactionFeignService = financialTransactionFeignService;
     }
 
     /**
@@ -531,7 +540,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setUnitPrice(0.0);   // Will be set during payment processing
 
             // Copy relevant information from original delivery
-            newDelivery.setOilType(delivery.getOliveType());
+            newDelivery.setOilType(delivery.getOilType());
             newDelivery.setRegion(delivery.getRegion());
             newDelivery.setSupplier(delivery.getSupplier());
             newDelivery.setLotOliveNumber(delivery.getLotNumber()); // Link to original olive delivery
@@ -579,7 +588,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 2) Build each piece
         String sequencePart = String.format(D, nextSeq);          // zero-padded to 4 digits
-        String oliveTypeCode = del.getOliveType().getName();           // e.g. "OB"
+        String oliveTypeCode = del.getOilType().getName().toUpperCase();           // e.g. "OB"
         int year = del.getDeliveryDate().getYear();                    // e.g. 2025
         String yearPart = String.format(D1, year % 100);
         // last two digits: "25"
@@ -798,17 +807,18 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Processing payment reception for delivery %s with unit price %.2f and total price %.2f", dto.getDeliveryId(), dto.getUnitPrice(), dto.getPrice());
 
         try {
-            // Find the delivery
-            UnifiedDelivery delivery = deliveryRepository.findById(dto.getDeliveryId()).orElseThrow(() -> {
+            // Find the oilDelivery
+            UnifiedDelivery oilDelivery = deliveryRepository.findById(dto.getDeliveryId()).orElseThrow(() -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Delivery not found with ID: " + dto.getDeliveryId());
                 return new EntityNotFoundException("Delivery not found: " + dto.getDeliveryId());
             });
+            UnifiedDelivery originalOliveDelivery = this.deliveryRepository.findByLotNumber(oilDelivery.getLotOliveNumber());
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Found delivery %s (Status: %s, Type: %s)", delivery.getLotNumber(), delivery.getStatus(), delivery.getDeliveryType());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Found oilDelivery %s (Status: %s, Type: %s)", oilDelivery.getLotNumber(), oilDelivery.getStatus(), oilDelivery.getDeliveryType());
 
-            // Validate delivery type
-            if (delivery.getDeliveryType() != DeliveryType.OIL) {
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Invalid delivery type for payment reception: %s (expected OIL)", delivery.getDeliveryType());
+            // Validate oilDelivery type
+            if (oilDelivery.getDeliveryType() != DeliveryType.OIL) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Invalid oilDelivery type for payment reception: %s (expected OIL)", oilDelivery.getDeliveryType());
                 throw new IllegalArgumentException("Payment reception can only be processed for OIL deliveries");
             }
 
@@ -824,22 +834,25 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
 
             // Update pricing on the Delivery
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Updating pricing for delivery %s: unitPrice=%.2f, price=%.2f", delivery.getLotNumber(), dto.getUnitPrice(), dto.getPrice());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Updating pricing for oilDelivery %s: unitPrice=%.2f, price=%.2f", oilDelivery.getLotNumber(), dto.getUnitPrice(), dto.getPrice());
 
-            delivery.setUnitPrice(dto.getUnitPrice());
-            delivery.setOilQuantity(dto.getOilQuantity());
-            delivery.setPrice(dto.getPrice());
-            delivery.setStatus(OliveLotStatus.STOCK_READY);
+            oilDelivery.setUnitPrice(dto.getUnitPrice());
+            oilDelivery.setOilQuantity(dto.getOilQuantity());
+            oilDelivery.setPrice(dto.getPrice());
+            oilDelivery.setPaidAmount(dto.getPrice());
+            originalOliveDelivery.setPaidAmount(dto.getPrice());
+            originalOliveDelivery.setUnpaidAmount(originalOliveDelivery.getUnpaidAmount()-dto.getPrice());
+            oilDelivery.setStatus(OliveLotStatus.STOCK_READY);
 
-            // Save the updated delivery
-            UnifiedDelivery savedDelivery = deliveryRepository.save(delivery);
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Successfully saved delivery %s with new status: %s", savedDelivery.getLotNumber(), savedDelivery.getStatus());
+            // Save the updated oilDelivery
+            UnifiedDelivery savedDelivery = deliveryRepository.save(oilDelivery);
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Successfully saved oilDelivery %s with new status: %s", savedDelivery.getLotNumber(), savedDelivery.getStatus());
 
             // Create oil transaction
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Creating oil transaction for delivery " + delivery.getLotNumber());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Creating oil transaction for oilDelivery " + oilDelivery.getLotNumber());
             oilTransactionService.createSingleOilTransactionIn(savedDelivery);
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Successfully completed payment reception processing for delivery %s", delivery.getLotNumber());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Successfully completed payment reception processing for oilDelivery %s", oilDelivery.getLotNumber());
 
         } catch (EntityNotFoundException e) {
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Entity not found error: " + e.getMessage());
@@ -910,7 +923,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             delivery.setUnitPrice(dto.getUnitPrice());
             delivery.setPrice(dto.getPrice());
-            delivery.setUnpaidAmount(dto.getPrice() * dto.getOilQuantity());
+            delivery.setUnpaidAmount(dto.getPrice());
             delivery.setStatus(OliveLotStatus.PROD_READY);
 
 
@@ -951,4 +964,62 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         var t = deliveryRepository.findByLotNumber(lotNumber);
         return modelMapper.map(t, UnifiedDeliveryDTO.class);
     }
+
+    @Transactional
+    public void processPayment(PaymentDTO paymentDTO) {
+        if (paymentDTO.getIdOperation() == null) {
+            return;
+        }
+        double amount = paymentDTO.getAmount() != null ? paymentDTO.getAmount() : 0d;
+
+        UnifiedDelivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(paymentDTO.getIdOperation())
+                .orElse(null);
+
+        if (delivery == null) {
+            throw new IllegalArgumentException("Oil Sale not found for ID: " + paymentDTO.getIdOperation());
+        } else {
+            updateDelivery(delivery, amount);
+        }
+
+        switch (delivery.getOperationType()) {
+            case OIL_PURCHASE ->
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.OIL_PURCHASE);
+            case OLIVE_PURCHASE ->
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE);
+            case BASE ->
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.SUPPLIER_PAYMENT);
+            case SIMPLE_RECEPTION ->
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT);
+        }
+
+    }
+
+    private void updateDelivery(UnifiedDelivery delivery, double amount) {
+        delivery.setPaid(amount == (delivery.getUnpaidAmount() != null ? delivery.getUnpaidAmount().doubleValue() : 0d));
+        delivery.setPaidAmount((delivery.getPaidAmount() != null ? delivery.getPaidAmount() : 0d) + amount);
+        delivery.setUnpaidAmount((delivery.getUnpaidAmount() != null ? delivery.getUnpaidAmount() : 0d) - amount);
+        deliveryRepository.save(delivery);
+    }
+
+    private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, UnifiedDelivery delivery, TransactionDirection direction, TransactionType transactionType) {
+        // Build Financial Transaction DTO
+        FinancialTransactionDto financialTransactionDto = new FinancialTransactionDto();
+        financialTransactionDto.setTransactionType(transactionType);
+        financialTransactionDto.setDirection(direction);
+        financialTransactionDto.setAmount(BigDecimal.valueOf(amount));
+        financialTransactionDto.setCurrency(paymentDTO.getCurrency() != null ? paymentDTO.getCurrency() : Currency.TND);
+        financialTransactionDto.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : PaymentMethod.CASH);
+        financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
+        financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
+        financialTransactionDto.setLotNumber(delivery.getLotNumber());
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+        financialTransactionDto.setTransactionDate(LocalDateTime.now());
+        financialTransactionDto.setApproved(true);
+        financialTransactionDto.setApprovalDate(LocalDateTime.now());
+        financialTransactionDto.setApprovedBy(null);
+
+        // Send to finance service
+        financialTransactionFeignService.create(financialTransactionDto);
+    }
+
 }
