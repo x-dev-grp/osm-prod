@@ -8,12 +8,14 @@ import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.repository.OilSaleRepository;
-import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
+ import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
 import com.xdev.communicator.models.shared.enums.TransactionDirection;
 import com.xdev.communicator.models.shared.enums.TransactionType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +60,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
         oiltTransactionDto.setQuantityKg(request.getQuantity().doubleValue());
         oiltTransactionDto.setTotalPrice(request.getQuantity().doubleValue() * request.getUnitPrice().doubleValue());
         oiltTransactionDto.setOilSaleId(oilSale.getId());
+        oiltTransactionDto.setOilSaleId(oilSale.getId());
         oilTransactionService.createOilTransactionForSale(oiltTransactionDto);
         return modelMapper.map(oilSale, OilSaleDTO.class);
     }
@@ -85,7 +88,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
         financialTransactionDto.setAmount(BigDecimal.valueOf(paymentDTO.getAmount()));
         financialTransactionDto.setTransactionType(TransactionType.OIL_SALE);
         financialTransactionDto.setApproved(true);
-        financialTransactionDto.setCurrency(paymentDTO.getCurrency());
+         financialTransactionDto.setCurrency(paymentDTO.getCurrency());
         financialTransactionDto.setDirection(TransactionDirection.INBOUND);
         if (paymentDTO.getBankAccount() != null) {
             financialTransactionDto.setBankAccount(paymentDTO.getBankAccount());
