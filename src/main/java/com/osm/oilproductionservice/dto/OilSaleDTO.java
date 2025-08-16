@@ -2,16 +2,11 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.SaleStatus;
-import com.osm.oilproductionservice.model.Customer;
 import com.osm.oilproductionservice.model.OilSale;
-import com.xdev.communicator.models.shared.dto.CustomerDto;
-import com.xdev.communicator.models.shared.enums.TypeCategory;
 import com.xdev.xdevbase.dtos.BaseDto;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -27,7 +22,6 @@ public class OilSaleDTO extends BaseDto<OilSale> {
 
     // ==================== CUSTOMER INFORMATION ====================
 
-    private CustomerDto customer;
 
     // ==================== SUPPLIER INFORMATION ====================
 
@@ -88,13 +82,7 @@ public class OilSaleDTO extends BaseDto<OilSale> {
         this.saleDate = saleDate;
     }
 
-    public CustomerDto getCustomer() {
-        return customer;
-    }
 
-    public void setCustomer(CustomerDto customer) {
-        this.customer = customer;
-    }
 
     public SupplierDto getSupplier() {
         return supplier;

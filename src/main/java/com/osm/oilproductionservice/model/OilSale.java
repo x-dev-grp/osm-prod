@@ -59,9 +59,6 @@ public class OilSale extends BaseEntity implements Serializable {
     /**
      * Customer who made the purchase
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
 
     // ==================== SUPPLIER INFORMATION ====================
 
@@ -219,13 +216,7 @@ public class OilSale extends BaseEntity implements Serializable {
         this.saleDate = saleDate;
     }
 
-    public Customer getCustomer() {
-        return customer;
-    }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
-    }
 
     public Supplier getSupplier() {
         return supplier;
@@ -397,8 +388,7 @@ public class OilSale extends BaseEntity implements Serializable {
                 ", invoiceNumber='" + invoiceNumber + '\'' +
                 ", status=" + status +
                 ", saleDate=" + saleDate +
-                ", customer=" + (customer != null ? customer.getCustomerName() : "null") +
-                 ", oilType=" + (oilType != null ? oilType.getName() : "null") +
+                  ", oilType=" + (oilType != null ? oilType.getName() : "null") +
                 ", quantity=" + quantity +
                 ", unitPrice=" + unitPrice +
                 ", totalAmount=" + totalAmount +

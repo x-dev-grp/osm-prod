@@ -16,8 +16,7 @@ public class PaymentDTO {
 
     private String checkNumber;
     private BankAccountDto bankAccount;
-    private CustomerDto customer;
-    private SupplierDto supplier;
+     private SupplierDto supplier;
 
     public UUID getIdOperation() {
         return idOperation;
@@ -65,14 +64,6 @@ public class PaymentDTO {
 
     public void setBankAccount(BankAccountDto bankAccount) {
         this.bankAccount = bankAccount;
-    }
-
-    public CustomerDto getCustomer() {
-        return customer;
-    }
-
-    public void setCustomer(CustomerDto customer) {
-        this.customer = customer;
     }
 
     public SupplierDto getSupplier() {

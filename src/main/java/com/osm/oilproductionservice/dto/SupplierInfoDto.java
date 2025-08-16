@@ -1,6 +1,7 @@
 package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.model.SupplierInfo;
+import com.xdev.communicator.models.shared.enums.PartnerCategory;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 /**
@@ -17,6 +18,24 @@ public class SupplierInfoDto extends BaseDto<SupplierInfo> {
     private String rib;
     private String bankName;
 
+    private String matriculeFiscal;
+    private PartnerCategory category;
+
+    public String getMatriculeFiscal() {
+        return matriculeFiscal;
+    }
+
+    public void setMatriculeFiscal(String matriculeFiscal) {
+        this.matriculeFiscal = matriculeFiscal;
+    }
+
+    public PartnerCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(PartnerCategory category) {
+        this.category = category;
+    }
     public String getName() {
         return name;
     }

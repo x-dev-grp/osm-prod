@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.model;
 
+import com.xdev.communicator.models.shared.enums.PartnerCategory;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
@@ -17,7 +18,28 @@ public class SupplierInfo extends BaseEntity {
     private String address;
     private String rib;
     private String bankName;
+    private String matriculeFiscal;
+    /**
+     * Customer category (PREMIUM, STANDARD, BASIC, etc.)
+     */
+    @Enumerated(EnumType.STRING)
+    private PartnerCategory category;
 
+    public String getMatriculeFiscal() {
+        return matriculeFiscal;
+    }
+
+    public void setMatriculeFiscal(String matriculeFiscal) {
+        this.matriculeFiscal = matriculeFiscal;
+    }
+
+    public PartnerCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(PartnerCategory category) {
+        this.category = category;
+    }
     @ManyToOne(fetch = FetchType.EAGER)
     private BaseType region;
     // Calculated fields (not persisted)
