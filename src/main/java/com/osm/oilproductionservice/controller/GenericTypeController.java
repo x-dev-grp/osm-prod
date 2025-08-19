@@ -66,6 +66,6 @@ public class GenericTypeController extends
 
     @Override
     protected String getResourceName() {
-        return "BaseType";
+        return "BaseType".toUpperCase();
     }
 }

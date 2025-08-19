@@ -1,5 +1,7 @@
 server:
   port: ${SERVER_PORT:8083}
+  max-http-request-header-size: 32KB      # Boot 3.x+
+
 
 spring:
   application:

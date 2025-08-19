@@ -102,6 +102,6 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
 
     @Override
     protected String getResourceName() {
-        return "OILTRANSACTION";
+        return "OILTRANSACTION".toUpperCase();
     }
 }

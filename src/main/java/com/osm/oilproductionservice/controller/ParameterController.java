@@ -34,6 +34,6 @@ public class ParameterController extends BaseControllerImpl<Parameter, Parameter
 
     @Override
     protected String getResourceName() {
-        return "Parameter";
+        return "Parameter".toUpperCase();
     }
 }

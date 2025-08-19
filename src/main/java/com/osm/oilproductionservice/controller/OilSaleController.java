@@ -27,7 +27,7 @@ public class OilSaleController extends BaseControllerImpl<OilSale, OilSaleDTO, O
     }
     @Override
     protected String getResourceName() {
-        return "OILSALE";
+        return "OILSALE".toUpperCase();
     }
     @PostMapping("/payment")
     public ResponseEntity<?> processPayment(@RequestBody PaymentDTO paymentDTO) {

@@ -23,7 +23,7 @@ public class WasteController extends BaseControllerImpl<Waste, WasteDTO, WasteDT
 
     @Override
     protected String getResourceName() {
-        return "WASTE";
+        return "WASTE".toUpperCase();
     }
 }
 

@@ -24,7 +24,7 @@ public class OilContainerController extends BaseControllerImpl<OilContainer, Oil
 
     @Override
     protected String getResourceName() {
-        return "Parameter";
+        return "OilContainer".toUpperCase();
     }
 }
 

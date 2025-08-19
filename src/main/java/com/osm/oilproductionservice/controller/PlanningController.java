@@ -151,5 +151,7 @@ public class PlanningController {
         Object v = body.get(key);
         return (v instanceof Number) ? ((Number) v).doubleValue() : null;
     }
-
+    protected String getResourceName() {
+        return "Parameter".toUpperCase();
+    }
 }
