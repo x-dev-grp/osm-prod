@@ -1,6 +1,7 @@
 package com.osm.oilproductionservice.model;
 
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.SaleStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
@@ -79,9 +80,10 @@ public class OilSale extends BaseEntity implements Serializable {
     /**
      * Oil type being sold
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "oil_type_id")
-    private BaseType oilType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "oil_type")
+    private OilType oilType;
+
 
     // ==================== QUANTITY & PRICING ====================
 
@@ -234,11 +236,11 @@ public class OilSale extends BaseEntity implements Serializable {
         this.storageUnit = storageUnit;
     }
 
-    public BaseType getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseType oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 

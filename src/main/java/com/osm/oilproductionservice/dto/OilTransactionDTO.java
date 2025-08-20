@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.model.OilTransaction;
@@ -17,7 +18,7 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
     private TransactionType transactionType;
     private TransactionState transactionState ;
     private UnifiedDeliveryDTO reception;
-    private BaseTypeDto oilType;
+    private OilType oilType;
     private UUID oilSaleId;
 
     public UUID getOilSaleId() {
@@ -102,11 +103,11 @@ public class OilTransactionDTO extends BaseDto<OilTransaction> {
         this.transactionType = transactionType;
     }
 
-    public BaseTypeDto getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseTypeDto oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 }

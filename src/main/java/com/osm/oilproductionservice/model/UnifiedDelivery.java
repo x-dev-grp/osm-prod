@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.osm.oilproductionservice.enums.DeliveryType;
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.enums.OliveType;
 import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -73,8 +75,8 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private Double unpaidAmount;
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oilType;   // E.g., Extra Virgin, Virgin, etc.
+    @Enumerated(EnumType.STRING)
+    private OilType oilType;
     // --- Olive Delivery Specific Fields ---
     private LocalDateTime trtDate;   // Treatment date for olive delivery
     /*   @ManyToOne(fetch = FetchType.LAZY)
@@ -83,8 +85,8 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oliveVariety;
     private int sackCount;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oliveType;
+    @Enumerated(EnumType.STRING)
+    private OliveType oliveType;
     @Enumerated(EnumType.STRING)
     private OliveLotStatus status;  // Status of the olive lot
     // Additional fields found in the UnifiedDelivery constructor, if needed
@@ -306,11 +308,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.storageUnit = storageUnit;
     }
 
-    public BaseType getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseType oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 
@@ -343,11 +345,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.sackCount = sackCount;
     }
 
-    public BaseType getOliveType() {
+    public OliveType getOliveType() {
         return oliveType;
     }
 
-    public void setOliveType(BaseType oliveType) {
+    public void setOliveType(OliveType oliveType) {
         this.oliveType = oliveType;
     }
 

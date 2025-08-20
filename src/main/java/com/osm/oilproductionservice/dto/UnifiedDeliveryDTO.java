@@ -2,7 +2,9 @@ package com.osm.oilproductionservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.osm.oilproductionservice.enums.DeliveryType;
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.osm.oilproductionservice.enums.OliveType;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.dtos.BaseDto;
@@ -74,7 +76,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private Double unpaidAmount;
 
-    private BaseTypeDto oilType;
+    private OilType oilType;
 
     // --- Olive Delivery Specific Fields ---
 
@@ -85,7 +87,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private int sackCount;
 
-    private BaseTypeDto oliveType;
+    private OliveType oliveType;
 
     private OliveLotStatus status;
 
@@ -289,11 +291,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     }
 
 
-    public BaseTypeDto getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseTypeDto oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 
@@ -325,11 +327,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.sackCount = sackCount;
     }
 
-    public BaseTypeDto getOliveType() {
+    public OliveType getOliveType() {
         return oliveType;
     }
 
-    public void setOliveType(BaseTypeDto oliveType) {
+    public void setOliveType(OliveType oliveType) {
         this.oliveType = oliveType;
     }
 

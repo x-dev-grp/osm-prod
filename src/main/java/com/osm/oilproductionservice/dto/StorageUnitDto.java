@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
@@ -22,7 +23,7 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private Double avgCost = 0.0;
     private Double totalCost = 0.0;
 
-    private BaseTypeDto oilType;
+    private OilType oilType;
     private StorageStatus status = StorageStatus.AVAILABLE;
 
     private LocalDateTime lastFillDate;
@@ -37,19 +38,7 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
         this.supplier = supplier;
     }
 
-    public StorageUnitDto(String name, String location, String description, Double maxCapacity, Double currentVolume, LocalDateTime nextMaintenanceDate, LocalDateTime lastInspectionDate, BaseTypeDto oilType, StorageStatus status, LocalDateTime lastFillDate, LocalDateTime lastEmptyDate) {
-        this.name = name;
-        this.location = location;
-        this.description = description;
-        this.maxCapacity = maxCapacity;
-        this.currentVolume = currentVolume;
-        this.nextMaintenanceDate = nextMaintenanceDate;
-        this.lastInspectionDate = lastInspectionDate;
-        this.oilType = oilType;
-        this.status = status;
-        this.lastFillDate = lastFillDate;
-        this.lastEmptyDate = lastEmptyDate;
-    }
+
 
     public StorageUnitDto() {
     }
@@ -117,11 +106,11 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
         this.lastInspectionDate = lastInspectionDate;
     }
 
-    public BaseTypeDto getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseTypeDto oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 

@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.SaleStatus;
 import com.osm.oilproductionservice.model.OilSale;
@@ -30,7 +31,7 @@ public class OilSaleDTO extends BaseDto<OilSale> {
     // ==================== STORAGE UNIT INFORMATION ====================
 
     private UUID storageUnit;
-    private BaseTypeDto oilType;
+    private OilType oilType;
 
     // ==================== QUANTITY & PRICING ====================
 
@@ -100,11 +101,11 @@ public class OilSaleDTO extends BaseDto<OilSale> {
         this.storageUnit = storageUnit;
     }
 
-    public BaseTypeDto getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseTypeDto oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 

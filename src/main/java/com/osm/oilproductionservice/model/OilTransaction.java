@@ -1,12 +1,10 @@
 package com.osm.oilproductionservice.model;
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
 import com.xdev.xdevbase.entities.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -28,8 +26,9 @@ public class OilTransaction extends BaseEntity implements Serializable {
 
     private String qualityGrade;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oilType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "oil_type")
+    private OilType oilType;
     private TransactionState transactionState = TransactionState.COMPLETED;
     /**
      * Net quantity moved, in kilograms (positive for IN, negative for OUT)
@@ -50,11 +49,11 @@ public class OilTransaction extends BaseEntity implements Serializable {
         this.oilSaleId = oilSaleId;
     }
 
-    public BaseType getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseType oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 

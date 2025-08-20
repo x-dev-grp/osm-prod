@@ -455,7 +455,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setUnitPrice(0.0);
 
             // Copy relevant information from original delivery
-            newDelivery.setOilType(delivery.getOliveType());
+            newDelivery.setOilType(delivery.getOliveType().toOilType());
             newDelivery.setOliveQuantity(delivery.getPoidsNet());
             newDelivery.setOliveType(delivery.getOliveType());
             newDelivery.setRegion(delivery.getRegion());

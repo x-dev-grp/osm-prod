@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.model;
 
+import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -25,9 +26,9 @@ public class StorageUnit extends BaseEntity {
     private Double avgCost = 0.0;
     private Double totalCost = 0.0;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oilType; // OIL_VARIETY
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "oil_type")
+    private OilType oilType;
     @Enumerated(EnumType.STRING)
     private StorageStatus status;
 
@@ -50,19 +51,6 @@ public class StorageUnit extends BaseEntity {
 
     // Constructors, Getters, Setters — all can stay
 
-    public StorageUnit(String name, String location, String description, Double maxCapacity, Double currentVolume, LocalDateTime nextMaintenanceDate, LocalDateTime lastInspectionDate, BaseType oilType, StorageStatus status, LocalDateTime lastFillDate, LocalDateTime lastEmptyDate) {
-        this.name = name;
-        this.location = location;
-        this.description = description;
-        this.maxCapacity = maxCapacity;
-        this.currentVolume = currentVolume;
-        this.nextMaintenanceDate = nextMaintenanceDate;
-        this.lastInspectionDate = lastInspectionDate;
-        this.oilType = oilType;
-        this.status = status;
-        this.lastFillDate = lastFillDate;
-        this.lastEmptyDate = lastEmptyDate;
-    }
 
     // Utility: Get % of fill used (can help for alerts/warnings)
     public double getFillPercentage() {
@@ -146,11 +134,11 @@ public class StorageUnit extends BaseEntity {
         this.lastInspectionDate = lastInspectionDate;
     }
 
-    public BaseType getOilType() {
+    public OilType getOilType() {
         return oilType;
     }
 
-    public void setOilType(BaseType oilType) {
+    public void setOilType(OilType oilType) {
         this.oilType = oilType;
     }
 

@@ -75,7 +75,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         tx.setReception(delivery);
         tx.setUnitPrice(dto.getOilUnitPrice());
         tx.setQualityGrade(dto.getQualityGrade());
-        tx.setOilType(delivery.getOliveType());
+        tx.setOilType(delivery.getOilType());
         tx.setQuantityKg(dto.getOilQuantity());
         OSMLogger.logMethodExit(OilTransactionService.class, "getOilTransaction", tx);
         return tx;

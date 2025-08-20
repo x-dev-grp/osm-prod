@@ -12,7 +12,6 @@ import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.utils.OSMLogger;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,7 +331,7 @@ public class PlanningService {
                 if(lot.getSupplier() != null && lot.getSupplier().getStorageUnit() != null) {
                     OilTransactionDTO oilTransaction = new OilTransactionDTO();
                     oilTransaction.setTransactionState(TransactionState.COMPLETED);
-                    oilTransaction.setOilType(modelMapper.map(lot.getOliveType(),BaseTypeDto.class));
+                    oilTransaction.setOilType(oilTransaction.getOilType());
                     oilTransaction.setTransactionType(TransactionType.TRANSFER_IN);
                     oilTransaction.setReception(modelMapper.map(lot,UnifiedDeliveryDTO.class));
                     oilTransaction.setQuantityKg(lot.getOilQuantity());
