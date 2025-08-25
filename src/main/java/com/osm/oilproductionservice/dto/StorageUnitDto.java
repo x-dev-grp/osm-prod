@@ -1,9 +1,7 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.osm.oilproductionservice.model.StorageUnit;
-import com.osm.oilproductionservice.model.Supplier;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.time.LocalDateTime;
@@ -23,8 +21,16 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private Double avgCost = 0.0;
     private Double totalCost = 0.0;
 
-    private OilType oilType;
+    private BaseTypeDto oilVariety; // OIL_VARIETY
     private StorageStatus status = StorageStatus.AVAILABLE;
+
+    public BaseTypeDto getOilVariety() {
+        return oilVariety;
+    }
+
+    public void setOilVariety(BaseTypeDto oilVariety) {
+        this.oilVariety = oilVariety;
+    }
 
     private LocalDateTime lastFillDate;
     private LocalDateTime lastEmptyDate;
@@ -106,13 +112,6 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
         this.lastInspectionDate = lastInspectionDate;
     }
 
-    public OilType getOilType() {
-        return oilType;
-    }
-
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
-    }
 
     public StorageStatus getStatus() {
         return status;

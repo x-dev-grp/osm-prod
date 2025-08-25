@@ -8,16 +8,14 @@ import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
+import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/production/deliveries")
@@ -25,10 +23,12 @@ import java.util.UUID;
 public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> {
 
     private final UnifiedDeliveryService UnifiedDeliveryService;
+    private final UnifiedDeliveryService unifiedDeliveryService;
 
-    public UnifiedDeliveryController(BaseService<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> baseService, ModelMapper modelMapper, UnifiedDeliveryService UnifiedDeliveryService) {
+    public UnifiedDeliveryController(BaseService<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> baseService, ModelMapper modelMapper, UnifiedDeliveryService UnifiedDeliveryService, UnifiedDeliveryService unifiedDeliveryService) {
         super(baseService, modelMapper);
         this.UnifiedDeliveryService = UnifiedDeliveryService;
+        this.unifiedDeliveryService = unifiedDeliveryService;
     }
     @PostMapping("/payment")
     public ResponseEntity<?> processPayment(@RequestBody PaymentDTO paymentDTO) {
@@ -139,6 +139,44 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     @Override
     protected String getResourceName() {
         return "UnifiedDelivery".toUpperCase();
+    }
+
+    @Override
+    public ResponseEntity<ApiSingleResponse<UnifiedDelivery, UnifiedDeliveryDTO>> findDtoByUuid(UUID id) {
+        // Get the base response from the superclass
+        ResponseEntity<ApiSingleResponse<UnifiedDelivery, UnifiedDeliveryDTO>> base = super.findDtoByUuid(id);
+        ApiSingleResponse<UnifiedDelivery, UnifiedDeliveryDTO> body = base.getBody();
+        if (body == null || body.getData() == null) {
+            return base;
+        }
+
+        UnifiedDeliveryDTO u = body.getData();
+
+        // Ensure QC list is initialized
+        if (u.getQualityControlResults() == null) {
+            u.setQualityControlResults(new HashSet<>());
+        }
+
+        // If we have an olive lot number, try to fetch its oil reception and merge QC results
+        String lotOliveNumber = u.getLotOliveNumber();
+        if (lotOliveNumber != null && !lotOliveNumber.isBlank()) {
+            UUID oliveLotUuid = null;
+            try {
+                oliveLotUuid = UUID.fromString(lotOliveNumber);
+            } catch (IllegalArgumentException ignore) {
+                // not a UUID; skip lookup
+            }
+
+            if (oliveLotUuid != null) {
+                UnifiedDeliveryDTO oilReception = unifiedDeliveryService.getByOliveLotNumber(oliveLotUuid);
+                if (oilReception != null && oilReception.getQualityControlResults() != null) {
+                    u.getQualityControlResults().addAll(oilReception.getQualityControlResults());
+                }
+            }
+        }
+
+        // Return the modified payload
+        return ResponseEntity.ok(body);
     }
 
 }

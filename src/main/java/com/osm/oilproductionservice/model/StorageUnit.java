@@ -26,9 +26,8 @@ public class StorageUnit extends BaseEntity {
     private Double avgCost = 0.0;
     private Double totalCost = 0.0;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "oil_type")
-    private OilType oilType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oilVariety; // OIL_VARIETY
     @Enumerated(EnumType.STRING)
     private StorageStatus status;
 
@@ -134,12 +133,12 @@ public class StorageUnit extends BaseEntity {
         this.lastInspectionDate = lastInspectionDate;
     }
 
-    public OilType getOilType() {
-        return oilType;
+    public BaseType getOilVariety() {
+        return oilVariety;
     }
 
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
+    public void setOilVariety(BaseType oilVariety) {
+        this.oilVariety = oilVariety;
     }
 
     public StorageStatus getStatus() {
