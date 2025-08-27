@@ -267,8 +267,13 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             oilTransaction.setTotalPrice();
             oilTransaction.setTransactionState(TransactionState.COMPLETED);
             // Approve oil credit asynchronously
-            oilCeditFeignService.approveOilCredit(oilTransaction.getExternalId()).thenAccept(_ -> oilTransactionRepository.save(oilTransaction));
-        }
+            oilCeditFeignService
+                    .approveOilCredit(oilTransaction.getExternalId())
+                    .thenRun(() -> oilTransactionRepository.save(oilTransaction))
+                    .exceptionally(ex -> {
+                        OSMLogger.logException(this.getClass(), "approveOilCredit failed", ex);
+                        return null;
+                    });        }
         OSMLogger.logMethodExit(this.getClass(), "handleLoan", oilTransaction);
         OSMLogger.logPerformance(this.getClass(), "handleLoan", startTime, System.currentTimeMillis());
     }
