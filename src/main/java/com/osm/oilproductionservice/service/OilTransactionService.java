@@ -33,6 +33,7 @@ import java.util.UUID;
  * Handles business logic for different transaction types and states, and integrates with storage and credit services.
  */
 @Service
+@Transactional
 public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTransactionDTO, OilTransactionDTO> {
     private final OilTransactionRepository oilTransactionRepository;
     private final StorageUnitRepo storageUnitRepo;
