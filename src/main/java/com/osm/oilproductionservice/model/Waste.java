@@ -1,6 +1,8 @@
 package com.osm.oilproductionservice.model;
 
 import com.osm.oilproductionservice.enums.WasteType;
+import com.xdev.communicator.models.shared.enums.Currency;
+import com.xdev.communicator.models.shared.enums.PaymentMethod;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
@@ -25,7 +27,42 @@ public class Waste extends BaseEntity {
     private String invoiceNumber;
     private Boolean paid;
     private Instant paymentDate;
+    private Double paidAmount;
+    private Double unpaidAmount;
+    private PaymentMethod paymentMethod;
+    private Currency Currency;
 
+    public Currency getCurrency() {
+        return Currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        Currency = currency;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public Double getUnpaidAmount() {
+        return unpaidAmount;
+    }
+
+    public void setUnpaidAmount(Double unpaidAmount) {
+        this.unpaidAmount = unpaidAmount;
+    }
+
+    public Double getPaidAmount() {
+        return paidAmount;
+    }
+
+    public void setPaidAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
+    }
 
     private String storageLocationCode;
     private UUID customer;

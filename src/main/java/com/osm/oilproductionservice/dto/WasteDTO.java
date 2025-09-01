@@ -2,6 +2,8 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.WasteType;
 import com.osm.oilproductionservice.model.Waste;
+import com.xdev.communicator.models.shared.enums.Currency;
+import com.xdev.communicator.models.shared.enums.PaymentMethod;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.math.BigDecimal;
@@ -21,8 +23,12 @@ public class WasteDTO extends BaseDto<Waste> {
     private UUID customer;
     private SupplierDto supplier;
     private String notes;
+    private Double paidAmount;
+    private Double unpaidAmount;
+    private PaymentMethod paymentMethod;
+    private Currency Currency;
 
-    public SupplierDto getSupplier() {
+    public  SupplierDto getSupplier() {
         return supplier;
     }
 
@@ -118,5 +124,35 @@ public class WasteDTO extends BaseDto<Waste> {
         this.notes = notes;
     }
 
+    public Double getPaidAmount() {
+        return paidAmount;
+    }
 
+    public void setPaidAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
+    }
+
+    public Double getUnpaidAmount() {
+        return unpaidAmount;
+    }
+
+    public void setUnpaidAmount(Double unpaidAmount) {
+        this.unpaidAmount = unpaidAmount;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public Currency getCurrency() {
+        return Currency;
+    }
+
+    public void setCurrency(Currency currency) {
+        Currency = currency;
+    }
 }
