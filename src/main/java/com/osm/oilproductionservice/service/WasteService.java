@@ -37,7 +37,7 @@ public class WasteService extends BaseServiceImpl<Waste, WasteDTO, WasteDTO> {
     }
 
     @Override
-    public Set<Action> actionsMapping(Waste millMachine) {
+    public Set<Action> actionsMapping(Waste waste) {
         Set<Action> actions = new HashSet<>();
         actions.add(Action.UPDATE);
         actions.add(Action.DELETE);

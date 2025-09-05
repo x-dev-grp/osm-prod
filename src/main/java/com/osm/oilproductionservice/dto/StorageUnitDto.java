@@ -23,6 +23,25 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
 
     private BaseTypeDto oilVariety; // OIL_VARIETY
     private StorageStatus status = StorageStatus.AVAILABLE;
+    private Boolean paidStorage;
+    private Double monthlyRentalPrice;
+
+    public Double getMonthlyRentalPrice() {
+        return monthlyRentalPrice;
+    }
+
+    public void setMonthlyRentalPrice(Double monthlyRentalPrice) {
+        this.monthlyRentalPrice = monthlyRentalPrice;
+    }
+
+    public Boolean getPaidStorage() {
+        return paidStorage;
+    }
+
+    public void setPaidStorage(Boolean paidStorage) {
+        this.paidStorage = paidStorage;
+    }
+
 
     public BaseTypeDto getOilVariety() {
         return oilVariety;

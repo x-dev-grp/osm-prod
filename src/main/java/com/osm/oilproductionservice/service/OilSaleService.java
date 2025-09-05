@@ -45,7 +45,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
     @Override
     public Set<Action> actionsMapping(OilSale oilSale) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ,Action.GEN_INVOICE));
         return actions;
     }
 

@@ -23,7 +23,7 @@ public class OilContainerService extends BaseServiceImpl<OilContainer, OilContai
     @Override
     public Set<Action> actionsMapping(OilContainer OilContainer) {
         Set<Action> actions = new HashSet<>();
-        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ, Action.MAINTENANCE));
+        actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
         return actions;
     }
 }

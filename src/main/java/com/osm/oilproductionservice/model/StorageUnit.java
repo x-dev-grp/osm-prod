@@ -1,6 +1,5 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -36,6 +35,25 @@ public class StorageUnit extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", unique = true)
     private Supplier supplier;
+    private Boolean paidStorage  ;
+    private Double monthlyRentalPrice  ;
+
+    public double getMonthlyRentalPrice() {
+        return monthlyRentalPrice;
+    }
+
+    public void setMonthlyRentalPrice(double monthlyRentalPrice) {
+        this.monthlyRentalPrice = monthlyRentalPrice;
+    }
+
+    public boolean isPaidStorage() {
+        return paidStorage;
+    }
+
+    public void setPaidStorage(boolean paidStorage) {
+        this.paidStorage = paidStorage;
+    }
+
 
     public Supplier getSupplier() {
         return supplier;
