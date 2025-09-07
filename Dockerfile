@@ -1,44 +1,42 @@
-# syntax=docker/dockerfile:1.4   # enable BuildKit secrets & cache
+# syntax=docker/dockerfile:1.4
 
-############################
-# ⬆️ 1) BUILD STAGE (Maven)
-############################
+########## BUILD ##########
 FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# 1) Pre-fetch deps for better cache hits
+# 1) cache deps
 COPY pom.xml .
-RUN --mount=type=secret,id=maven_settings,dst=/root/.m2/settings.xml \
+RUN --mount=type=secret,id=maven_settings \
     --mount=type=cache,target=/root/.m2 \
+    mkdir -p /root/.m2 && \
+    cp /run/secrets/maven_settings /root/.m2/settings.xml && \
     mvn -B -s /root/.m2/settings.xml -DskipTests dependency:go-offline
 
-# 2) Build the app
+# 2) compile
 COPY src ./src
-RUN --mount=type=secret,id=maven_settings,dst=/root/.m2/settings.xml \
+RUN --mount=type=secret,id=maven_settings \
     --mount=type=cache,target=/root/.m2 \
+    mkdir -p /root/.m2 && \
+    cp /run/secrets/maven_settings /root/.m2/settings.xml && \
     mvn -B -s /root/.m2/settings.xml -DskipTests clean package
 
-############################
-# ⬇️ 2) RUNTIME STAGE (JRE)
-############################
+########## RUNTIME ##########
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-
-# run as non-root (good practice)
+# run as non-root
 RUN useradd -r -u 10001 -g root appuser
 
-# copy the fat JAR produced in the build stage
+# copy jar
 COPY --from=build /app/target/*.jar /app/app.jar
 
 # service port for productionservice
 ARG SERVICE_PORT=8083
 ENV SERVER_PORT=${SERVICE_PORT}
 
-# sensible defaults for containers
+# sensible JVM defaults in containers
 ENV JAVA_TOOL_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75" \
     SPRING_PROFILES_ACTIVE=prod
 
 EXPOSE ${SERVICE_PORT}
-
 USER appuser
 ENTRYPOINT ["java","-jar","/app/app.jar"]
