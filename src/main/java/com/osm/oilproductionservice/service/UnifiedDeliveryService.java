@@ -992,13 +992,13 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         switch (delivery.getOperationType()) {
             case OIL_PURCHASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.OIL_PURCHASE);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.OIL_PURCHASE,OperationType.OIL_PURCHASE);
             case OLIVE_PURCHASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE,OperationType.OLIVE_PURCHASE);
             case BASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.SUPPLIER_PAYMENT);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.SUPPLIER_PAYMENT,OperationType.BASE);
             case SIMPLE_RECEPTION ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT,OperationType.SIMPLE_RECEPTION);
         }
 
     }
@@ -1010,9 +1010,10 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         deliveryRepository.save(delivery);
     }
 
-    private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, UnifiedDelivery delivery, TransactionDirection direction, TransactionType transactionType) {
+    private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, UnifiedDelivery delivery, TransactionDirection direction, TransactionType transactionType,OperationType operationtype) {
         // Build Financial Transaction DTO
         FinancialTransactionDto financialTransactionDto = new FinancialTransactionDto();
+        financialTransactionDto.setOperationType(operationtype);
         financialTransactionDto.setTransactionType(transactionType);
         financialTransactionDto.setDirection(direction);
         financialTransactionDto.setAmount(BigDecimal.valueOf(amount));
