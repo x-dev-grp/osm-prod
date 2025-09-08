@@ -11,25 +11,25 @@ spring:
     banner-mode: console
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/osmproduction}
-    username: ${DB_USER:postgres}
-    password: ${DB_PASS:root}
+    url: jdbc:postgresql://localhost:5432/osmproduction
+    username: postgres
+    password: root
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: ${HIBERNATE_DDL_AUTO:update}
-    show-sql: ${SHOW_SQL:false}
+      ddl-auto: update
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   data:
     jdbc:
       dialect: postgresql
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USER:xdevgroupe@gmail.com}
-    password: ${MAIL_PASS:changeme}
+    host: smtp.gmail.com
+    port: 587
+    username: xdevgroupe@gmail.com
+    password: changeme
     protocol: smtp
     default-encoding: UTF-8
     properties:
