@@ -26,6 +26,7 @@ public class PlanningController {
     public static final String RENDEMENT = "rendement";
     public static final String UNPAID_PRICE = "unpaidPrice";
     public static final String AUTO_SET_STORAGE = "autoSetStorage";
+    public static final String TRT_DURATION = "triturationDurationInMinutes";
 
     private final PlanningService planningService;
 
@@ -74,6 +75,7 @@ public class PlanningController {
             Double oilQuantity = getDouble(body, OIL_QUANTITY);
             Double rendement   = getDouble(body, RENDEMENT);
             Double unpaidPrice = getDouble(body, UNPAID_PRICE);
+            int duree = getInt(body, TRT_DURATION);
 
             if (oilQuantity == null && rendement == null && unpaidPrice == null) {
                 return ResponseEntity
@@ -84,7 +86,7 @@ public class PlanningController {
             if(body.get(AUTO_SET_STORAGE)!=null && body.get(AUTO_SET_STORAGE) instanceof Boolean b) {
                autoSetStorage= b;
             }
-            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice,autoSetStorage);
+            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice,autoSetStorage,duree);
             return ResponseEntity
                     .ok("Lot completed successfully");
 
@@ -105,6 +107,11 @@ public class PlanningController {
             OSMLogger.logPerformance(
                     this.getClass(), "completeLot", startTime, System.currentTimeMillis());
         }
+    }
+
+    private int getInt(Map<String, Object> body, String key) {
+        Object v = body.get(key);
+        return (v instanceof Number) ? ((Number) v).intValue() : 0;
     }
 
     /* ───── MARK GLOBAL-LOT completed ───── */

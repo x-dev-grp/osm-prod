@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -281,7 +283,7 @@ public class PlanningService {
     }
 
     @Transactional
-    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice,boolean autoSetStorage ) {
+    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice,boolean autoSetStorage,int duree ) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "markLotCompleted", lotNumber, oilQuantity, rendement);
         try {
@@ -308,14 +310,17 @@ public class PlanningService {
             }
             UnifiedDelivery lot = delivery.getFirst();
 
-            lot.setOilQuantity(oilQuantity);
-            lot.setRendement(rendement);
+            lot.setOilQuantity( normalize3(oilQuantity).doubleValue() );
+            lot.setRendement(   normalize3(rendement).doubleValue() );
+            lot.setTrtDuration(duree);
 
             lot.setOilType(lot.getOilType());
             lot.setOilVariety(lot.getOliveVariety());
             lot.setStatus(OliveLotStatus.COMPLETED);
 
             deliveryRepo.save(lot);
+            updateMachinWorkTime(lot.getMillMachine(),lot.getTrtDuration());
+
             if (lot.getOperationType() == OperationType.EXCHANGE ||
                     lot.getOperationType() == OperationType.BASE ||
                     lot.getOperationType() == OperationType.OLIVE_PURCHASE) {
@@ -323,8 +328,8 @@ public class PlanningService {
 
             }
             if(lot.getOperationType()==OperationType.SIMPLE_RECEPTION){
-                lot.setPrice(unpaidPrice);
-                lot.setUnpaidAmount(unpaidPrice);
+                lot.setPrice(normalize3(unpaidPrice).doubleValue());
+                lot.setUnpaidAmount(normalize3(unpaidPrice).doubleValue());
 
             }
             if(autoSetStorage ) {
@@ -354,6 +359,15 @@ public class PlanningService {
         }
     }
 
+    private void updateMachinWorkTime(MillMachine millMachine, Integer trtDuration) {
+        MillMachine machin = millRepo.findById(millMachine.getId()).orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millMachine.getId()));
+        if (machin != null) {
+            long currentWorkTime = machin.getHoursOperated() != null ? machin.getHoursOperated() : 0;
+            machin.setHoursOperated((currentWorkTime + (trtDuration != null ? trtDuration : 0))/60);
+            millRepo.save(machin);
+        }
+    }
+
     @Transactional
 
     public void markGlobalLotCompleted(String globalLotNumber, List<ChildLotCompletionDto> childLots) {
@@ -377,7 +391,7 @@ public class PlanningService {
             }
 
             // delegate each child
-            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice(),false));
+            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice(),false,dto.getTrtDuration()));
 
             log.info("Global lot {} completed with {} child lots", globalLotNumber, childLots.size());
         } catch (Exception e) {
@@ -387,5 +401,20 @@ public class PlanningService {
             OSMLogger.logMethodExit(this.getClass(), "markGlobalLotCompleted", null);
             OSMLogger.logPerformance(this.getClass(), "markGlobalLotCompleted", startTime, System.currentTimeMillis());
         }
+    }
+    private static BigDecimal normalize3(Number n) {
+        if (n == null) return null;
+        // Use BigDecimal(String) to avoid double precision artifacts
+        BigDecimal bd = (n instanceof BigDecimal)
+                ? (BigDecimal) n
+                : new BigDecimal(n.toString());
+
+        // Round to 3 decimals, then remove trailing zeros (scale becomes 0..3)
+        bd = bd.setScale(3, RoundingMode.HALF_UP).stripTrailingZeros();
+
+        // Normalize -0 to 0
+        if (bd.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
+
+        return bd;
     }
 }

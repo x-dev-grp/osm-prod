@@ -94,8 +94,30 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private MillMachine millMachine;
     private Double oliveQuantity;
+    private Double poidsCamionVide;
+
+    public Double getPoidsCamionVide() {
+        return poidsCamionVide;
+    }
+
+    public void setPoidsCamionVide(Double poidsCamionVide) {
+        this.poidsCamionVide = poidsCamionVide;
+    }
     private String parcel;
 
+    private Integer trtDuration;
+
+    public Integer getTrtDuration() {
+        return trtDuration;
+    }
+
+    public void setTrtDuration(Integer trtDuration) {
+        this.trtDuration = trtDuration;
+    }
+
+    public boolean isPaid() {
+        return paid;
+    }
     public boolean getPaid() {
         return paid;
     }
