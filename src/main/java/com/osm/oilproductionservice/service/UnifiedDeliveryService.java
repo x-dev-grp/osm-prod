@@ -222,7 +222,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         OSMLogger.logMethodEntry(this.getClass(), "mapOliveDeliveryActions", delivery);
 
         if (delivery == null) {
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[mapOliveDeliveryActions] Delivery is null, returning empty action set");
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN,
+                    "[mapOliveDeliveryActions] Delivery is null, returning empty action set");
             return new HashSet<>();
         }
 
@@ -233,57 +234,67 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         switch (delivery.getStatus()) {
             case NEW -> {
-                actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY ));
-
+                actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
             }
             case IN_PROGRESS -> {
-                break;
+                // No extra actions for now
             }
             case OLIVE_CONTROLLED -> {
-                actions.addAll(Set.of(Action.DELETE, Action.UPDATE,Action.GEN_PDF_QC_OLIVE));
-                switch (delivery.getOperationType()) {
-                    case EXCHANGE,OLIVE_PURCHASE -> {
-                        actions.add(Action.SET_PRICE);
+                actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.GEN_PDF_QC_OLIVE));
 
+                switch (delivery.getOperationType()) {
+                    case EXCHANGE, OLIVE_PURCHASE -> {
+                        actions.add(Action.SET_PRICE);
                     }
                 }
             }
             case COMPLETED -> {
-                actions.add( Action.GEN_PDF_QC_OLIVE);
-                switch (delivery.getOperationType()) {
+                actions.add(Action.GEN_PDF_QC_OLIVE);
+                actions.add(Action.GEN_PDF_PRODUCTION); // ✅ Bon de production quand réception olive terminée
 
+                switch (delivery.getOperationType()) {
                     case SIMPLE_RECEPTION -> {
                         // CRITICAL: Check payment status for simple reception
-                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s", delivery.getLotNumber(),delivery.getPaid());
+                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                                "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s",
+                                delivery.getLotNumber(), delivery.getPaid());
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.OIL_QUALITY);
                             actions.add(Action.PAY);
-                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
+                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                                    "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
                         }
                     }
                     case BASE, OLIVE_PURCHASE -> {
-                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Adding OIL_RECEPTION for %s operation delivery %s", delivery.getOperationType(), delivery.getLotNumber());
+                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                                "[mapOliveDeliveryActions] Adding OIL_RECEPTION for %s operation delivery %s",
+                                delivery.getOperationType(), delivery.getLotNumber());
+
                         actions.add(Action.OIL_RECEPTION);
                         actions.add(Action.GEN_PDF_QC_OIL);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.PAY);
-                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
+                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                                    "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
                         }
                     }
-
-
                 }
-
+            }
+            case IN_STOCK -> {
+                // ✅ Même logique que COMPLETED → possibilité de générer bon de production
+                actions.add(Action.GEN_PDF_PRODUCTION);
             }
         }
 
-        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Final actions for delivery %s: %s", delivery.getLotNumber(), actions);
+        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                "[mapOliveDeliveryActions] Final actions for delivery %s: %s", delivery.getLotNumber(), actions);
         OSMLogger.logMethodExit(this.getClass(), "mapOliveDeliveryActions", actions);
         OSMLogger.logPerformance(this.getClass(), "mapOliveDeliveryActions", startTime, System.currentTimeMillis());
         return actions;
     }
+
 
     /**
      * Maps available actions for oil deliveries based on their status.
@@ -306,6 +317,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         actions.add(Action.GEN_PDF);
         actions.add(Action.GEN_INVOICE);
 
+
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Mapping actions for oil delivery %s (Status: %s, Operation: %s)", delivery.getLotNumber(), delivery.getStatus(), delivery.getOperationType());
 
         switch (delivery.getStatus()) {
@@ -317,10 +329,16 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding OIL_CONTROLLED status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_QC_OIL);
                 actions.add(Action.SET_PRICE);
+                actions.add(Action.GEN_PDF_PRODUCTION);
             }
             case WAITING_FOR_PAYMENT_DETAILS -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding WAITING_FOR_PAYMENT_DETAILS status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.COMPLETE_PAYMENT_DETAILS);
+
+            }
+            case COMPLETED,IN_STOCK -> {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
+                actions.add(Action.GEN_PDF_PRODUCTION);
             }
         }
 

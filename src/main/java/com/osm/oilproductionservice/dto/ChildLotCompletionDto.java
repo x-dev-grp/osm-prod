@@ -6,6 +6,9 @@ public class ChildLotCompletionDto {
     private Double rendement;
     private Double unpaidPrice;
 
+    private int trtDuration;
+    public int getTrtDuration() {return trtDuration;}
+    public void setTrtDuration(int trtDuration) {this.trtDuration = trtDuration;}
     public ChildLotCompletionDto() {}
     public String getLotNumber() { return lotNumber; }
     public void setLotNumber(String lotNumber) { this.lotNumber = lotNumber; }
