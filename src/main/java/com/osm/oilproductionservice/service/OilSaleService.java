@@ -4,13 +4,13 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.OilSaleDTO;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.PaymentDTO;
+import com.osm.oilproductionservice.enums.SaleStatus;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.repository.OilSaleRepository;
  import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import com.xdev.communicator.models.shared.enums.TransactionDirection;
-import com.xdev.communicator.models.shared.enums.TransactionType;
+import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -23,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import static com.xdev.communicator.models.shared.enums.OperationType.OIL_SALE;
 
 /**
  * Service class for managing oil sales operations
@@ -80,6 +82,9 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
         double payment = paymentDTO.getAmount() != null ? paymentDTO.getAmount() : 0d;
 
         oilSale.setPaid(payment > 0 && payment == unpaidAmount.doubleValue());
+        if(payment > 0 && payment == unpaidAmount.doubleValue()){
+            oilSale.setStatus(SaleStatus.DELIVERED);
+        }
         oilSale.setPaiedAmount( (paidAmount.add(BigDecimal.valueOf(payment))).doubleValue());
         oilSale.setUnpaidAmount((unpaidAmount.subtract(BigDecimal.valueOf(payment))).doubleValue());
 
@@ -97,7 +102,14 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
             financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber());
         }
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
-        financialTransactionFeignService.create(financialTransactionDto);
+        financialTransactionDto.setResourceName(ResourceName.OILSALE);
+         financialTransactionDto.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : PaymentMethod.CASH);
+         financialTransactionDto.setLotNumber(null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+         financialTransactionDto.setApprovalDate(LocalDateTime.now());
+        financialTransactionDto.setOperationType(OIL_SALE);
+        financialTransactionDto.setExternalTransactionId( oilSale.getId().toString());
+         financialTransactionFeignService.create(financialTransactionDto);
 
     }
 }

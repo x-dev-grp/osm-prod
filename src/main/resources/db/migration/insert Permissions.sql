@@ -361,7 +361,7 @@ SELECT public.seed_permissions_from_json($$
         "DELETE",
         "GEN_PDF"
       ]
-    }
+    },
     "CONTRACT": {
       "description": "Employee contracts",
       "module": "HR",
