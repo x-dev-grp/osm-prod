@@ -361,7 +361,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case COMPLETED,IN_STOCK -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_PRODUCTION);
+ 
                 actions.add(Action.GEN_INVOICE);
+ 
             }
         }
 
