@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
+import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.xdev.xdevbase.dtos.BaseDto;
@@ -25,6 +26,8 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private StorageStatus status = StorageStatus.AVAILABLE;
     private Boolean paidStorage;
     private Double monthlyRentalPrice;
+    private QualityGrades qualityGrade;
+    private String lotNumber;
 
     public Double getMonthlyRentalPrice() {
         return monthlyRentalPrice;
@@ -170,5 +173,21 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
 
     public void setTotalCost(Double totalCost) {
         this.totalCost = totalCost;
+    }
+
+    public QualityGrades getQualityGrade() {
+        return qualityGrade;
+    }
+
+    public void setQualityGrade(QualityGrades qualityGrade) {
+        this.qualityGrade = qualityGrade;
+    }
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
     }
 }

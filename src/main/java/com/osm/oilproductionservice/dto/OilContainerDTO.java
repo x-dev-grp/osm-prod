@@ -21,6 +21,7 @@ public class OilContainerDTO extends BaseDto<OilContainer> {
     private String storageLocationCode;
     private String imageUrl;
     private String certification;
+    private String lotNumber;
 
     public String getName() {
         return name;
@@ -120,5 +121,13 @@ public class OilContainerDTO extends BaseDto<OilContainer> {
 
     public void setCertification(String certification) {
         this.certification = certification;
+    }
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
     }
 }

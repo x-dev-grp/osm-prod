@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 public class OilContainer extends BaseEntity {
 
     private String name;
+    private String lotNumber;
     private String description;
     /**
      * Liters capacity, e.g. 1.00, 5.00
@@ -56,6 +57,14 @@ public class OilContainer extends BaseEntity {
      * e.g. "FDA food-grade"
      */
     private String certification;
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
+    }
 
     public String getName() {
         return name;

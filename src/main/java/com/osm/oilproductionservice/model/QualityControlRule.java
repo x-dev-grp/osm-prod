@@ -35,6 +35,16 @@ public class QualityControlRule extends BaseEntity implements Serializable {
     // New field for textValues
     private String ruleTextValue;
 
+    private String rawStringValue;
+
+
+    public String getRawStringValue() {
+        return rawStringValue;
+    }
+
+    public void setRawStringValue(String rawStringValue) {
+        this.rawStringValue = rawStringValue;
+    }
 
     public String getRuleKey() {
         return ruleKey;

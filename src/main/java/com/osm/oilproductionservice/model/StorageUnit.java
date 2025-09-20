@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.model;
 
+import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -13,6 +14,11 @@ import java.time.LocalDateTime;
 public class StorageUnit extends BaseEntity {
 
     private String name;
+
+    private String lotNumber;
+    @Enumerated(EnumType.STRING)
+    private QualityGrades qualityGrade;
+
     private String location;
     private String description;
 
@@ -29,6 +35,7 @@ public class StorageUnit extends BaseEntity {
     private BaseType oilVariety; // OIL_VARIETY
     @Enumerated(EnumType.STRING)
     private StorageStatus status;
+
 
     private LocalDateTime lastFillDate;
     private LocalDateTime lastEmptyDate;
@@ -76,6 +83,33 @@ public class StorageUnit extends BaseEntity {
                 : 0.0;
     }
 
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
+    }
+
+    public QualityGrades getQualityGrade() {
+        return qualityGrade;
+    }
+
+    public void setQualityGrade(QualityGrades qualityGrade) {
+        this.qualityGrade = qualityGrade;
+    }
+
+    public Boolean getPaidStorage() {
+        return paidStorage;
+    }
+
+    public void setPaidStorage(Boolean paidStorage) {
+        this.paidStorage = paidStorage;
+    }
+
+    public void setMonthlyRentalPrice(Double monthlyRentalPrice) {
+        this.monthlyRentalPrice = monthlyRentalPrice;
+    }
     public String getName() {
         return name;
     }

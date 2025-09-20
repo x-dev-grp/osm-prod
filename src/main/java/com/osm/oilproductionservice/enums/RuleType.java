@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum RuleType {
     NUMERIC,
     BOOLEAN,
+    RAW_STRING,
     STRING;
 
     @JsonCreator

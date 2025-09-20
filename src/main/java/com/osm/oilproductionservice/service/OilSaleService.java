@@ -102,8 +102,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
             financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber());
         }
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
-        financialTransactionDto.setResourceName(ResourceName.OILSALE);
-         financialTransactionDto.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : PaymentMethod.CASH);
+          financialTransactionDto.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : PaymentMethod.CASH);
          financialTransactionDto.setLotNumber(null);
         financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
          financialTransactionDto.setApprovalDate(LocalDateTime.now());

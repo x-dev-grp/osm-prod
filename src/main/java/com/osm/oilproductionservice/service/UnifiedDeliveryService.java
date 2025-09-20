@@ -105,7 +105,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         } else {
             delivery.setStatus(OliveLotStatus.WAITING);
         }
-
+        if (delivery.getDeliveryType()== DeliveryType.OIL){
+            delivery.setStatus(OliveLotStatus.NEW);
+        }
 
         // Save entity
         UnifiedDelivery savedDelivery = deliveryRepository.saveAndFlush(delivery);
@@ -146,6 +148,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         } else {
             existing.setStatus(OliveLotStatus.WAITING);
         }
+        if (existing.getDeliveryType()== DeliveryType.OIL){
+            existing.setStatus(OliveLotStatus.NEW);
+        }
         // 5. Resolve and set the OliveVariety relationship
         if (dto.getOliveVariety() != null && dto.getOliveVariety().getId() != null) {
             BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId())
@@ -158,7 +163,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         }
 
          // 4. Persist changes
-        UnifiedDelivery updated = deliveryRepository.saveAndFlush(existing);
+        UnifiedDelivery updated = deliveryRepository.save(existing);
 
         OSMLogger.logMethodExit(this.getClass(), "update", updated);
         OSMLogger.logPerformance(this.getClass(), "update", startTime, System.currentTimeMillis());

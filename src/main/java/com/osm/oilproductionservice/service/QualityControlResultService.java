@@ -31,19 +31,15 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
 
     private static final Logger log = LoggerFactory.getLogger(QualityControlResultService.class);
     private final DeliveryRepository deliveryRepository;
-    Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
-
     private final QualityControlResultRepository repository;
-
     private final QualityControlRuleRepository ruleRepository;
     private final DeliveryRepository deliveryRepo;
-
     private final ModelMapper modelMapper;
-
     private final UnifiedDeliveryService unifiedDeliveryService;
     private final QualityControlResultRepository qualityControlResultRepository;
     private final OilTransactionRepository oilTransactionRepository;
     private final OilTransactionService oilTransactionService;
+    Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
 
     public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, QualityControlResultRepository qualityControlResultRepository, OilTransactionRepository oilTransactionRepository, OilTransactionService oilTransactionService, DeliveryRepository deliveryRepository) {
         super(repository, modelMapper);
@@ -94,33 +90,26 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 1) Ensure all DTOs point to the same delivery
         UUID deliveryId = dtos.getFirst().getDeliveryId();
         if (dtos.stream().anyMatch(dto -> !deliveryId.equals(dto.getDeliveryId()))) {
-            throw new IllegalArgumentException(
-                    "All QualityControlResultDto must reference the same delivery"
-            );
+            throw new IllegalArgumentException("All QualityControlResultDto must reference the same delivery");
         }
 
         // 2) Load that delivery
-        UnifiedDelivery delivery = deliveryRepo.findById(deliveryId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Delivery not found for ID " + deliveryId
-                ));
+        UnifiedDelivery delivery = deliveryRepo.findById(deliveryId).orElseThrow(() -> new IllegalArgumentException("Delivery not found for ID " + deliveryId));
 
         // 3) Load & validate rules
         Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
 
 
         // 5) Map each DTO → entity
-        List<QualityControlResult> entities = dtos.stream()
-                .map(dto -> {
-                    QualityControlRule rule = ruleMap.get(dto.getRule().getId());
-                    validateMeasuredValue(dto.getMeasuredValue(), rule);
-                    QualityControlResult e = new QualityControlResult();
-                    e.setRule(rule);
-                    e.setMeasuredValue(dto.getMeasuredValue());
-                    e.setDelivery(delivery);
-                    return e;
-                })
-                .toList();
+        List<QualityControlResult> entities = dtos.stream().map(dto -> {
+            QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+            validateMeasuredValue(dto.getMeasuredValue(), rule);
+            QualityControlResult e = new QualityControlResult();
+            e.setRule(rule);
+            e.setMeasuredValue(dto.getMeasuredValue());
+            e.setDelivery(delivery);
+            return e;
+        }).toList();
 
         Optional<QualityControlResult> match = entities.stream()
                 // 2) match on measuredValue ∈ allowed
@@ -139,7 +128,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         // 7) Mark delivery as quality-checked
         delivery.setHasQualityControl(true);
 
-        if (delivery.getOperationType() == OperationType.BASE && delivery.getDeliveryType() == DeliveryType.OLIVE ) {
+        if (delivery.getOperationType() == OperationType.BASE && delivery.getDeliveryType() == DeliveryType.OLIVE) {
             delivery.setStatus(OliveLotStatus.PROD_READY);
         } else {
             delivery.setStatus(delivery.getDeliveryType() == DeliveryType.OIL ? OliveLotStatus.OIL_CONTROLLED : OliveLotStatus.OLIVE_CONTROLLED);
@@ -147,9 +136,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         deliveryRepo.save(delivery);
 
         // 8) Map back to DTOs
-        List<QualityControlResultDto> resultDtos = saved.stream()
-                .map(e -> modelMapper.map(e, QualityControlResultDto.class))
-                .toList();
+        List<QualityControlResultDto> resultDtos = saved.stream().map(e -> modelMapper.map(e, QualityControlResultDto.class)).toList();
         OSMLogger.logMethodExit(this.getClass(), "saveAll", resultDtos);
         OSMLogger.logPerformance(this.getClass(), "saveAll", startTime, System.currentTimeMillis());
         return resultDtos;
@@ -165,28 +152,24 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             return Collections.emptyList();
         }
         // You can add custom logic for idx here (e.g., link to a batch, etc.)
-      UnifiedDelivery newOIlRec=  unifiedDeliveryService.createOilRecFromOliveRecImpl(idx,true);
+        UnifiedDelivery newOIlRec = unifiedDeliveryService.createOilRecFromOliveRecImpl(idx, true);
         log.info("Saving QC results for idx: {} ({} results)", idx, dtos.size());
         // Validate rules
         Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
         // Map each DTO → entity (no delivery linkage)
-        List<QualityControlResult> entities = dtos.stream()
-                .map(dto -> {
-                    QualityControlRule rule = ruleMap.get(dto.getRule().getId());
-                    validateMeasuredValue(dto.getMeasuredValue(), rule);
-                    QualityControlResult e = new QualityControlResult();
-                    e.setRule(rule);
-                    e.setMeasuredValue(dto.getMeasuredValue());
-                    e.setDelivery(newOIlRec); // if you add an idx field to the entity
-                    return e;
-                })
-                .toList();
+        List<QualityControlResult> entities = dtos.stream().map(dto -> {
+            QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+            validateMeasuredValue(dto.getMeasuredValue(), rule);
+            QualityControlResult e = new QualityControlResult();
+            e.setRule(rule);
+            e.setMeasuredValue(dto.getMeasuredValue());
+            e.setDelivery(newOIlRec); // if you add an idx field to the entity
+            return e;
+        }).toList();
         // Persist QC results
         List<QualityControlResult> saved = repository.saveAll(entities);
         // Map back to DTOs
-        List<QualityControlResultDto> resultDtos = saved.stream()
-                .map(e -> modelMapper.map(e, QualityControlResultDto.class))
-                .toList();
+        List<QualityControlResultDto> resultDtos = saved.stream().map(e -> modelMapper.map(e, QualityControlResultDto.class)).toList();
         OSMLogger.logMethodExit(this.getClass(), "saveAllForIdx", resultDtos);
         OSMLogger.logPerformance(this.getClass(), "saveAllForIdx", startTime, System.currentTimeMillis());
         return resultDtos;
@@ -198,21 +181,17 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     private Map<UUID, QualityControlRule> fetchAndValidateRules(List<QualityControlResultDto> dtos) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "fetchAndValidateRules", dtos);
-        Set<UUID> ruleIds = dtos.stream()
-                .peek(dto -> {
-                    if (dto.getRule() == null || dto.getRule().getId() == null) {
-                        throw new IllegalArgumentException("Each DTO must reference a valid Rule ID");
-                    }
-                })
-                .map(dto -> dto.getRule().getId())
-                .collect(Collectors.toSet());
+        Set<UUID> ruleIds = dtos.stream().peek(dto -> {
+            if (dto.getRule() == null || dto.getRule().getId() == null) {
+                throw new IllegalArgumentException("Each DTO must reference a valid Rule ID");
+            }
+        }).map(dto -> dto.getRule().getId()).collect(Collectors.toSet());
 
         List<QualityControlRule> rules = ruleRepository.findAllById(ruleIds);
         if (rules.size() != ruleIds.size()) {
             throw new IllegalArgumentException("One or more provided Rule IDs were not found");
         }
-        Map<UUID, QualityControlRule> ruleMap = rules.stream()
-                .collect(Collectors.toMap(QualityControlRule::getId, Function.identity()));
+        Map<UUID, QualityControlRule> ruleMap = rules.stream().collect(Collectors.toMap(QualityControlRule::getId, Function.identity()));
         OSMLogger.logMethodExit(this.getClass(), "fetchAndValidateRules", ruleMap);
         OSMLogger.logPerformance(this.getClass(), "fetchAndValidateRules", startTime, System.currentTimeMillis());
         return ruleMap;
@@ -254,6 +233,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
                     }
                 }
                 break;
+
 
             default:
                 throw new IllegalArgumentException("Unknown rule type: " + ruleType);

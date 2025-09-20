@@ -81,7 +81,6 @@ public class WasteService extends BaseServiceImpl<Waste, WasteDTO, WasteDTO> {
         financialTransactionDto.setApprovedBy(null);
         financialTransactionDto.setExternalTransactionId(delivery.getExternalId().toString());
         financialTransactionDto.setOperationType(wasteSale);
-        financialTransactionDto.setResourceName(ResourceName.Waste);
 
         // Send to finance service
         financialTransactionFeignService.create(financialTransactionDto);

@@ -15,6 +15,7 @@ public class QualityControlRuleDto extends BaseDto<QualityControlRule> {
     private RuleType ruleType;
     private Boolean booleanValue;
     private String ruleTextValue; // New field for text values
+    private String rawStringValue;
 
     public String getRuleKey() {
         return ruleKey;
@@ -86,5 +87,13 @@ public class QualityControlRuleDto extends BaseDto<QualityControlRule> {
 
     public void setRuleTextValue(String ruleTextValue) {
         this.ruleTextValue = ruleTextValue;
+    }
+
+    public String getRawStringValue() {
+        return rawStringValue;
+    }
+
+    public void setRawStringValue(String rawStringValue) {
+        this.rawStringValue = rawStringValue;
     }
 }
