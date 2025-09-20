@@ -3,14 +3,10 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.WasteDTO;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
-import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.model.Waste;
 import com.osm.oilproductionservice.repository.WasteRepository;
 import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import com.xdev.communicator.models.shared.enums.Currency;
-import com.xdev.communicator.models.shared.enums.PaymentMethod;
-import com.xdev.communicator.models.shared.enums.TransactionDirection;
-import com.xdev.communicator.models.shared.enums.TransactionType;
+import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
@@ -64,10 +60,10 @@ public class WasteService extends BaseServiceImpl<Waste, WasteDTO, WasteDTO> {
         waste.setUnpaidAmount((unpaidAmount.subtract(BigDecimal.valueOf(payment))).doubleValue());
 
         wasteRepository.save(waste);
-        prepareFinanacalTransaction(paymentDTO, payment, waste, TransactionDirection.INBOUND, TransactionType.WASTE_SALE);
+        prepareFinanacalTransaction(paymentDTO, payment, waste, TransactionDirection.INBOUND, TransactionType.WASTE_SALE, OperationType.WASTE_SALE);
 
     }
-    private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, Waste delivery, TransactionDirection direction, TransactionType transactionType) {
+    private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, Waste delivery, TransactionDirection direction, TransactionType transactionType, OperationType wasteSale) {
         // Build Financial Transaction DTO
         FinancialTransactionDto financialTransactionDto = new FinancialTransactionDto();
         financialTransactionDto.setTransactionType(transactionType);
@@ -83,6 +79,9 @@ public class WasteService extends BaseServiceImpl<Waste, WasteDTO, WasteDTO> {
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());
         financialTransactionDto.setApprovedBy(null);
+        financialTransactionDto.setExternalTransactionId(delivery.getExternalId().toString());
+        financialTransactionDto.setOperationType(wasteSale);
+        financialTransactionDto.setResourceName(ResourceName.Waste);
 
         // Send to finance service
         financialTransactionFeignService.create(financialTransactionDto);

@@ -97,7 +97,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private Double oliveQuantity;
 
-    private String parcel;
+    private BaseTypeDto parcel;
 
     private Set<QualityControlResultDto> qualityControlResults = new HashSet<>();
 
@@ -362,11 +362,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.oliveQuantity = oliveQuantity;
     }
 
-    public String getParcel() {
+    public BaseTypeDto getParcel() {
         return parcel;
     }
 
-    public void setParcel(String parcel) {
+    public void setParcel(BaseTypeDto parcel) {
         this.parcel = parcel;
     }
 

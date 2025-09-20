@@ -103,7 +103,8 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setPoidsCamionVide(Double poidsCamionVide) {
         this.poidsCamionVide = poidsCamionVide;
     }
-    private String parcel;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType parcel;
 
     private Integer trtDuration;
 
@@ -407,11 +408,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.oliveQuantity = oliveQuantity;
     }
 
-    public String getParcel() {
+    public BaseType getParcel() {
         return parcel;
     }
 
-    public void setParcel(String parcel) {
+    public void setParcel(BaseType parcel) {
         this.parcel = parcel;
     }
 

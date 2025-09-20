@@ -2,13 +2,15 @@ package com.osm.oilproductionservice.enums;
 
 
 public enum TypeCategory {
-    WASTE_TYPE,           // Types of Waste (pits, pulp, wastewater)
-    REGION,               // Geographic regions or zones
-    SUPPLIER_TYPE,        // Farmer, Cooperative, Trader, etc.
-    OLIVE_VARIETY,        // Arbequina, Koroneiki, etc.
+    WASTE_TYPE,
+    REGION,
+    SUPPLIER_TYPE,
+    OLIVE_VARIETY,
     PRODUCTION_METHOD,
-    OPERATION_TYPE,// Extra Virgin, Pomace, etc.
+    OPERATION_TYPE,
     OIL_VARIETY,
-    OLIVE_TYPE, OIL_TYPE
+    OLIVE_TYPE,
+    OIL_TYPE,
+    PARCEL
 
 }

@@ -195,6 +195,23 @@ SELECT public.seed_permissions_from_json($$
         "PLANNING"
       ]
     },
+    "UNIFIEDDELIVERY": {
+      "description": "Delivery management",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "COMPLETE",
+        "TO_PROD",
+        "GEN_PDF",
+        "GEN_PDF_QC_OIL",
+        "GEN_PDF_QC_OLIVE",
+        "PLANNING"
+      ]
+    },
     "MACHINEPLAN": {
       "description": "Machine planning and scheduling",
       "module": "PRODUCTION",
@@ -361,7 +378,7 @@ SELECT public.seed_permissions_from_json($$
         "DELETE",
         "GEN_PDF"
       ]
-    }
+    },
     "CONTRACT": {
       "description": "Employee contracts",
       "module": "HR",
