@@ -103,7 +103,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         if (delivery.getPoidsCamionVide() != null) {
             delivery.setStatus(OliveLotStatus.NEW);
         } else {
-            dto.setStatus(OliveLotStatus.WAITING);
+            delivery.setStatus(OliveLotStatus.WAITING);
         }
 
 
@@ -126,7 +126,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         dto.setStatus(existing.getStatus());
         // Exclude oliveVariety from BeanUtils.copyProperties since we handle it separately
-        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety");
+        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety","parcel");
 
         // 3. Resolve and set the Supplier relationship
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
