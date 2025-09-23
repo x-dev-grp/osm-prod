@@ -10,6 +10,7 @@ import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFe
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.repository.OilSaleRepository;
  import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
+import com.xdev.communicator.models.shared.dto.SupplierDto;
 import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
@@ -104,7 +105,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
           financialTransactionDto.setPaymentMethod(paymentDTO.getPaymentMethod() != null ? paymentDTO.getPaymentMethod() : PaymentMethod.CASH);
          financialTransactionDto.setLotNumber(null);
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? modelMapper.map(paymentDTO.getSupplier(), SupplierDto.class) : null);
          financialTransactionDto.setApprovalDate(LocalDateTime.now());
         financialTransactionDto.setOperationType(OIL_SALE);
         financialTransactionDto.setExternalTransactionId( oilSale.getId().toString());

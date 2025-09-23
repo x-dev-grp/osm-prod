@@ -142,60 +142,58 @@ interact with the database and provides methods to manage the entities.
 ```java
 package com.osm.oilproductionservice.service;
 
-import com.osm.oilproductionservice.model.BaseType;
 import com.osm.oilproductionservice.model.customTypes.*;
 import com.osm.oilproductionservice.exception.ServiceException;
-import com.osm.oilproductionservice.repository.*;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GenericTypeService {
 
-    private final WasteTypeRepository wasteTypeRepository;
-    private final SupplierTypeEntityRepository supplierTypeEntityRepository;
-    private final OliveVarietyTypeRepository oliveVarietyTypeRepository;
-    private final OliveLotStatusTypeRepository oliveLotStatusTypeRepository;
+  private final WasteTypeRepository wasteTypeRepository;
+  private final SupplierTypeEntityRepository supplierTypeEntityRepository;
+  private final OliveVarietyTypeRepository oliveVarietyTypeRepository;
+  private final OliveLotStatusTypeRepository oliveLotStatusTypeRepository;
 
-    public GenericTypeService(WasteTypeRepository wasteTypeRepository, SupplierTypeEntityRepository supplierTypeEntityRepository, OliveVarietyTypeRepository oliveVarietyTypeRepository, OliveLotStatusTypeRepository oliveLotStatusTypeRepository) {
-        this.wasteTypeRepository = wasteTypeRepository;
-        this.supplierTypeEntityRepository = supplierTypeEntityRepository;
-        this.oliveVarietyTypeRepository = oliveVarietyTypeRepository;
-        this.oliveLotStatusTypeRepository = oliveLotStatusTypeRepository;
-    }
+  public GenericTypeService(WasteTypeRepository wasteTypeRepository, SupplierTypeEntityRepository supplierTypeEntityRepository, OliveVarietyTypeRepository oliveVarietyTypeRepository, OliveLotStatusTypeRepository oliveLotStatusTypeRepository) {
+    this.wasteTypeRepository = wasteTypeRepository;
+    this.supplierTypeEntityRepository = supplierTypeEntityRepository;
+    this.oliveVarietyTypeRepository = oliveVarietyTypeRepository;
+    this.oliveLotStatusTypeRepository = oliveLotStatusTypeRepository;
+  }
 
-    // Create a new type (e.g., WasteType, SupplierTypeEntity, OliveLotStatusType)
-    public Object createType(BaseType baseType, String type) {
-        switch (type.toLowerCase()) {
-            case "wastetype":
-                if (wasteTypeRepository.existsByName(((WasteType) baseType).getName())) {
-                    throw new ServiceException("A WasteType with this name already exists.");
-                }
-                return wasteTypeRepository.save((WasteType) baseType);
-
-            case "suppliertype":
-                if (supplierTypeEntityRepository.existsByName(((SupplierType) baseType).getName())) {
-                    throw new ServiceException("A Supplier with this name already exists.");
-                }
-                return supplierTypeEntityRepository.save((SupplierType) baseType);
-
-            case "olivelotstatustype":
-                if (oliveLotStatusTypeRepository.existsByName(((OliveLotStatusType) baseType).getName())) {
-                    throw new ServiceException("An OliveLotStatusType with this name already exists.");
-                }
-                return oliveLotStatusTypeRepository.save((OliveLotStatusType) baseType);
-
-            case "olivevarietytype":
-                if (oliveVarietyTypeRepository.existsByName(((OliveVarietyType) baseType).getName())) {
-                    throw new ServiceException("An OliveVarietyType with this name already exists.");
-                }
-                return oliveVarietyTypeRepository.save((OliveVarietyType) baseType);
-
-            default:
-                throw new ServiceException("Unknown type: " + type);
+  // Create a new type (e.g., WasteType, SupplierTypeEntity, OliveLotStatusType)
+  public Object createType(BaseType baseType, String type) {
+    switch (type.toLowerCase()) {
+      case "wastetype":
+        if (wasteTypeRepository.existsByName(((WasteType) baseType).getName())) {
+          throw new ServiceException("A WasteType with this name already exists.");
         }
-    }
+        return wasteTypeRepository.save((WasteType) baseType);
 
-    // Additional methods (getAllTypes, getType, updateType, deleteType) follow a similar pattern...
+      case "suppliertype":
+        if (supplierTypeEntityRepository.existsByName(((SupplierType) baseType).getName())) {
+          throw new ServiceException("A Supplier with this name already exists.");
+        }
+        return supplierTypeEntityRepository.save((SupplierType) baseType);
+
+      case "olivelotstatustype":
+        if (oliveLotStatusTypeRepository.existsByName(((OliveLotStatusType) baseType).getName())) {
+          throw new ServiceException("An OliveLotStatusType with this name already exists.");
+        }
+        return oliveLotStatusTypeRepository.save((OliveLotStatusType) baseType);
+
+      case "olivevarietytype":
+        if (oliveVarietyTypeRepository.existsByName(((OliveVarietyType) baseType).getName())) {
+          throw new ServiceException("An OliveVarietyType with this name already exists.");
+        }
+        return oliveVarietyTypeRepository.save((OliveVarietyType) baseType);
+
+      default:
+        throw new ServiceException("Unknown type: " + type);
+    }
+  }
+
+  // Additional methods (getAllTypes, getType, updateType, deleteType) follow a similar pattern...
 }
 ```
 

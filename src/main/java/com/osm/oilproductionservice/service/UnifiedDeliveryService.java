@@ -12,6 +12,7 @@ import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.*;
 import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
+import com.xdev.communicator.models.shared.dto.SupplierDto;
 import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.communicator.models.shared.enums.Currency;
 import com.xdev.xdevbase.models.Action;
@@ -97,7 +98,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
 
         if (dto.getSupplier() != null) {
-            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getSupplierInfo().getId()));
+            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             delivery.setSupplierType(supplier);
         }
         if (delivery.getPoidsCamionVide() != null) {
@@ -143,7 +144,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         } else {
             existing.setStorageUnit(null);
         }
-        if (existing.getPoidsCamionVide() != null) {
+        if (existing.getPoidsCamionVide() != null && existing.getStatus()==OliveLotStatus.WAITING) {
             existing.setStatus(OliveLotStatus.NEW);
         } else {
             existing.setStatus(OliveLotStatus.WAITING);
@@ -573,7 +574,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             throw new IllegalArgumentException("Delivery must have a supplier for payment oil reception");
         }
 
-        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Creating oil reception for payment from olive delivery %s (Supplier: %s)", delivery.getLotNumber(), delivery.getSupplier().getSupplierInfo().getName());
+        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Creating oil reception for payment from olive delivery %s (Supplier: %s)", delivery.getLotNumber(), delivery.getSupplier().getName());
 
         try {
             UnifiedDelivery newDelivery = new UnifiedDelivery();
@@ -895,6 +896,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             oilDelivery.setUnitPrice(dto.getUnitPrice());
             oilDelivery.setOilQuantity(dto.getOilQuantity());
+            oilDelivery.setPoidsNet(dto.getOilQuantity());
             oilDelivery.setPrice(dto.getPrice());
             oilDelivery.setPaidAmount(dto.getPrice());
             originalOliveDelivery.setPaidAmount(dto.getPrice());
@@ -1069,7 +1071,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
         financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
         financialTransactionDto.setLotNumber(delivery.getLotNumber());
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? modelMapper.map(paymentDTO.getSupplier(), SupplierDto.class) : null);
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());

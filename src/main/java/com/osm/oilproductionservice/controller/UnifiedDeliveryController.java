@@ -32,12 +32,12 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     }
     @PostMapping("/payment")
     public ResponseEntity<?> processPayment(@RequestBody PaymentDTO paymentDTO) {
-        try {
+
+        try{
             this.UnifiedDeliveryService.processPayment(paymentDTO);
-            return ResponseEntity.ok().build();
-        }
-        catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error processing payment: " + e.getMessage());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Pricing updated successfully", null));
+        }catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

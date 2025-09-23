@@ -6,6 +6,7 @@ import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFe
 import com.osm.oilproductionservice.model.Waste;
 import com.osm.oilproductionservice.repository.WasteRepository;
 import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
+import com.xdev.communicator.models.shared.dto.SupplierDto;
 import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
@@ -74,7 +75,7 @@ public class WasteService extends BaseServiceImpl<Waste, WasteDTO, WasteDTO> {
         financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
         financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
         financialTransactionDto.setLotNumber("N/A");
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? modelMapper.map(paymentDTO.getSupplier(), SupplierDto.class): null);
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());

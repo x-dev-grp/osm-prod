@@ -167,17 +167,6 @@ SELECT public.seed_permissions_from_json($$
         "GEN_PDF"
       ]
     },
-    "SUPPLIERINFO": {
-      "description": "Supplier information details",
-      "module": "RECEPTION",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "GEN_PDF"
-      ]
-    },
     "UNIFIEDDELIVERY": {
       "description": "Delivery management",
       "module": "RECEPTION",
@@ -190,23 +179,10 @@ SELECT public.seed_permissions_from_json($$
         "COMPLETE",
         "TO_PROD",
         "GEN_PDF",
-        "GEN_PDF_QC_OIL",
-        "GEN_PDF_QC_OLIVE",
-        "PLANNING"
-      ]
-    },
-    "UNIFIEDDELIVERY": {
-      "description": "Delivery management",
-      "module": "PRODUCTION",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "VALIDATE",
-        "COMPLETE",
-        "TO_PROD",
-        "GEN_PDF",
+        "OLIVE_QUALITY",
+        "OIL_QUALITY",
+        "UPDATE_OLIVE_QUALITY",
+        "UPDATE_OIL_QUALITY",
         "GEN_PDF_QC_OIL",
         "GEN_PDF_QC_OLIVE",
         "PLANNING"
