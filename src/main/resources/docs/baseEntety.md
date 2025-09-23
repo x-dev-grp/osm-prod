@@ -14,7 +14,7 @@ The main components of the project include:
 - **Service Layer**: Contains business logic for handling operations on entities.
 - **Exception Handling**: Centralized exception handling for uniform error responses.
 
----
+---  
 
 ## 1. **Base Class (`BaseType`)**
 
