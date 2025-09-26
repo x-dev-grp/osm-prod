@@ -2,9 +2,8 @@ package com.osm.oilproductionservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.OliveType;
+import com.osm.oilproductionservice.enums.Olive_Oil_Type;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.dtos.BaseDto;
@@ -78,7 +77,16 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private Double unpaidAmount;
 
-    private OilType oilType;
+
+    public Olive_Oil_Type getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(Olive_Oil_Type oilType) {
+        this.oilType = oilType;
+    }
+
+    private Olive_Oil_Type oilType;
 
     // --- Olive Delivery Specific Fields ---
 
@@ -89,7 +97,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
 
     private int sackCount;
 
-    private OliveType oliveType;
+    private Olive_Oil_Type oliveType;
 
     private OliveLotStatus status;
 
@@ -293,13 +301,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     }
 
 
-    public OilType getOilType() {
-        return oilType;
-    }
 
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
-    }
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -329,11 +331,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.sackCount = sackCount;
     }
 
-    public OliveType getOliveType() {
+    public Olive_Oil_Type getOliveType() {
         return oliveType;
     }
 
-    public void setOliveType(OliveType oliveType) {
+    public void setOliveType(Olive_Oil_Type oliveType) {
         this.oliveType = oliveType;
     }
 

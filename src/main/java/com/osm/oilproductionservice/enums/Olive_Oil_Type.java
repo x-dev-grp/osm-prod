@@ -3,25 +3,22 @@ package com.osm.oilproductionservice.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum OliveType {
+public enum Olive_Oil_Type {
     OC("oc"),
     OB("ob");
 
     private String name;
 
-    OliveType(String name) { this.name = name; }
+    Olive_Oil_Type(String name) { this.name = name; }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
     /** Olive -> Oil (OC→HC, OB→HB) */
-    public OilType toOilType() {
-        return this == OC ? OilType.HC : OilType.HB;
-    }
 
     /** Tolerant JSON factory: accepts "OC"/"OB" and also "HC"/"HB" by mapping them */
     @JsonCreator
-    public static OliveType from(String raw) {
+    public static Olive_Oil_Type from(String raw) {
         if (raw == null) return null;
         String v = raw.trim().toUpperCase();
 
@@ -35,7 +32,7 @@ public enum OliveType {
 
 
 
-        throw new IllegalArgumentException("Unknown OliveType: " + raw);
+        throw new IllegalArgumentException("Unknown Olive_Oil_Type: " + raw);
     }
 
     /** Always serialize as the enum code (OC/OB) */

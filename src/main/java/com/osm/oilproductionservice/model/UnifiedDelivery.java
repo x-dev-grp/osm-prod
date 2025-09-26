@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OilType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.OliveType;
+import com.osm.oilproductionservice.enums.Olive_Oil_Type;
 import com.xdev.communicator.models.shared.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -56,7 +55,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     private String matriculeCamion;
     private String etatCamion;
-    private boolean paid=false;
+    private boolean paid = false;
     @ManyToOne(fetch = FetchType.LAZY)
     private Supplier supplier;
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -75,8 +74,18 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private Double unpaidAmount;
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
+
+
+    public Olive_Oil_Type getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(Olive_Oil_Type oilType) {
+        this.oilType = oilType;
+    }
+
     @Enumerated(EnumType.STRING)
-    private OilType oilType;
+    private Olive_Oil_Type oilType;
     // --- Olive Delivery Specific Fields ---
     private LocalDateTime trtDate;   // Treatment date for olive delivery
     /*   @ManyToOne(fetch = FetchType.LAZY)
@@ -86,7 +95,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private BaseType oliveVariety;
     private int sackCount;
     @Enumerated(EnumType.STRING)
-    private OliveType oliveType;
+    private Olive_Oil_Type oliveType;
     @Enumerated(EnumType.STRING)
     private OliveLotStatus status;  // Status of the olive lot
     // Additional fields found in the UnifiedDelivery constructor, if needed
@@ -95,6 +104,9 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private MillMachine millMachine;
     private Double oliveQuantity;
     private Double poidsCamionVide;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType parcel;
+    private Integer trtDuration;
 
     public Double getPoidsCamionVide() {
         return poidsCamionVide;
@@ -103,10 +115,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setPoidsCamionVide(Double poidsCamionVide) {
         this.poidsCamionVide = poidsCamionVide;
     }
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType parcel;
-
-    private Integer trtDuration;
 
     public Integer getTrtDuration() {
         return trtDuration;
@@ -119,6 +127,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public boolean isPaid() {
         return paid;
     }
+
     public boolean getPaid() {
         return paid;
     }
@@ -331,13 +340,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.storageUnit = storageUnit;
     }
 
-    public OilType getOilType() {
-        return oilType;
-    }
-
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
-    }
 
     // Olive-specific getters and setters
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -368,11 +370,11 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.sackCount = sackCount;
     }
 
-    public OliveType getOliveType() {
+    public Olive_Oil_Type getOliveType() {
         return oliveType;
     }
 
-    public void setOliveType(OliveType oliveType) {
+    public void setOliveType(Olive_Oil_Type oliveType) {
         this.oliveType = oliveType;
     }
 

@@ -344,7 +344,10 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
                 actions.add(Action.DELETE);
                 actions.add(Action.VALIDATE);
             }
-            case COMPLETED -> actions.add(Action.GEN_PDF);
+            case COMPLETED -> {
+                actions.add(Action.GEN_PDF);
+                actions.add(Action.DELETE);
+            }
             case null, default -> {
             }
         }
