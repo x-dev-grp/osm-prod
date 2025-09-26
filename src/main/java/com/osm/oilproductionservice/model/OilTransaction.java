@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.OilType;
+import com.osm.oilproductionservice.enums.Olive_Oil_Type;
 import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.enums.TransactionType;
 import com.xdev.xdevbase.entities.BaseEntity;
@@ -28,7 +28,7 @@ public class OilTransaction extends BaseEntity implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "oil_type")
-    private OilType oilType;
+    private Olive_Oil_Type oilType;
     private TransactionState transactionState = TransactionState.COMPLETED;
     /**
      * Net quantity moved, in kilograms (positive for IN, negative for OUT)
@@ -36,6 +36,15 @@ public class OilTransaction extends BaseEntity implements Serializable {
     private Double quantityKg;
     private Double unitPrice;
     private double totalPrice;
+
+    public Olive_Oil_Type getOilType() {
+        return oilType;
+    }
+
+    public void setOilType(Olive_Oil_Type oilType) {
+        this.oilType = oilType;
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     private UnifiedDelivery reception;
 
@@ -49,13 +58,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
         this.oilSaleId = oilSaleId;
     }
 
-    public OilType getOilType() {
-        return oilType;
-    }
-
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
-    }
 
     public TransactionState getTransactionState() {
         return transactionState;
