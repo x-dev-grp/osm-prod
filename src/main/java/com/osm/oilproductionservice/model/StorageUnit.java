@@ -134,6 +134,24 @@ public class StorageUnit extends BaseEntity {
             }
         }
     }
+    public void updateDeletedCurrentVolume(Double volume, int direction, Double unitPrice) {
+        java.util.function.Function<Double, Double> rd = v -> BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        if (volume != null) {
+            if (direction == 0) {
+                this.currentVolume = rd.apply(this.currentVolume + volume);
+                this.totalCost = rd.apply(this.totalCost + (volume * unitPrice));
+            } else {
+                this.currentVolume = rd.apply(this.currentVolume - volume);
+                this.totalCost = rd.apply(this.totalCost - (volume * this.avgCost));
+            }
+
+            if (this.currentVolume == 0) {
+                this.avgCost = 0.0;
+            } else {
+                this.avgCost = rd.apply(this.totalCost / this.currentVolume);
+            }
+        }
+    }
 
     public LocalDateTime getNextMaintenanceDate() {
         return nextMaintenanceDate;

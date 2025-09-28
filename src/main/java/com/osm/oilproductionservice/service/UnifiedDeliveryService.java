@@ -2,15 +2,11 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
-import com.osm.oilproductionservice.dto.SupplierDto;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
-import com.osm.oilproductionservice.model.BaseType;
-import com.osm.oilproductionservice.model.StorageUnit;
-import com.osm.oilproductionservice.model.Supplier;
-import com.osm.oilproductionservice.model.UnifiedDelivery;
+import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.*;
 import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
 import com.xdev.communicator.models.shared.enums.*;
@@ -48,8 +44,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     private final GenericRepository genericRepository;
     private final OilTransactionService oilTransactionService;
     private final FinancialTransactionFeignService financialTransactionFeignService;
-
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService) {
+    private final QualityControlResultRepository qualityControlResultRepository;
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService, QualityControlResultService qualityControlResultService, QualityControlResultRepository qualityControlResultRepository) {
         super(repository, modelMapper);
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
@@ -57,6 +53,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         this.genericRepository = genericRepository;
         this.oilTransactionService = oilTransactionService;
         this.financialTransactionFeignService = financialTransactionFeignService;
+        this.qualityControlResultRepository = qualityControlResultRepository;
     }
 
     /**
@@ -1101,6 +1098,41 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // Send to finance service
         financialTransactionFeignService.create(financialTransactionDto);
+    }
+
+    @Override
+    @Transactional
+    public UnifiedDeliveryDTO delete(UUID id) {
+        OSMLogger.logMethodEntry(this.getClass(), "delete", id);
+        try {
+            if (id == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Delete ID is null: {}", id);
+                return null;
+            }
+            UnifiedDelivery entity = repository.findById(id).orElse(null);
+            if (entity == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Entity with ID {} not found for deletion", id);
+                return null;
+            }
+            entity.setDeleted(true);
+            UnifiedDelivery updatedEntity = repository.save(entity);
+            Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(
+                    qc -> {
+                        QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
+                        if (result == null) {
+                            result.setDeleted(true);
+                            return result;
+                        }
+                        return null;
+                    }
+            ).filter(Objects::nonNull).collect(Collectors.toSet());
+            qualityControlResultRepository.saveAll(controlResults);
+            UnifiedDeliveryDTO result = modelMapper.map(updatedEntity, outDTOClass);
+            return result;
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "Error deleting entity with ID: " + id, e);
+            throw e;
+        }
     }
 
 }
