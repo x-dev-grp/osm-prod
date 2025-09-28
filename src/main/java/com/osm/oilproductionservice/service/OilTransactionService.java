@@ -149,6 +149,36 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
 
+    @Override
+    @Transactional
+    public OilTransactionDTO delete(UUID id) {
+        OSMLogger.logMethodEntry(this.getClass(), "delete", id);
+        try {
+            if (id == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Delete ID is null: {}", id);
+                return null;
+            }
+            OilTransaction entity = repository.findById(id).orElse(null);
+            if (entity == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Entity with ID {} not found for deletion", id);
+                return null;
+            }
+            entity.setDeleted(true);
+            OilTransaction updatedEntity = repository.save(entity);
+            OilTransactionDTO result = modelMapper.map(updatedEntity, outDTOClass);
+            StorageUnit storageUnitSource = updatedEntity.getStorageUnitSource();
+            StorageUnit storageUnitDestination = updatedEntity.getStorageUnitDestination();
+            storageUnitSource.updateDeletedCurrentVolume(updatedEntity.getQuantityKg(), 0, null);
+            storageUnitDestination.updateDeletedCurrentVolume(updatedEntity.getQuantityKg(), 1, updatedEntity.getUnitPrice());
+            storageUnitRepo.saveAll(Set.of(storageUnitSource, storageUnitDestination));
+            return result;
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "Error deleting entity with ID: " + id, e);
+            throw e;
+        }
+    }
+
+
     /**
      * Approves an oil transaction by applying business logic based on its type.
      *
