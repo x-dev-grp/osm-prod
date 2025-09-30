@@ -6,13 +6,9 @@ import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
-import com.osm.oilproductionservice.model.BaseType;
-import com.osm.oilproductionservice.model.StorageUnit;
-import com.osm.oilproductionservice.model.Supplier;
-import com.osm.oilproductionservice.model.UnifiedDelivery;
+import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.*;
 import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import com.xdev.communicator.models.shared.dto.SupplierDto;
 import com.xdev.communicator.models.shared.enums.*;
 import com.xdev.communicator.models.shared.enums.Currency;
 import com.xdev.xdevbase.models.Action;
@@ -35,7 +31,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     public static final String LOT_NUMBER = "lotNumber";
     public static final String DELIVERY_NUMBER = "deliveryNumber";
-    public static final String D = "%04d";
+    public static final String D = "%03d";
     public static final String D1 = "%02d";
     public static final String ID = "id";
     public static final String SUPPLIER = "supplier";
@@ -48,8 +44,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     private final GenericRepository genericRepository;
     private final OilTransactionService oilTransactionService;
     private final FinancialTransactionFeignService financialTransactionFeignService;
+    private final QualityControlResultRepository qualityControlResultRepository;
 
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService) {
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService, QualityControlResultRepository qualityControlResultRepository) {
         super(repository, modelMapper);
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
@@ -57,6 +54,12 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         this.genericRepository = genericRepository;
         this.oilTransactionService = oilTransactionService;
         this.financialTransactionFeignService = financialTransactionFeignService;
+        this.qualityControlResultRepository = qualityControlResultRepository;
+    }
+
+    // Helper: treat null/0/<=0 as invalid
+    private static boolean isValidPoids(java.math.BigDecimal w) {
+        return w != null && w.compareTo(java.math.BigDecimal.ZERO) > 0;
     }
 
     /**
@@ -95,20 +98,19 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         // Map DTO to entity
 
         UnifiedDelivery delivery = modelMapper.map(dto, UnifiedDelivery.class);
-
+        if (dto.getDeliveryType() == DeliveryType.OIL) {
+            delivery.setStatus(OliveLotStatus.NEW);
+        } else if (delivery.getPoidsCamionVide() != null && dto.getDeliveryType() == DeliveryType.OLIVE) {
+            delivery.setStatus(OliveLotStatus.NEW);
+        } else {
+            delivery.setStatus(OliveLotStatus.WAITING);
+        }
 
         if (dto.getSupplier() != null) {
             Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             delivery.setSupplierType(supplier);
         }
-        if (delivery.getPoidsCamionVide() != null) {
-            delivery.setStatus(OliveLotStatus.NEW);
-        } else {
-            delivery.setStatus(OliveLotStatus.WAITING);
-        }
-        if (delivery.getDeliveryType()== DeliveryType.OIL){
-            delivery.setStatus(OliveLotStatus.NEW);
-        }
+
 
         // Save entity
         UnifiedDelivery savedDelivery = deliveryRepository.saveAndFlush(delivery);
@@ -128,42 +130,71 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
         dto.setStatus(existing.getStatus());
-        // Exclude oliveVariety from BeanUtils.copyProperties since we handle it separately
-        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety","parcel");
 
-        // 3. Resolve and set the Supplier relationship
+        // Whether the caller actually provided a poidsCamionVide this update
+        final boolean poidsVideProvided = dto.getPoidsCamionVide() != null;
+
+        // 2) Copy simple fields (exclude those we manage manually)
+        BeanUtils.copyProperties(
+                dto,
+                existing,
+                ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety", "parcel"
+        );
+
+        // 3) Resolve Supplier
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
-            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
+            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId())
+                    .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             existing.setSupplierType(supplier);
         } else {
             existing.setSupplierType(null);
         }
+
+        // 4) Resolve StorageUnit
         if (dto.getStorageUnit() != null && dto.getStorageUnit().getId() != null) {
-            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId()).orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
+            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId())
+                    .orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
             existing.setStorageUnit(stu);
         } else {
             existing.setStorageUnit(null);
         }
-        if (existing.getPoidsCamionVide() != null && existing.getStatus()==OliveLotStatus.WAITING) {
-            existing.setStatus(OliveLotStatus.NEW);
-        } else {
-            existing.setStatus(OliveLotStatus.WAITING);
-        }
-        if (existing.getDeliveryType()== DeliveryType.OIL){
-            existing.setStatus(OliveLotStatus.NEW);
-        }
-        // 5. Resolve and set the OliveVariety relationship
+
+        // 5) Resolve OliveVariety
         if (dto.getOliveVariety() != null && dto.getOliveVariety().getId() != null) {
             BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId())
-                .orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
+                    .orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
             existing.setOliveVariety(oliveVariety);
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to: %s (ID: %s)", oliveVariety.getName(), oliveVariety.getId());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                    "[update] Set oliveVariety to: %s (ID: %s)", oliveVariety.getName(), oliveVariety.getId());
         } else {
             existing.setOliveVariety(null);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to null");
         }
 
-         // 4. Persist changes
+        // 6) Merge poidsCamionVide explicitly (do NOT clear it when DTO omits it)
+        //    If DTO sends a value, apply it; else keep the existing value.
+        if (dto.getPoidsCamionVide() != null) {
+            existing.setPoidsCamionVide(dto.getPoidsCamionVide());
+        }
+        if (existing.getDeliveryType() == DeliveryType.OLIVE) {
+            // 7) Status rules (exactly as you described)
+            OliveLotStatus prev = existing.getStatus();
+
+            boolean poidsValid = isValidPoids(BigDecimal.valueOf(existing.getPoidsCamionVide())); // > 0
+
+            if (poidsValid) {
+                existing.setStatus(OliveLotStatus.NEW);
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                        "[update] poidsCamionVide valid (>0): status -> NEW (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+            } else {
+                existing.setStatus(OliveLotStatus.WAITING);
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                        "[update] poidsCamionVide missing/invalid (null/0/<=0): status -> WAITING (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+            }
+        }
+
+
+        // 7) Persist
         UnifiedDelivery updated = deliveryRepository.save(existing);
 
         OSMLogger.logMethodExit(this.getClass(), "update", updated);
@@ -255,20 +286,21 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         Set<Action> actions = new HashSet<>();
         actions.add(Action.READ);
-        actions.add(Action.GEN_PDF);
 
         switch (delivery.getStatus()) {
             case WAITING -> {
-                actions.addAll(Set.of(Action.DELETE, Action.UPDATE ));
+                actions.addAll(Set.of(Action.DELETE, Action.UPDATE));
             }
             case NEW -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
+                actions.add(Action.GEN_PDF);
             }
             case IN_PROGRESS -> {
                 // No extra actions for now
             }
             case OLIVE_CONTROLLED -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.GEN_PDF_QC_OLIVE));
+                actions.add(Action.GEN_PDF);
 
                 switch (delivery.getOperationType()) {
                     case EXCHANGE, OLIVE_PURCHASE -> {
@@ -280,6 +312,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 actions.add(Action.GEN_PDF_QC_OLIVE);
                 actions.add(Action.GEN_PDF_PRODUCTION); // ✅ Bon de production quand réception olive terminée
                 actions.add(Action.GEN_INVOICE);
+                actions.add(Action.GEN_PDF);
 
                 switch (delivery.getOperationType()) {
                     case SIMPLE_RECEPTION -> {
@@ -287,6 +320,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
                                 "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s",
                                 delivery.getLotNumber(), delivery.getPaid());
+                        actions.add(Action.GEN_PDF);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.OIL_QUALITY);
@@ -302,6 +336,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
                         actions.add(Action.OIL_RECEPTION);
                         actions.add(Action.GEN_PDF_QC_OIL);
+                        actions.add(Action.GEN_PDF);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.PAY);
@@ -315,6 +350,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 // ✅ Même logique que COMPLETED → possibilité de générer bon de production
                 actions.add(Action.GEN_PDF_PRODUCTION);
                 actions.add(Action.GEN_INVOICE);
+                actions.add(Action.GEN_PDF);
+
             }
         }
 
@@ -344,7 +381,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         Set<Action> actions = new HashSet<>();
         actions.add(Action.READ);
-        actions.add(Action.GEN_PDF);
 
 
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Mapping actions for oil delivery %s (Status: %s, Operation: %s)", delivery.getLotNumber(), delivery.getStatus(), delivery.getOperationType());
@@ -353,23 +389,26 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case NEW -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding NEW status actions for oil delivery " + delivery.getLotNumber());
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
+                actions.add(Action.GEN_PDF);
             }
             case OIL_CONTROLLED -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding OIL_CONTROLLED status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_QC_OIL);
                 actions.add(Action.SET_PRICE);
-             }
+                actions.add(Action.GEN_PDF);
+            }
             case WAITING_FOR_PAYMENT_DETAILS -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding WAITING_FOR_PAYMENT_DETAILS status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.COMPLETE_PAYMENT_DETAILS);
 
+                actions.add(Action.GEN_PDF);
             }
-            case COMPLETED,IN_STOCK -> {
+            case COMPLETED, IN_STOCK -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_PRODUCTION);
- 
+                actions.add(Action.GEN_PDF);
                 actions.add(Action.GEN_INVOICE);
- 
+
             }
         }
 
@@ -490,13 +529,12 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Generate new delivery number and lot number
             Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
+//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
             String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[creatOilRecForOtherOPS] Generated new lot number: %s, delivery number: %s", newLotNumber, newDeliveryNumber);
 
             // Set basic delivery information
-            newDelivery.setLotNumber(newLotNumber);
+            newDelivery.setLotNumber(delivery.getLotNumber());
             newDelivery.setDeliveryNumber(newDeliveryNumber);
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
@@ -512,7 +550,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setUnitPrice(0.0);
 
             // Copy relevant information from original delivery
-            newDelivery.setOilType(delivery.getOliveType().toOilType());
+            newDelivery.setOilType(delivery.getOliveType());
             newDelivery.setOliveQuantity(delivery.getPoidsNet());
             newDelivery.setOliveType(delivery.getOliveType());
             newDelivery.setRegion(delivery.getRegion());
@@ -579,17 +617,17 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         try {
             UnifiedDelivery newDelivery = new UnifiedDelivery();
             newDelivery.setDeliveryType(DeliveryType.OIL);
-            newDelivery.setStatus(OliveLotStatus.WAITING_FOR_PAYMENT_DETAILS);
+            newDelivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
 
             // Generate new delivery number and lot number
             Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
+//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
             String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Generated new lot number: %s, delivery number: %s", newLotNumber, newDeliveryNumber);
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] used the original olive reception lot number as new lot number: %s, delivery number: %s", delivery.getLotNumber(), newDeliveryNumber);
 
             // Set basic delivery information
-            newDelivery.setLotNumber(newLotNumber);
+            newDelivery.setLotNumber(delivery.getLotNumber());
             newDelivery.setDeliveryNumber(newDeliveryNumber);
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
@@ -598,7 +636,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setUnitPrice(0.0);   // Will be set during payment processing
 
             // Copy relevant information from original delivery
-            newDelivery.setOilType(delivery.getOilType());
+            newDelivery.setOilType(delivery.getOliveType());
             newDelivery.setRegion(delivery.getRegion());
             newDelivery.setSupplier(delivery.getSupplier());
             newDelivery.setLotOliveNumber(delivery.getLotNumber()); // Link to original olive delivery
@@ -646,23 +684,22 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 2) Build each piece
         String sequencePart = String.format(D, nextSeq);          // zero-padded to 4 digits
-        String oliveTypeCode = del.getOilType().getName().toUpperCase();           // e.g. "OB"
+//        String oliveTypeCode = del.getOilType().getName().toUpperCase();           // e.g. "OB"
         int year = del.getDeliveryDate().getYear();                    // e.g. 2025
-        String yearPart = String.format(D1, year % 100);
+//        String yearPart = String.format(D1, year % 100);
         // last two digits: "25"
 
         // 3) Concatenate into final lot number
-        String lotNumber = sequencePart + oliveTypeCode + yearPart;    // "0005OB25"
+//        String lotNumber = sequencePart + yearPart;    // "0005OB25"
 
         // 4) Return both if you still need the raw sequence
         Map<String, Object> map = new HashMap<>();
         map.put(DELIVERY_NUMBER, nextSeq);
-        map.put(LOT_NUMBER, lotNumber);
+//        map.put(LOT_NUMBER, lotNumber);
         OSMLogger.logMethodExit(this.getClass(), "generateDeliveryNumber", map);
         OSMLogger.logPerformance(this.getClass(), "generateDeliveryNumber", startTime, System.currentTimeMillis());
         return map;
     }
-
 
 
     /**
@@ -785,10 +822,10 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     }
                     double totalPrice = unitPrice * delivery.getOilQuantity();
                     delivery.setPrice(totalPrice);
-                    delivery.setStatus(OliveLotStatus.STOCK_READY);
+                    delivery.setStatus(OliveLotStatus.IN_STOCK);
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
-                        case BASE ->  {
+                        case BASE -> {
                             UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
                             originalDelivery.setUnpaidAmount(totalPrice);
                             deliveryRepository.save(originalDelivery);
@@ -900,7 +937,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             oilDelivery.setPrice(dto.getPrice());
             oilDelivery.setPaidAmount(dto.getPrice());
             originalOliveDelivery.setPaidAmount(dto.getPrice());
-            originalOliveDelivery.setUnpaidAmount(originalOliveDelivery.getUnpaidAmount()-dto.getPrice());
+            originalOliveDelivery.setUnpaidAmount(originalOliveDelivery.getUnpaidAmount() - dto.getPrice());
             oilDelivery.setStatus(OliveLotStatus.STOCK_READY);
 
             // Save the updated oilDelivery
@@ -1013,7 +1050,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     public UnifiedDeliveryDTO getByOliveLotNumber(UUID id) {
         var t = deliveryRepository.findByLotOliveNumber(id);
-        if(Objects.isNull(t)){
+        if (Objects.isNull(t)) {
             return null;
         }
         return modelMapper.map(t, UnifiedDeliveryDTO.class);
@@ -1044,11 +1081,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case OIL_PURCHASE ->
                     prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.OIL_PURCHASE);
             case OLIVE_PURCHASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE,OperationType.OLIVE_PURCHASE);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.OLIVE_PURCHASE);
             case BASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE,OperationType.BASE);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.BASE);
             case SIMPLE_RECEPTION ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT,OperationType.SIMPLE_RECEPTION);
+                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT, OperationType.SIMPLE_RECEPTION);
         }
 
     }
@@ -1071,7 +1108,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
         financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
         financialTransactionDto.setLotNumber(delivery.getLotNumber());
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? modelMapper.map(paymentDTO.getSupplier(), SupplierDto.class) : null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());
@@ -1081,6 +1118,41 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // Send to finance service
         financialTransactionFeignService.create(financialTransactionDto);
+    }
+
+    @Override
+    @Transactional
+    public UnifiedDeliveryDTO delete(UUID id) {
+        OSMLogger.logMethodEntry(this.getClass(), "delete", id);
+        try {
+            if (id == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Delete ID is null: {}", id);
+                return null;
+            }
+            UnifiedDelivery entity = repository.findById(id).orElse(null);
+            if (entity == null) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Entity with ID {} not found for deletion", id);
+                return null;
+            }
+            entity.setDeleted(true);
+            UnifiedDelivery updatedEntity = repository.save(entity);
+            Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(
+                    qc -> {
+                        QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
+                        if (result != null) {
+                            result.setDeleted(true);
+                            return result;
+                        }
+                        return null;
+                    }
+            ).filter(Objects::nonNull).collect(Collectors.toSet());
+            qualityControlResultRepository.saveAll(controlResults);
+            UnifiedDeliveryDTO result = modelMapper.map(updatedEntity, outDTOClass);
+            return result;
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "Error deleting entity with ID: " + id, e);
+            throw e;
+        }
     }
 
 }

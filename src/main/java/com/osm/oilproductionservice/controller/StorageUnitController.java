@@ -30,6 +30,6 @@ public class StorageUnitController extends BaseControllerImpl<StorageUnit, Stora
     }
     @Override
     protected String getResourceName() {
-        return "StorageUnit".toUpperCase();
+        return "STORAGEUNIT".toUpperCase();
     }
 }
