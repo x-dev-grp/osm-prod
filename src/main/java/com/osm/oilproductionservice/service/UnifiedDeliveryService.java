@@ -31,7 +31,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     public static final String LOT_NUMBER = "lotNumber";
     public static final String DELIVERY_NUMBER = "deliveryNumber";
-    public static final String D = "%04d";
+    public static final String D = "%03d";
     public static final String D1 = "%02d";
     public static final String ID = "id";
     public static final String SUPPLIER = "supplier";
@@ -45,7 +45,8 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     private final OilTransactionService oilTransactionService;
     private final FinancialTransactionFeignService financialTransactionFeignService;
     private final QualityControlResultRepository qualityControlResultRepository;
-    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService, QualityControlResultService qualityControlResultService, QualityControlResultRepository qualityControlResultRepository) {
+
+    public UnifiedDeliveryService(BaseRepository<UnifiedDelivery> repository, ModelMapper modelMapper, DeliveryRepository deliveryRepository, SupplierRepository supplierRepository, StorageUnitRepo storageUnitRepo, GenericRepository genericRepository, OilTransactionService oilTransactionService, FinancialTransactionFeignService financialTransactionFeignService, QualityControlResultRepository qualityControlResultRepository) {
         super(repository, modelMapper);
         this.deliveryRepository = deliveryRepository;
         this.supplierRepository = supplierRepository;
@@ -54,6 +55,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         this.oilTransactionService = oilTransactionService;
         this.financialTransactionFeignService = financialTransactionFeignService;
         this.qualityControlResultRepository = qualityControlResultRepository;
+    }
+
+    // Helper: treat null/0/<=0 as invalid
+    private static boolean isValidPoids(java.math.BigDecimal w) {
+        return w != null && w.compareTo(java.math.BigDecimal.ZERO) > 0;
     }
 
     /**
@@ -94,7 +100,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery delivery = modelMapper.map(dto, UnifiedDelivery.class);
         if (dto.getDeliveryType() == DeliveryType.OIL) {
             delivery.setStatus(OliveLotStatus.NEW);
-        } else if (delivery.getPoidsCamionVide() != null &&dto.getDeliveryType() == DeliveryType.OLIVE) {
+        } else if (delivery.getPoidsCamionVide() != null && dto.getDeliveryType() == DeliveryType.OLIVE) {
             delivery.setStatus(OliveLotStatus.NEW);
         } else {
             delivery.setStatus(OliveLotStatus.WAITING);
@@ -165,18 +171,26 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to null");
         }
 
-        // 6) Status rules
-        OliveLotStatus previousStatus = existing.getStatus();
+        // 6) Merge poidsCamionVide explicitly (do NOT clear it when DTO omits it)
+        //    If DTO sends a value, apply it; else keep the existing value.
+        if (dto.getPoidsCamionVide() != null) {
+            existing.setPoidsCamionVide(dto.getPoidsCamionVide());
+        }
+        if (existing.getDeliveryType() == DeliveryType.OLIVE) {
+            // 7) Status rules (exactly as you described)
+            OliveLotStatus prev = existing.getStatus();
 
-        // Olive reception
-        if (poidsVideProvided) {
-            existing.setStatus(OliveLotStatus.NEW);
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                    "[update] Olive reception with poidsCamionVide provided → status NEW (prev=%s)", previousStatus);
-        } else {
-            existing.setStatus(OliveLotStatus.WAITING);
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                    "[update] Olive reception without poidsCamionVide → status WAITING (prev=%s)", previousStatus);
+            boolean poidsValid = isValidPoids(BigDecimal.valueOf(existing.getPoidsCamionVide())); // > 0
+
+            if (poidsValid) {
+                existing.setStatus(OliveLotStatus.NEW);
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                        "[update] poidsCamionVide valid (>0): status -> NEW (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+            } else {
+                existing.setStatus(OliveLotStatus.WAITING);
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                        "[update] poidsCamionVide missing/invalid (null/0/<=0): status -> WAITING (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+            }
         }
 
 
@@ -279,12 +293,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
             case NEW -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
+                actions.add(Action.GEN_PDF);
             }
             case IN_PROGRESS -> {
                 // No extra actions for now
             }
             case OLIVE_CONTROLLED -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.GEN_PDF_QC_OLIVE));
+                actions.add(Action.GEN_PDF);
 
                 switch (delivery.getOperationType()) {
                     case EXCHANGE, OLIVE_PURCHASE -> {
@@ -304,6 +320,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
                                 "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s",
                                 delivery.getLotNumber(), delivery.getPaid());
+                        actions.add(Action.GEN_PDF);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.OIL_QUALITY);
@@ -319,6 +336,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
                         actions.add(Action.OIL_RECEPTION);
                         actions.add(Action.GEN_PDF_QC_OIL);
+                        actions.add(Action.GEN_PDF);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.PAY);
@@ -333,6 +351,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 actions.add(Action.GEN_PDF_PRODUCTION);
                 actions.add(Action.GEN_INVOICE);
                 actions.add(Action.GEN_PDF);
+
             }
         }
 
@@ -370,22 +389,24 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case NEW -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding NEW status actions for oil delivery " + delivery.getLotNumber());
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OIL_QUALITY));
+                actions.add(Action.GEN_PDF);
             }
             case OIL_CONTROLLED -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding OIL_CONTROLLED status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_QC_OIL);
                 actions.add(Action.SET_PRICE);
+                actions.add(Action.GEN_PDF);
             }
             case WAITING_FOR_PAYMENT_DETAILS -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding WAITING_FOR_PAYMENT_DETAILS status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.COMPLETE_PAYMENT_DETAILS);
 
+                actions.add(Action.GEN_PDF);
             }
             case COMPLETED, IN_STOCK -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_PRODUCTION);
                 actions.add(Action.GEN_PDF);
-
                 actions.add(Action.GEN_INVOICE);
 
             }
@@ -508,13 +529,12 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Generate new delivery number and lot number
             Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
+//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
             String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[creatOilRecForOtherOPS] Generated new lot number: %s, delivery number: %s", newLotNumber, newDeliveryNumber);
 
             // Set basic delivery information
-            newDelivery.setLotNumber(newLotNumber);
+            newDelivery.setLotNumber(delivery.getLotNumber());
             newDelivery.setDeliveryNumber(newDeliveryNumber);
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
@@ -597,17 +617,17 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         try {
             UnifiedDelivery newDelivery = new UnifiedDelivery();
             newDelivery.setDeliveryType(DeliveryType.OIL);
-            newDelivery.setStatus(OliveLotStatus.WAITING_FOR_PAYMENT_DETAILS);
+            newDelivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
 
             // Generate new delivery number and lot number
             Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
+//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
             String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
 
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Generated new lot number: %s, delivery number: %s", newLotNumber, newDeliveryNumber);
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] used the original olive reception lot number as new lot number: %s, delivery number: %s", delivery.getLotNumber(), newDeliveryNumber);
 
             // Set basic delivery information
-            newDelivery.setLotNumber(newLotNumber);
+            newDelivery.setLotNumber(delivery.getLotNumber());
             newDelivery.setDeliveryNumber(newDeliveryNumber);
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
@@ -616,7 +636,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setUnitPrice(0.0);   // Will be set during payment processing
 
             // Copy relevant information from original delivery
-            newDelivery.setOilType(delivery.getOilType());
+            newDelivery.setOilType(delivery.getOliveType());
             newDelivery.setRegion(delivery.getRegion());
             newDelivery.setSupplier(delivery.getSupplier());
             newDelivery.setLotOliveNumber(delivery.getLotNumber()); // Link to original olive delivery
@@ -664,18 +684,18 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 2) Build each piece
         String sequencePart = String.format(D, nextSeq);          // zero-padded to 4 digits
-        String oliveTypeCode = del.getOilType().getName().toUpperCase();           // e.g. "OB"
+//        String oliveTypeCode = del.getOilType().getName().toUpperCase();           // e.g. "OB"
         int year = del.getDeliveryDate().getYear();                    // e.g. 2025
-        String yearPart = String.format(D1, year % 100);
+//        String yearPart = String.format(D1, year % 100);
         // last two digits: "25"
 
         // 3) Concatenate into final lot number
-        String lotNumber = sequencePart + oliveTypeCode + yearPart;    // "0005OB25"
+//        String lotNumber = sequencePart + yearPart;    // "0005OB25"
 
         // 4) Return both if you still need the raw sequence
         Map<String, Object> map = new HashMap<>();
         map.put(DELIVERY_NUMBER, nextSeq);
-        map.put(LOT_NUMBER, lotNumber);
+//        map.put(LOT_NUMBER, lotNumber);
         OSMLogger.logMethodExit(this.getClass(), "generateDeliveryNumber", map);
         OSMLogger.logPerformance(this.getClass(), "generateDeliveryNumber", startTime, System.currentTimeMillis());
         return map;
@@ -802,7 +822,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     }
                     double totalPrice = unitPrice * delivery.getOilQuantity();
                     delivery.setPrice(totalPrice);
-                    delivery.setStatus(OliveLotStatus.STOCK_READY);
+                    delivery.setStatus(OliveLotStatus.IN_STOCK);
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
                         case BASE -> {
@@ -1088,7 +1108,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
         financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
         financialTransactionDto.setLotNumber(delivery.getLotNumber());
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier()  : null);
+        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());
@@ -1119,7 +1139,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(
                     qc -> {
                         QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
-                        if (result == null) {
+                        if (result != null) {
                             result.setDeleted(true);
                             return result;
                         }
