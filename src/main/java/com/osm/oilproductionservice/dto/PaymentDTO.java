@@ -3,7 +3,7 @@ package com.osm.oilproductionservice.dto;
 import com.xdev.communicator.models.shared.dto.BankAccountDto;
 import com.xdev.communicator.models.shared.enums.Currency;
 import com.xdev.communicator.models.shared.enums.PaymentMethod;
-import com.xdev.communicator.models.common.dtos.SupplierDto;
+import com.xdev.communicator.models.shared.dto.SupplierDto;
 
 import java.util.UUID;
 
