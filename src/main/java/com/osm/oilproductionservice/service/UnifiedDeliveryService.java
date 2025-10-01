@@ -826,7 +826,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
                         case BASE -> {
-                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumber(delivery.getLotOliveNumber());
+                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(),DeliveryType.OLIVE);
                             originalDelivery.setUnpaidAmount(totalPrice);
                             deliveryRepository.save(originalDelivery);
                         }
@@ -907,7 +907,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Delivery not found with ID: " + dto.getDeliveryId());
                 return new EntityNotFoundException("Delivery not found: " + dto.getDeliveryId());
             });
-            UnifiedDelivery originalOliveDelivery = this.deliveryRepository.findByLotNumber(oilDelivery.getLotOliveNumber());
+            UnifiedDelivery originalOliveDelivery = this.deliveryRepository.findByLotNumberAndDeliveryType(oilDelivery.getLotOliveNumber(),DeliveryType.OLIVE);
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Found oilDelivery %s (Status: %s, Type: %s)", oilDelivery.getLotNumber(), oilDelivery.getStatus(), oilDelivery.getDeliveryType());
 
@@ -1057,7 +1057,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     }
 
     public UnifiedDeliveryDTO getByLotNumber(String lotNumber) {
-        var t = deliveryRepository.findByLotNumber(lotNumber);
+        var t = deliveryRepository.findByLotNumberAndDeliveryType(lotNumber,DeliveryType.OLIVE);
         return modelMapper.map(t, UnifiedDeliveryDTO.class);
     }
 
@@ -1108,7 +1108,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         financialTransactionDto.setBankAccount(paymentDTO.getBankAccount() != null ? paymentDTO.getBankAccount() : null);
         financialTransactionDto.setCheckNumber(paymentDTO.getCheckNumber() != null ? paymentDTO.getCheckNumber() : null);
         financialTransactionDto.setLotNumber(delivery.getLotNumber());
-        financialTransactionDto.setsupplier(paymentDTO.getSupplier() != null ? paymentDTO.getSupplier() : null);
+        financialTransactionDto.setsupplier((paymentDTO.getSupplier() != null) ? paymentDTO.getSupplier() : null);
         financialTransactionDto.setTransactionDate(LocalDateTime.now());
         financialTransactionDto.setApproved(true);
         financialTransactionDto.setApprovalDate(LocalDateTime.now());

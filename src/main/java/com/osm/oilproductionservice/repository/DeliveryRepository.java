@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.repository;
 
+import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.xdev.xdevbase.repos.BaseRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,7 +32,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     List<UnifiedDelivery> findByLotNumberIn(Set<String> lotNumbers);
 
-    UnifiedDelivery findByLotNumber(String lotNumbers);
+    UnifiedDelivery findByLotNumberAndDeliveryType(String lotNumber, DeliveryType deliveryType);
 
     List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
 
