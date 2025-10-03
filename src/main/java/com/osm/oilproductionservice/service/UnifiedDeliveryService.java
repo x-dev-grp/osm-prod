@@ -8,9 +8,9 @@ import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.*;
-import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import com.xdev.communicator.models.shared.enums.*;
-import com.xdev.communicator.models.shared.enums.Currency;
+import com.xdev.communicator.models.enums.*;
+import com.xdev.communicator.models.enums.Currency;
+import com.xdev.communicator.models.shared.FinancialTransactionDto;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 @Service
 public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, UnifiedDeliveryDTO, UnifiedDeliveryDTO> {
 
-    public static final String LOT_NUMBER = "lotNumber";
     public static final String DELIVERY_NUMBER = "deliveryNumber";
     public static final String D = "%03d";
     public static final String D1 = "%02d";
@@ -55,6 +54,18 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         this.oilTransactionService = oilTransactionService;
         this.financialTransactionFeignService = financialTransactionFeignService;
         this.qualityControlResultRepository = qualityControlResultRepository;
+    }
+
+    private static double r3(double v) {
+        return Math.round(v * 1000.0) / 1000.0;
+    }
+
+    private static double safe(Double v) {
+        return (v == null || v.isNaN() || v.isInfinite()) ? 0.0 : v;
+    }
+
+    private static double clamp(double v, double lo, double hi) {
+        return Math.max(lo, Math.min(hi, v));
     }
 
     // Helper: treat null/0/<=0 as invalid
@@ -135,16 +146,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         final boolean poidsVideProvided = dto.getPoidsCamionVide() != null;
 
         // 2) Copy simple fields (exclude those we manage manually)
-        BeanUtils.copyProperties(
-                dto,
-                existing,
-                ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety", "parcel"
-        );
+        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety", "parcel");
 
         // 3) Resolve Supplier
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
-            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId())
-                    .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
+            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             existing.setSupplierType(supplier);
         } else {
             existing.setSupplierType(null);
@@ -152,8 +158,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 4) Resolve StorageUnit
         if (dto.getStorageUnit() != null && dto.getStorageUnit().getId() != null) {
-            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId())
-                    .orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
+            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId()).orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
             existing.setStorageUnit(stu);
         } else {
             existing.setStorageUnit(null);
@@ -161,11 +166,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 5) Resolve OliveVariety
         if (dto.getOliveVariety() != null && dto.getOliveVariety().getId() != null) {
-            BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId())
-                    .orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
+            BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId()).orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
             existing.setOliveVariety(oliveVariety);
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                    "[update] Set oliveVariety to: %s (ID: %s)", oliveVariety.getName(), oliveVariety.getId());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to: %s (ID: %s)", oliveVariety.getName(), oliveVariety.getId());
         } else {
             existing.setOliveVariety(null);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to null");
@@ -184,12 +187,10 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             if (poidsValid) {
                 existing.setStatus(OliveLotStatus.NEW);
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                        "[update] poidsCamionVide valid (>0): status -> NEW (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] poidsCamionVide valid (>0): status -> NEW (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
             } else {
                 existing.setStatus(OliveLotStatus.WAITING);
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                        "[update] poidsCamionVide missing/invalid (null/0/<=0): status -> WAITING (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] poidsCamionVide missing/invalid (null/0/<=0): status -> WAITING (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
             }
         }
 
@@ -279,8 +280,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         OSMLogger.logMethodEntry(this.getClass(), "mapOliveDeliveryActions", delivery);
 
         if (delivery == null) {
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN,
-                    "[mapOliveDeliveryActions] Delivery is null, returning empty action set");
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[mapOliveDeliveryActions] Delivery is null, returning empty action set");
             return new HashSet<>();
         }
 
@@ -317,22 +317,17 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 switch (delivery.getOperationType()) {
                     case SIMPLE_RECEPTION -> {
                         // CRITICAL: Check payment status for simple reception
-                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                                "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s",
-                                delivery.getLotNumber(), delivery.getPaid());
+                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] SIMPLE_RECEPTION payment check for delivery %s: fullyPaid=%s", delivery.getLotNumber(), delivery.getPaid());
                         actions.add(Action.GEN_PDF);
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.OIL_QUALITY);
                             actions.add(Action.PAY);
-                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                                    "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
+                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
                         }
                     }
                     case BASE, OLIVE_PURCHASE -> {
-                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                                "[mapOliveDeliveryActions] Adding OIL_RECEPTION for %s operation delivery %s",
-                                delivery.getOperationType(), delivery.getLotNumber());
+                        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Adding OIL_RECEPTION for %s operation delivery %s", delivery.getOperationType(), delivery.getLotNumber());
 
                         actions.add(Action.OIL_RECEPTION);
                         actions.add(Action.GEN_PDF_QC_OIL);
@@ -340,8 +335,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
                         if (!delivery.getPaid()) {
                             actions.add(Action.PAY);
-                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                                    "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
+                            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Added OIL_QUALITY action for unpaid delivery " + delivery.getLotNumber());
                         }
                     }
                 }
@@ -355,8 +349,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
         }
 
-        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
-                "[mapOliveDeliveryActions] Final actions for delivery %s: %s", delivery.getLotNumber(), actions);
+        OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOliveDeliveryActions] Final actions for delivery %s: %s", delivery.getLotNumber(), actions);
         OSMLogger.logMethodExit(this.getClass(), "mapOliveDeliveryActions", actions);
         OSMLogger.logPerformance(this.getClass(), "mapOliveDeliveryActions", startTime, System.currentTimeMillis());
         return actions;
@@ -632,7 +625,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
             // Initialize payment-related fields
-            newDelivery.setOilQuantity(0.0); // Will be set during payment processing
+            newDelivery.setOilQuantity(delivery.getOilQuantity()); // Will be set during payment processing
             newDelivery.setUnitPrice(0.0);   // Will be set during payment processing
 
             // Copy relevant information from original delivery
@@ -826,7 +819,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
                         case BASE -> {
-                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(),DeliveryType.OLIVE);
+                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(), DeliveryType.OLIVE);
                             originalDelivery.setUnpaidAmount(totalPrice);
                             deliveryRepository.save(originalDelivery);
                         }
@@ -907,7 +900,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updatePrincingForPaymentreception] Delivery not found with ID: " + dto.getDeliveryId());
                 return new EntityNotFoundException("Delivery not found: " + dto.getDeliveryId());
             });
-            UnifiedDelivery originalOliveDelivery = this.deliveryRepository.findByLotNumberAndDeliveryType(oilDelivery.getLotOliveNumber(),DeliveryType.OLIVE);
+            UnifiedDelivery originalOliveDelivery = this.deliveryRepository.findByLotNumberAndDeliveryType(oilDelivery.getLotOliveNumber(), DeliveryType.OLIVE);
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updatePrincingForPaymentreception] Found oilDelivery %s (Status: %s, Type: %s)", oilDelivery.getLotNumber(), oilDelivery.getStatus(), oilDelivery.getDeliveryType());
 
@@ -1057,7 +1050,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     }
 
     public UnifiedDeliveryDTO getByLotNumber(String lotNumber) {
-        var t = deliveryRepository.findByLotNumberAndDeliveryType(lotNumber,DeliveryType.OLIVE);
+        var t = deliveryRepository.findByLotNumberAndDeliveryType(lotNumber, DeliveryType.OLIVE);
         return modelMapper.map(t, UnifiedDeliveryDTO.class);
     }
 
@@ -1068,8 +1061,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         }
         double amount = paymentDTO.getAmount() != null ? paymentDTO.getAmount() : 0d;
 
-        UnifiedDelivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(paymentDTO.getIdOperation())
-                .orElse(null);
+        UnifiedDelivery delivery = deliveryRepository.findByIdAndIsDeletedFalse(paymentDTO.getIdOperation()).orElse(null);
 
         if (delivery == null) {
             throw new IllegalArgumentException("Oil Sale not found for ID: " + paymentDTO.getIdOperation());
@@ -1090,11 +1082,39 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
     }
 
-    private void updateDelivery(UnifiedDelivery delivery, double amount) {
-        delivery.setPaid(amount == (delivery.getUnpaidAmount() != null ? delivery.getUnpaidAmount().doubleValue() : 0d));
-        delivery.setPaidAmount((delivery.getPaidAmount() != null ? delivery.getPaidAmount() : 0d) + amount);
-        delivery.setUnpaidAmount((delivery.getUnpaidAmount() != null ? delivery.getUnpaidAmount() : 0d) - amount);
-        deliveryRepository.save(delivery);
+    @Transactional
+    public void updateDelivery(UnifiedDelivery d, double amountDelta) {
+        // 1) Resolve total (use stored total; fallback to unit * qty if missing)
+        double total = r3(safe(d.getPrice()));
+        if (total <= 0.0) {
+            total = r3(safe(d.getUnitPrice()) * safe(d.getOilQuantity())); // remove this block if you never want fallback
+        }
+
+        // 2) Current paid/unpaid
+        double paid = r3(safe(d.getPaidAmount()));
+        paid = clamp(paid, 0.0, total);
+        double unpaid = r3(Math.max(0.0, total - paid));
+
+        // 3) Normalize delta: cap overpay/refund
+        double change = r3(amountDelta);
+        if (change >= 0.0) {
+            change = Math.min(change, unpaid);          // cannot overpay
+        } else {
+            change = -Math.min(Math.abs(change), paid); // cannot refund more than paid
+        }
+
+        // 4) Apply & round
+        double newPaid = r3(clamp(paid + change, 0.0, total));
+        double newUnpaid = r3(Math.max(0.0, total - newPaid));
+        boolean fullyPaid = (newUnpaid == 0.0); // safe since rounded to 3
+
+        // 5) Persist
+        d.setPrice(r3(total));
+        d.setPaidAmount(newPaid);
+        d.setUnpaidAmount(newUnpaid);
+        d.setPaid(fullyPaid);
+
+        deliveryRepository.save(d);
     }
 
     private void prepareFinanacalTransaction(PaymentDTO paymentDTO, double amount, UnifiedDelivery delivery, TransactionDirection direction, TransactionType transactionType, OperationType simpleReception) {
@@ -1136,16 +1156,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             }
             entity.setDeleted(true);
             UnifiedDelivery updatedEntity = repository.save(entity);
-            Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(
-                    qc -> {
-                        QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
-                        if (result != null) {
-                            result.setDeleted(true);
-                            return result;
-                        }
-                        return null;
-                    }
-            ).filter(Objects::nonNull).collect(Collectors.toSet());
+            Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(qc -> {
+                QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
+                if (result != null) {
+                    result.setDeleted(true);
+                    return result;
+                }
+                return null;
+            }).filter(Objects::nonNull).collect(Collectors.toSet());
             qualityControlResultRepository.saveAll(controlResults);
             UnifiedDeliveryDTO result = modelMapper.map(updatedEntity, outDTOClass);
             return result;
@@ -1155,4 +1173,21 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         }
     }
 
+    public UnifiedDeliveryDTO getByLotNumberAndType(String lotNumber, DeliveryType deliveryType) {
+
+        try {
+            // Make enum lookup case-insensitive and trim spaces
+
+            var entity = deliveryRepository.findByLotNumberAndDeliveryType(lotNumber, deliveryType);
+            if (entity == null) {
+                return null;
+            }
+
+            return modelMapper.map(entity, UnifiedDeliveryDTO.class);
+
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "Error getByLotNumberAndType  : ", e);
+            return null;
+        }
+    }
 }

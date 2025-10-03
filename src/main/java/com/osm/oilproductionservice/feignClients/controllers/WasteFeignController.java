@@ -1,8 +1,7 @@
 package com.osm.oilproductionservice.feignClients.controllers;
 
 import com.xdev.communicator.feignControllers.BaseFeignController;
-import com.xdev.communicator.models.shared.dto.UnifiedDeliveryDTO;
-import com.xdev.communicator.models.shared.dto.WasteDTO;
+import com.xdev.communicator.models.shared.WasteDTO;
 import com.xdev.xdevsecurity.config.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 

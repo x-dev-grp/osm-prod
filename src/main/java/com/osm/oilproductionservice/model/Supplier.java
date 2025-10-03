@@ -21,16 +21,7 @@ public class Supplier extends BaseEntity {
     private String rib;
     private String bankName;
     private String matriculeFiscal;
-
-    public StorageUnit getStorageUnit() {
-        return storageUnit;
-    }
-
-    public void setStorageUnit(StorageUnit storageUnit) {
-        this.storageUnit = storageUnit;
-    }
-
-    @OneToOne(mappedBy = "supplier",fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "supplier", fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
     @ManyToOne(fetch = FetchType.EAGER)
     private BaseType region;
@@ -45,6 +36,14 @@ public class Supplier extends BaseEntity {
     private Float totalUnpaidAmount;
     @Transient
     private Float totalDebt;
+
+    public StorageUnit getStorageUnit() {
+        return storageUnit;
+    }
+
+    public void setStorageUnit(StorageUnit storageUnit) {
+        this.storageUnit = storageUnit;
+    }
 
     public Boolean getHasStorage() {
         return hasStorage;

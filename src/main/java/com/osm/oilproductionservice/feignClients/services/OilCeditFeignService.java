@@ -5,7 +5,7 @@ import com.osm.oilproductionservice.feignClients.controllers.OilCreditFeignContr
 import com.xdev.communicator.exceptions.ServiceException;
 import com.xdev.communicator.feignControllers.BaseFeignController;
 import com.xdev.communicator.feignServices.BaseFeignService;
-import com.xdev.communicator.models.shared.dto.OilCreditDto;
+import com.xdev.communicator.models.shared.OilCreditDto;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;

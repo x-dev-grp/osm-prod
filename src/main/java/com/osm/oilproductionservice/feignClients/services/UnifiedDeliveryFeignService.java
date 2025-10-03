@@ -1,15 +1,11 @@
 package com.osm.oilproductionservice.feignClients.services;
 
 
- import com.osm.oilproductionservice.feignClients.controllers.FinancialTransactionFeignController;
-import com.osm.oilproductionservice.feignClients.controllers.OilCreditFeignController;
 import com.osm.oilproductionservice.feignClients.controllers.UnifiedDeliveryFeignController;
-import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.communicator.feignControllers.BaseFeignController;
 import com.xdev.communicator.feignServices.BaseFeignService;
-import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
- import com.xdev.communicator.models.shared.dto.UnifiedDeliveryDTO;
- import org.springframework.stereotype.Service;
+import com.xdev.communicator.models.shared.FinancialTransactionDto;
+import org.springframework.stereotype.Service;
 
 @Service
 public class UnifiedDeliveryFeignService extends BaseFeignService<FinancialTransactionDto, FinancialTransactionDto> {

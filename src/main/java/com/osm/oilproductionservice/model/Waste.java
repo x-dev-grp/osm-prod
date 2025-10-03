@@ -1,8 +1,8 @@
 package com.osm.oilproductionservice.model;
 
 import com.osm.oilproductionservice.enums.WasteType;
-import com.xdev.communicator.models.shared.enums.Currency;
-import com.xdev.communicator.models.shared.enums.PaymentMethod;
+import com.xdev.communicator.models.enums.Currency;
+import com.xdev.communicator.models.enums.PaymentMethod;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 

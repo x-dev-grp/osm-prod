@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.enums.Olive_Oil_Type;
-import com.xdev.communicator.models.shared.enums.OperationType;
+import com.xdev.communicator.models.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Cache;
@@ -124,9 +124,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.trtDuration = trtDuration;
     }
 
-    public boolean isPaid() {
-        return paid;
-    }
 
     public boolean getPaid() {
         return paid;

@@ -4,6 +4,7 @@ import com.osm.oilproductionservice.enums.Olive_Oil_Type;
 import com.osm.oilproductionservice.enums.QualityGrades;
 import com.osm.oilproductionservice.enums.SaleStatus;
 import com.osm.oilproductionservice.model.OilSale;
+import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.math.BigDecimal;

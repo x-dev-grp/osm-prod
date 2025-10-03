@@ -1,16 +1,14 @@
 package com.osm.oilproductionservice.dto;
 
 
-
-
-
-  import com.osm.oilproductionservice.enums.OperationType;
-  import com.osm.oilproductionservice.enums.TransactionType;
-  import com.xdev.communicator.models.shared.dto.BankAccountDto;
-import com.xdev.communicator.models.shared.dto.ExpenseDto;
-import com.xdev.communicator.models.shared.enums.Currency;
-import com.xdev.communicator.models.shared.enums.PaymentMethod;
-import com.xdev.communicator.models.shared.enums.TransactionDirection;
+import com.osm.oilproductionservice.enums.OperationType;
+import com.osm.oilproductionservice.enums.TransactionType;
+import com.xdev.communicator.models.enums.Currency;
+import com.xdev.communicator.models.enums.PaymentMethod;
+import com.xdev.communicator.models.enums.TransactionDirection;
+import com.xdev.communicator.models.shared.BankAccountDto;
+import com.xdev.communicator.models.shared.ExpenseDto;
+import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.math.BigDecimal;
@@ -26,7 +24,7 @@ public class FinancialTransactionDto extends BaseDto {
     private BankAccountDto bankAccount;
     private String checkNumber;
     private String lotNumber;
-    private  SupplierDto supplier;
+    private SupplierDto supplier;
      private ExpenseDto expense;
     private String description;
     private String invoiceReference;

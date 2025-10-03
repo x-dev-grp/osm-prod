@@ -1,7 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.model.Supplier;
-import com.xdev.communicator.models.shared.enums.PartnerCategory;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 /**

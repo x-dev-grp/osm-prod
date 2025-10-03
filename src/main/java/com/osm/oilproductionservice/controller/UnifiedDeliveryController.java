@@ -5,6 +5,7 @@ import com.osm.oilproductionservice.dto.ApiResponse;
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
+import com.osm.oilproductionservice.enums.DeliveryType;
 import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
@@ -15,7 +16,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/production/deliveries")
@@ -66,9 +70,17 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByOliveLotNumber(@PathVariable UUID id) {
         ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByOliveLotNumber(id));
         return ResponseEntity.ok(response);
-    } @GetMapping("/getDeliveryByLotNumber/{lotNumber}")
+    }
+
+    @GetMapping("/getDeliveryByLotNumber/{lotNumber}")
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber) {
         ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumber(lotNumber));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/getDeliveryByLotNumber/{lotNumber}/{type}")
+    public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber, @PathVariable DeliveryType type) {
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumberAndType(lotNumber, type));
         return ResponseEntity.ok(response);
     }
 

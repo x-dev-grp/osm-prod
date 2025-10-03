@@ -3,17 +3,10 @@ package com.osm.oilproductionservice.feignClients.services;
 
 import com.osm.oilproductionservice.feignClients.controllers.FinancialTransactionFeignController;
 import com.osm.oilproductionservice.feignClients.controllers.OilCreditFeignController;
-import com.xdev.communicator.exceptions.ServiceException;
 import com.xdev.communicator.feignControllers.BaseFeignController;
 import com.xdev.communicator.feignServices.BaseFeignService;
-import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.retry.annotation.Retry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
-import org.springframework.http.ResponseEntity;
+import com.xdev.communicator.models.shared.FinancialTransactionDto;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.CompletableFuture;
 
 @Service
 public class FinancialTransactionFeignService extends BaseFeignService<FinancialTransactionDto, FinancialTransactionDto> {

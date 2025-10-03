@@ -5,18 +5,17 @@ import com.osm.oilproductionservice.dto.OilSaleDTO;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.enums.SaleStatus;
-import com.osm.oilproductionservice.enums.TransactionState;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.repository.OilSaleRepository;
- import com.xdev.communicator.models.shared.dto.FinancialTransactionDto;
-import com.xdev.communicator.models.shared.dto.SupplierDto;
-import com.xdev.communicator.models.shared.enums.*;
+import com.xdev.communicator.models.enums.PaymentMethod;
+import com.xdev.communicator.models.enums.TransactionDirection;
+import com.xdev.communicator.models.enums.TransactionType;
+import com.xdev.communicator.models.shared.FinancialTransactionDto;
+import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.xdev.communicator.models.shared.enums.OperationType.OIL_SALE;
+import static com.xdev.communicator.models.enums.OperationType.OIL_SALE;
 
 /**
  * Service class for managing oil sales operations

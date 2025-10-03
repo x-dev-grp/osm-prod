@@ -2,8 +2,9 @@ package com.osm.oilproductionservice.dto;
 
 import com.osm.oilproductionservice.enums.WasteType;
 import com.osm.oilproductionservice.model.Waste;
-import com.xdev.communicator.models.shared.enums.Currency;
-import com.xdev.communicator.models.shared.enums.PaymentMethod;
+import com.xdev.communicator.models.enums.Currency;
+import com.xdev.communicator.models.enums.PaymentMethod;
+import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.math.BigDecimal;

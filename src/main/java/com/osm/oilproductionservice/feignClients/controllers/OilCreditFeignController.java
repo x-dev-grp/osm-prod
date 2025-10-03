@@ -1,7 +1,7 @@
 package com.osm.oilproductionservice.feignClients.controllers;
 
 import com.xdev.communicator.feignControllers.BaseFeignController;
-import com.xdev.communicator.models.shared.dto.OilCreditDto;
+import com.xdev.communicator.models.shared.OilCreditDto;
 import com.xdev.xdevsecurity.config.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;

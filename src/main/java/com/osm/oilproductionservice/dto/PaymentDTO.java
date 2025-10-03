@@ -1,9 +1,12 @@
 package com.osm.oilproductionservice.dto;
 
-import com.xdev.communicator.models.shared.dto.BankAccountDto;
-import com.xdev.communicator.models.shared.enums.Currency;
-import com.xdev.communicator.models.shared.enums.PaymentMethod;
-import com.xdev.communicator.models.shared.dto.SupplierDto;
+
+import com.xdev.communicator.models.enums.Currency;
+import com.xdev.communicator.models.enums.PaymentMethod;
+import com.xdev.communicator.models.shared.BankAccountDto;
+import com.xdev.communicator.models.shared.SupplierDto;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
@@ -15,7 +18,8 @@ public class PaymentDTO {
 
     private String checkNumber;
     private BankAccountDto bankAccount;
-     private  SupplierDto supplier;
+    private
+    SupplierDto supplier;
 
     public UUID getIdOperation() {
         return idOperation;
