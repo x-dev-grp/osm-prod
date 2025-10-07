@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.WasteType;
+import com.xdev.communicator.models.enums.WasteType;
 import com.osm.oilproductionservice.model.Waste;
 import com.xdev.communicator.models.enums.Currency;
 import com.xdev.communicator.models.enums.PaymentMethod;

@@ -1,10 +1,8 @@
 package com.osm.oilproductionservice.controller;
 
-import com.osm.oilproductionservice.dto.ChildLotCompletionDto;
 import com.osm.oilproductionservice.dto.PlanningSaveRequest;
 import com.osm.oilproductionservice.service.PlanningService;
-import com.xdev.xdevbase.apiDTOs.ApiResponse;
-import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
+import com.xdev.communicator.models.shared.ChildLotCompletionDto;
 import com.xdev.xdevbase.utils.OSMLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 @RestController
 @RequestMapping("/api/production")
@@ -86,7 +86,7 @@ public class PlanningController {
             if(body.get(AUTO_SET_STORAGE)!=null && body.get(AUTO_SET_STORAGE) instanceof Boolean b) {
                autoSetStorage= b;
             }
-            planningService.markLotCompleted(lotNumber, oilQuantity, rendement, unpaidPrice,autoSetStorage,duree);
+            planningService.markLotCompleted(lotNumber, "0" , oilQuantity, rendement, unpaidPrice,autoSetStorage,duree);
             return ResponseEntity
                     .ok("Lot completed successfully");
 
@@ -118,18 +118,19 @@ public class PlanningController {
     @PostMapping("/planning/globalLots/{globalLotNumber}/completed")
     public ResponseEntity<String> completeGlobalLot(
             @PathVariable String globalLotNumber,
-            @RequestBody List<ChildLotCompletionDto> childLots) {
+            @RequestBody Map<String, Object> body) {
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "completeGlobalLot", globalLotNumber, childLots);
 
-        try {
+
+        List<ChildLotCompletionDto> childLots = (List<ChildLotCompletionDto>) body.get("childLots");
+        OSMLogger.logMethodEntry(this.getClass(), "completeGlobalLot", globalLotNumber, childLots);   try {
             if (childLots == null || childLots.isEmpty()) {
                 return ResponseEntity
                         .badRequest()
                         .body("Child lot details must be provided");
             }
 
-            planningService.markGlobalLotCompleted(globalLotNumber, childLots);
+            planningService.markGlobalLotCompleted(globalLotNumber, body);
             return ResponseEntity
                     .ok("Global lot completed successfully");
 
@@ -152,11 +153,10 @@ public class PlanningController {
                     this.getClass(), "completeGlobalLot", startTime, System.currentTimeMillis());
         }
     }
-
     /** helper to safely extract a Double from the request body */
     private Double getDouble(Map<String, Object> body, String key) {
         Object v = body.get(key);
-        return (v instanceof Number) ? ((Number) v).doubleValue() : null;
+        return (v instanceof Number) ? round(((Number) v).doubleValue(),3) : null;
     }
     protected String getResourceName() {
         return "Parameter".toUpperCase();

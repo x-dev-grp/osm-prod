@@ -1,13 +1,15 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.QualityGrades;
-import com.osm.oilproductionservice.enums.StorageStatus;
+import com.xdev.communicator.models.enums.QualityGrades;
+import com.xdev.communicator.models.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 @Entity
 @Table(name = "storage_unit")
@@ -108,7 +110,7 @@ public class StorageUnit extends BaseEntity {
     }
 
     public void setMonthlyRentalPrice(Double monthlyRentalPrice) {
-        this.monthlyRentalPrice = monthlyRentalPrice;
+        this.monthlyRentalPrice = monthlyRentalPrice == null ? null :  round(monthlyRentalPrice, 3);
     }
     public String getName() {
         return name;
@@ -139,7 +141,7 @@ public class StorageUnit extends BaseEntity {
     }
 
     public void setMaxCapacity(Double maxCapacity) {
-        this.maxCapacity = maxCapacity;
+        this.maxCapacity = maxCapacity == null ? null : round(maxCapacity, 3);
     }
 
     public Double getCurrentVolume() {
@@ -147,7 +149,7 @@ public class StorageUnit extends BaseEntity {
     }
 
     public void setCurrentVolume(Double currentVolume) {
-        this.currentVolume = currentVolume;
+        this.currentVolume = currentVolume == null ? null : round(currentVolume, 3);
     }
 
     public void updateCurrentVolume(Double volume, int direction, Double unitPrice) {
@@ -240,7 +242,7 @@ public class StorageUnit extends BaseEntity {
     }
 
     public void setAvgCost(Double avgCost) {
-        this.avgCost = avgCost;
+        this.avgCost = avgCost == null ? null : round(avgCost, 3);
     }
 
     public Double getTotalCost() {
@@ -248,6 +250,6 @@ public class StorageUnit extends BaseEntity {
     }
 
     public void setTotalCost(Double totalCost) {
-        this.totalCost = totalCost;
+        this.totalCost = totalCost == null ? null : round(totalCost, 3);
     }
 }

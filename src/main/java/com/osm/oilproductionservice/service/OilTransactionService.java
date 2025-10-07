@@ -2,10 +2,6 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.TransactionState;
-import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.feignClients.services.OilCeditFeignService;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
@@ -13,7 +9,10 @@ import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.OilTransactionRepository;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
-import com.xdev.communicator.models.enums.OperationType;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
+import com.xdev.communicator.models.enums.TransactionState;
+import com.xdev.communicator.models.enums.TransactionType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import com.xdev.xdevbase.utils.OSMLogger;
@@ -27,6 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.xdev.communicator.models.enums.OperationType.EXCHANGE;
 
 /**
  * Service class for managing oil transactions, including creation, approval, and action mapping.
@@ -221,7 +222,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         switch (type) {
             case RECEPTION_IN -> handleReceptionIn(oilTransaction, dto);
             case TRANSFER_IN -> handleTransferIn(oilTransaction, dto);
-            case SALE -> handleSale(oilTransaction, dto);
+            case OIL_SALE -> handleSale(oilTransaction, dto);
             case LOAN -> handleLoan(oilTransaction, dto);
             case EXCHANGE -> handleExchange(oilTransaction, dto);
             default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
@@ -489,7 +490,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
 
             // Validate operation type for exchange
-            if (delivery.getOperationType() != OperationType.EXCHANGE) {
+            if (delivery.getOperationType() != EXCHANGE) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[createSingleOilTransactionOut] Creating oil transaction out for non-exchange operation: %s", delivery.getOperationType());
             }
 
@@ -537,7 +538,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     @Transactional
     public OilTransactionDTO createOilTransactionForSale(OilTransactionDTO oilTransactionDTO) {
         OilTransactionDTO oilTransactionDTOforSale = modelMapper.map(oilTransactionDTO, OilTransactionDTO.class);
-        oilTransactionDTOforSale.setTransactionType(TransactionType.SALE);
+        oilTransactionDTOforSale.setTransactionType(TransactionType.OIL_SALE);
         oilTransactionDTOforSale.setTransactionState(TransactionState.PENDING);
         return save(oilTransactionDTOforSale);
     }

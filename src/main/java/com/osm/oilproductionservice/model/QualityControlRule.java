@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.RuleType;
+import com.xdev.communicator.models.enums.RuleType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

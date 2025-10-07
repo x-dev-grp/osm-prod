@@ -1,9 +1,8 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.ParameterType;
+import com.xdev.communicator.models.enums.ParameterType;
 import com.osm.oilproductionservice.model.Parameter;
 import com.xdev.xdevbase.dtos.BaseDto;
-import lombok.Value;
 
 import java.io.Serializable;
 

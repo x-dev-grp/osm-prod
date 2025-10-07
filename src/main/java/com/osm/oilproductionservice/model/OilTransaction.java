@@ -1,8 +1,8 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.Olive_Oil_Type;
-import com.osm.oilproductionservice.enums.TransactionState;
-import com.osm.oilproductionservice.enums.TransactionType;
+import com.xdev.communicator.models.enums.Olive_Oil_Type;
+import com.xdev.communicator.models.enums.TransactionState;
+import com.xdev.communicator.models.enums.TransactionType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
@@ -10,6 +10,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
@@ -104,7 +106,7 @@ public class OilTransaction extends BaseEntity implements Serializable {
     }
 
     public void setQuantityKg(Double quantityKg) {
-        this.quantityKg = quantityKg;
+        this.quantityKg = quantityKg == null ? null :  round(quantityKg, 3);
     }
 
     public Double getUnitPrice() {
@@ -112,7 +114,7 @@ public class OilTransaction extends BaseEntity implements Serializable {
     }
 
     public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice;
+        this.unitPrice = unitPrice == null ? null : round(unitPrice, 3);
     }
 
     public double getTotalPrice() {

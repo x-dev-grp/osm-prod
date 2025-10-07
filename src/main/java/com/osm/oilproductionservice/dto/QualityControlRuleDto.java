@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.RuleType;
+import com.xdev.communicator.models.enums.RuleType;
 import com.osm.oilproductionservice.model.QualityControlRule;
 import com.xdev.xdevbase.dtos.BaseDto;
 

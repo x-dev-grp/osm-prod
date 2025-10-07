@@ -5,10 +5,12 @@ import com.osm.oilproductionservice.dto.ApiResponse;
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
 import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
@@ -75,6 +77,11 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     @GetMapping("/getDeliveryByLotNumber/{lotNumber}")
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber) {
         ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumber(lotNumber));
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/getDeliveriesByGlobalLotNumber/{lotNumber}")
+    public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesByGlobalLotNumber(@PathVariable String lotNumber) {
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getDeliveriesByGlobalLotNumber(lotNumber));
         return ResponseEntity.ok(response);
     }
 

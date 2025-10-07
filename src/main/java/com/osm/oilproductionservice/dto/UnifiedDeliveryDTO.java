@@ -1,10 +1,10 @@
 package com.osm.oilproductionservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.Olive_Oil_Type;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
+import com.xdev.communicator.models.enums.Olive_Oil_Type;
 import com.xdev.communicator.models.enums.OperationType;
 import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.dtos.BaseDto;

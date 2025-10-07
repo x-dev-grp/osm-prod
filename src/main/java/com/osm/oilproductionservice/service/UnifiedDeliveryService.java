@@ -3,8 +3,6 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.*;
 import com.osm.oilproductionservice.repository.*;
@@ -818,11 +816,11 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     delivery.setStatus(OliveLotStatus.IN_STOCK);
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
-                        case BASE -> {
-                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(), DeliveryType.OLIVE);
-                            originalDelivery.setUnpaidAmount(totalPrice);
-                            deliveryRepository.save(originalDelivery);
-                        }
+//                        case BASE -> {
+//                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(), DeliveryType.OLIVE);
+//                            originalDelivery.setUnpaidAmount(totalPrice);
+//                            deliveryRepository.save(originalDelivery);
+//                        }
                     }
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OIL delivery %s: unitPrice=%.2f, oilQuantity=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getOilQuantity(), totalPrice);
 
@@ -1190,4 +1188,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             return null;
         }
     }
+
+    public List<UnifiedDeliveryDTO> getDeliveriesByGlobalLotNumber(String lotNumber) {
+        List<UnifiedDelivery> deliveries =
+                deliveryRepository.findByGlobalLotNumberAndDeliveryType(lotNumber, DeliveryType.OLIVE);
+        List<UnifiedDeliveryDTO> result = new ArrayList<>(deliveries.size());
+        deliveries.forEach(d -> result.add(modelMapper.map(d, UnifiedDeliveryDTO.class)));
+        return result;
+    }
+
+
 }

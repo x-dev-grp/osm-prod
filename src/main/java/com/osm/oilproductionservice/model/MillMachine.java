@@ -8,6 +8,8 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+import static org.apache.commons.math3.util.Precision.round;
+
 
 @Entity
 @Table(name = "mill_machine")
@@ -102,7 +104,7 @@ public class MillMachine extends BaseEntity implements Serializable {
     }
 
     public void setCapacity(Double capacity) {
-        this.capacity = capacity;
+        this.capacity = capacity == null ? null :  round(capacity, 3);
     }
 
     public String getOperatingStatus() {

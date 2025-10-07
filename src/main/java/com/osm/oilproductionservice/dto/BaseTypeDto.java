@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.TypeCategory;
+import com.xdev.communicator.models.enums.TypeCategory;
 import com.osm.oilproductionservice.model.BaseType;
 import com.xdev.xdevbase.dtos.BaseDto;
 

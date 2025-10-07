@@ -1,9 +1,9 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.RuleType;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
+import com.xdev.communicator.models.enums.RuleType;
 import com.osm.oilproductionservice.model.QualityControlResult;
 import com.osm.oilproductionservice.model.QualityControlRule;
 import com.osm.oilproductionservice.model.UnifiedDelivery;

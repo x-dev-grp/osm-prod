@@ -3,9 +3,9 @@ package com.osm.oilproductionservice.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.osm.oilproductionservice.enums.DeliveryType;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.Olive_Oil_Type;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
+import com.xdev.communicator.models.enums.Olive_Oil_Type;
 import com.xdev.communicator.models.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -17,6 +17,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 
 /**
@@ -113,7 +115,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPoidsCamionVide(Double poidsCamionVide) {
-        this.poidsCamionVide = poidsCamionVide;
+        this.poidsCamionVide = poidsCamionVide == null ? null : round(poidsCamionVide, 3);
     }
 
     public Integer getTrtDuration() {
@@ -229,7 +231,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPoidsBrute(Double poidsBrute) {
-        this.poidsBrute = poidsBrute;
+        this.poidsBrute = poidsBrute == null ? null : round(poidsBrute, 3);
     }
 
     public Double getPoidsNet() {
@@ -237,7 +239,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPoidsNet(Double poidsNet) {
-        this.poidsNet = poidsNet;
+        this.poidsNet = poidsNet == null ? null : round(poidsNet, 3);
     }
 
     public String getMatriculeCamion() {
@@ -294,7 +296,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setOilQuantity(Double oilQuantity) {
-        this.oilQuantity = oilQuantity;
+        this.oilQuantity = oilQuantity == null ? null : round(oilQuantity, 3);
     }
 
     public Double getUnitPrice() {
@@ -302,7 +304,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice;
+        this.unitPrice = unitPrice == null ? null : round(unitPrice, 3);
     }
 
     public Double getPrice() {
@@ -310,7 +312,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPrice(Double price) {
-        this.price = price;
+        this.price = price == null ? null : round(price, 3);
     }
 
     public Double getPaidAmount() {
@@ -318,7 +320,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPaidAmount(Double paidAmount) {
-        this.paidAmount = paidAmount;
+        this.paidAmount = paidAmount == null ? null : round(paidAmount, 3);
     }
 
     public Double getUnpaidAmount() {
@@ -326,7 +328,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount;
+        this.unpaidAmount = unpaidAmount == null ? null : round(unpaidAmount, 3);
     }
 
     public StorageUnit getStorageUnit() {
@@ -388,7 +390,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setRendement(Double rendement) {
-        this.rendement = rendement;
+        this.rendement = rendement == null ? null : round(rendement, 3);
     }
 
     public MillMachine getMillMachine() {
@@ -404,7 +406,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setOliveQuantity(Double oliveQuantity) {
-        this.oliveQuantity = oliveQuantity;
+        this.oliveQuantity = oliveQuantity == null ? null : round(oliveQuantity, 3);
     }
 
     public BaseType getParcel() {

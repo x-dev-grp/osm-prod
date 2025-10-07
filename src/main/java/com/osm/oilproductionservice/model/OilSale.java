@@ -1,9 +1,10 @@
 package com.osm.oilproductionservice.model;
 
 
-import com.osm.oilproductionservice.enums.Olive_Oil_Type;
-import com.osm.oilproductionservice.enums.QualityGrades;
-import com.osm.oilproductionservice.enums.SaleStatus;
+
+import com.xdev.communicator.models.enums.Olive_Oil_Type;
+import com.xdev.communicator.models.enums.QualityGrades;
+import com.xdev.communicator.models.enums.SaleStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 /**
  * Oil Sale entity for managing oil sales transactions
@@ -169,7 +172,7 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setPaiedAmount(Double paidAmount) {
-        this.paidAmount = paidAmount;
+        this.paidAmount = paidAmount == null ? null :  round(paidAmount, 3);
     }
 
     public Double getUnpaidAmount() {
@@ -177,7 +180,7 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount;
+        this.unpaidAmount = unpaidAmount == null ? null : round(unpaidAmount, 3);
     }
 
     public OilSale() {
@@ -406,4 +409,4 @@ public class OilSale extends BaseEntity implements Serializable {
                 ", paymentMethod='" + paymentMethod + '\'' +
                 '}';
     }
-} 
+}

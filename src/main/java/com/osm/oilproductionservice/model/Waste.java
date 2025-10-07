@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.WasteType;
+import com.xdev.communicator.models.enums.WasteType;
 import com.xdev.communicator.models.enums.Currency;
 import com.xdev.communicator.models.enums.PaymentMethod;
 import com.xdev.xdevbase.entities.BaseEntity;
@@ -9,6 +9,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+
+import static org.apache.commons.math3.util.Precision.round;
 
 @Entity
 @Table(name = "waste")
@@ -53,7 +55,7 @@ public class Waste extends BaseEntity {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount;
+        this.unpaidAmount = unpaidAmount == null ? null :  round(unpaidAmount, 3);
     }
 
     public Double getPaidAmount() {
@@ -61,7 +63,7 @@ public class Waste extends BaseEntity {
     }
 
     public void setPaidAmount(Double paidAmount) {
-        this.paidAmount = paidAmount;
+        this.paidAmount = paidAmount == null ? null : round(paidAmount, 3);
     }
 
     private String storageLocationCode;
@@ -84,7 +86,7 @@ public class Waste extends BaseEntity {
     }
 
     public void setQuantityInKg(Double quantityInKg) {
-        this.quantityInKg = quantityInKg;
+        this.quantityInKg = quantityInKg == null ? null : round(quantityInKg, 3);
     }
 
     public BigDecimal getUnitPrice() {

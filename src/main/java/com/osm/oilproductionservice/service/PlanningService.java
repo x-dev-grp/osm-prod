@@ -1,14 +1,14 @@
 package com.osm.oilproductionservice.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.osm.oilproductionservice.dto.*;
-import com.osm.oilproductionservice.enums.OliveLotStatus;
-import com.osm.oilproductionservice.enums.TransactionState;
-import com.osm.oilproductionservice.enums.TransactionType;
 import com.osm.oilproductionservice.model.MillMachine;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.MillMachineRepository;
-import com.xdev.communicator.models.enums.OperationType;
+import com.xdev.communicator.models.enums.*;
+import com.xdev.communicator.models.shared.ChildLotCompletionDto;
 import com.xdev.xdevbase.utils.OSMLogger;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -17,12 +17,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.osm.oilproductionservice.controller.PlanningController.OIL_QUANTITY;
+import static com.osm.oilproductionservice.controller.PlanningController.RENDEMENT;
+import static org.apache.commons.math3.util.Precision.round;
 
 @Service
 public class PlanningService {
@@ -202,7 +204,6 @@ public class PlanningService {
     @Transactional
     public PlanningSaveRequest getPlanning() {
         long startTime = System.currentTimeMillis();
-        OSMLogger.logMethodEntry(this.getClass(), "getPlanning", null);
         try {
             log.info("Fetching current planning state at {}", new Date());
 
@@ -282,27 +283,38 @@ public class PlanningService {
         }
     }
 
+    /**
+     * Returns the single unique value if all are equal (ignoring nulls),
+     * returns null if the list is empty, all-null, or contains differing values.
+     */
+    private static <T> T allEqualOrNull(List<T> values) {
+        if (values == null || values.isEmpty()) return null;
+        T first = null;
+        for (T v : values) {
+            if (v == null) continue;
+            if (first == null) {
+                first = v;
+            } else if (!first.equals(v)) {
+                return null; // mixed → no single common value
+            }
+        }
+        return first; // may be null if all were null
+    }
+
+    private void updateMachinWorkTime(MillMachine millMachine, Integer trtDuration) {
+        MillMachine machin = millRepo.findById(millMachine.getId()).orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millMachine.getId()));
+        if (machin != null) {
+            long currentWorkTime = machin.getHoursOperated() != null ? machin.getHoursOperated() : 0;
+            machin.setHoursOperated((currentWorkTime + (trtDuration != null ? trtDuration : 0)) / 60);
+            millRepo.save(machin);
+        }
+    }
+
     @Transactional
-    public void markLotCompleted(String lotNumber, Double oilQuantity, Double rendement, Double unpaidPrice,boolean autoSetStorage,int duree ) {
+    public void markLotCompleted(String lotNumber, String globalLotNumber, Double oilQuantity, Double rendement, Double unpaidPrice, boolean autoSetStorage, int duree) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "markLotCompleted", lotNumber, oilQuantity, rendement);
         try {
-            // Validate input parameters
-            if (lotNumber == null || lotNumber.trim().isEmpty()) {
-                throw new IllegalArgumentException("Lot number cannot be null or empty");
-            }
-
-            if (oilQuantity != null && oilQuantity < 0) {
-                throw new IllegalArgumentException("Oil quantity cannot be negative");
-            }
-
-            if (rendement != null && (rendement < 0 || rendement > 100)) {
-                throw new IllegalArgumentException("Rendement must be between 0 and 100");
-            }
-
-            if (unpaidPrice != null && unpaidPrice < 0) {
-                throw new IllegalArgumentException("Unpaid price cannot be negative");
-            }
 
             List<UnifiedDelivery> delivery = deliveryRepo.findByLotNumberIn(Set.of(lotNumber));
             if (delivery.isEmpty()) {
@@ -310,8 +322,8 @@ public class PlanningService {
             }
             UnifiedDelivery lot = delivery.getFirst();
 
-            lot.setOilQuantity( normalize3(oilQuantity).doubleValue() );
-            lot.setRendement(   normalize3(rendement).doubleValue() );
+            lot.setOilQuantity((oilQuantity).doubleValue());
+            lot.setRendement(round(rendement, 3) );
             lot.setTrtDuration(duree);
 
             lot.setOilType(lot.getOilType());
@@ -319,18 +331,22 @@ public class PlanningService {
             lot.setStatus(OliveLotStatus.COMPLETED);
 
             deliveryRepo.save(lot);
-            updateMachinWorkTime(lot.getMillMachine(),lot.getTrtDuration());
-
-            if (lot.getOperationType() == OperationType.EXCHANGE ||
-                    lot.getOperationType() == OperationType.BASE ||
-                    lot.getOperationType() == OperationType.OLIVE_PURCHASE) {
-                unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(),false);
-
+            if (Objects.equals(globalLotNumber, "0") || globalLotNumber.isEmpty()) {
+                updateMachinWorkTime(lot.getMillMachine(), lot.getTrtDuration());
+                switch (lot.getOperationType()) {
+                    case EXCHANGE, BASE, OLIVE_PURCHASE ->
+                            unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(), false);
+                    case null, default -> {
+                    }
+                }
             }
-            if(lot.getOperationType()==OperationType.SIMPLE_RECEPTION){
-                lot.setPrice(normalize3(unpaidPrice).doubleValue());
-                lot.setUnpaidAmount(normalize3(unpaidPrice).doubleValue());
-
+            switch (lot.getOperationType()) {
+                case SIMPLE_RECEPTION -> {
+                    lot.setPrice((unpaidPrice).doubleValue());
+                    lot.setUnpaidAmount((unpaidPrice).doubleValue());
+                }
+                case null, default -> {
+                }
             }
             if(autoSetStorage ) {
                 if(lot.getSupplier() != null && lot.getSupplier().getStorageUnit() != null) {
@@ -359,41 +375,33 @@ public class PlanningService {
         }
     }
 
-    private void updateMachinWorkTime(MillMachine millMachine, Integer trtDuration) {
-        MillMachine machin = millRepo.findById(millMachine.getId()).orElseThrow(() -> new IllegalArgumentException(MILL_NOT_FOUND + millMachine.getId()));
-        if (machin != null) {
-            long currentWorkTime = machin.getHoursOperated() != null ? machin.getHoursOperated() : 0;
-            machin.setHoursOperated((currentWorkTime + (trtDuration != null ? trtDuration : 0))/60);
-            millRepo.save(machin);
-        }
-    }
-
     @Transactional
 
-    public void markGlobalLotCompleted(String globalLotNumber, List<ChildLotCompletionDto> childLots) {
+    public void markGlobalLotCompleted(String globalLotNumber, Map<String, Object> body) {
         long startTime = System.currentTimeMillis();
+        Double oilQuantity = getDouble(body, OIL_QUANTITY);
+        Double rendement = getDouble(body, RENDEMENT);
+        int duree = (int) body.get("triturationDurationInMinutes");
+        // ✅ Convert raw List<LinkedHashMap> → List<ChildLotCompletionDto>
+        List<ChildLotCompletionDto> childLots = new ObjectMapper().convertValue(body.get("childLots"), new TypeReference<>() {
+                }
+        );
         OSMLogger.logMethodEntry(this.getClass(), "markGlobalLotCompleted", globalLotNumber, childLots);
 
         try {
-            // Validate input parameters
-            if (globalLotNumber == null || globalLotNumber.trim().isEmpty()) {
-                throw new IllegalArgumentException("Global lot number cannot be null or empty");
-            }
-
-            if (childLots == null || childLots.isEmpty()) {
-                throw new IllegalArgumentException("Child lots list cannot be null or empty");
-            }
-
             // verify global lot exists
             List<UnifiedDelivery> existing = deliveryRepo.findByGlobalLotNumber(globalLotNumber);
             if (existing.isEmpty()) {
                 throw new EntityNotFoundException("Global lot not found: " + globalLotNumber);
             }
-
             // delegate each child
-            childLots.forEach(dto -> markLotCompleted(dto.getLotNumber(), dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice(),false,dto.getTrtDuration()));
-
+            childLots.forEach(dto -> markLotCompleted( dto.getLotNumber(),globalLotNumber, dto.getOilQuantity(), dto.getRendement(), dto.getUnpaidPrice(), false, duree));
             log.info("Global lot {} completed with {} child lots", globalLotNumber, childLots.size());
+            if (existing.getFirst().getOperationType() == OperationType.BASE || existing.getFirst().getOperationType() == OperationType.OLIVE_PURCHASE) {
+                createGlobalOilReception(globalLotNumber, oilQuantity, rendement);
+            }
+            updateMachinWorkTime(existing.getFirst().getMillMachine(), duree);
+
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "markGlobalLotCompleted", e);
             throw e;
@@ -401,20 +409,114 @@ public class PlanningService {
             OSMLogger.logMethodExit(this.getClass(), "markGlobalLotCompleted", null);
             OSMLogger.logPerformance(this.getClass(), "markGlobalLotCompleted", startTime, System.currentTimeMillis());
         }
+
     }
-    private static BigDecimal normalize3(Number n) {
-        if (n == null) return null;
-        // Use BigDecimal(String) to avoid double precision artifacts
-        BigDecimal bd = (n instanceof BigDecimal)
-                ? (BigDecimal) n
-                : new BigDecimal(n.toString());
 
-        // Round to 3 decimals, then remove trailing zeros (scale becomes 0..3)
-        bd = bd.setScale(3, RoundingMode.HALF_UP).stripTrailingZeros();
-
-        // Normalize -0 to 0
-        if (bd.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
-
-        return bd;
+    private Double getDouble(Map<String, Object> body, String key) {
+        Object v = body.get(key);
+        return (v instanceof Number) ? round(((Number) v).doubleValue(),3) : null;
     }
+
+    // ---- drop-in replacement ----
+    @Transactional
+    protected void createGlobalOilReception(String globalLotNumber, Double oilQuantity, Double rendement) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "createAggregatedOilReceptionFromGlobalLot", globalLotNumber);
+
+        try {
+            // Fetch child lots
+            List<UnifiedDelivery> existing = deliveryRepo.findByGlobalLotNumber(globalLotNumber);
+            if (existing.isEmpty()) {
+                throw new EntityNotFoundException("Global lot not found: " + globalLotNumber);
+            }
+
+            // Validate uniform global lot and supported operation type
+            String gln = existing.getFirst().getGlobalLotNumber();
+            OperationType op = existing.getFirst().getOperationType();
+            if (existing.stream().anyMatch(d -> !Objects.equals(d.getGlobalLotNumber(), gln) ||
+                    (op != OperationType.BASE && op != OperationType.OLIVE_PURCHASE))) {
+                throw new IllegalStateException("Invalid global lot: mixed GLN or unsupported op type (must be BASE or OLIVE_PURCHASE)");
+            }
+
+            // Aggregates (round to 3 decimals)
+            double totalOliveKg = existing.stream()
+                    .map(UnifiedDelivery::getPoidsNet)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+
+            double totalOilKg = existing.stream()
+                    .map(UnifiedDelivery::getOilQuantity)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+
+            double totalUnpaid = existing.stream()
+                    .map(UnifiedDelivery::getUnpaidAmount)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+
+            int totalDuration = existing.getFirst().getTrtDuration();
+
+
+            // Common metadata: prefer unanimous value, else fallback to first item
+            UnifiedDelivery first = existing.get(0);
+
+            var commonOilType = allEqualOrNull(existing.stream().map(UnifiedDelivery::getOilType).toList());
+            var commoneregion = allEqualOrNull(existing.stream().map(UnifiedDelivery::getRegion).toList());
+            var oilType = (commonOilType != null) ? commonOilType : first.getOliveType();
+
+            var commonOilVariety = allEqualOrNull(existing.stream().map(UnifiedDelivery::getOilVariety).toList());
+            var commonolivtype = allEqualOrNull(existing.stream().map(UnifiedDelivery::getOliveType).toList());
+            var oilVariety = (commonOilVariety != null) ? commonOilVariety : first.getOliveVariety();
+
+            var commonMill = allEqualOrNull(existing.stream().map(UnifiedDelivery::getMillMachine).toList());
+            var mill = (commonMill != null) ? commonMill : first.getMillMachine();
+
+            var commonOp = allEqualOrNull(existing.stream().map(UnifiedDelivery::getOperationType).toList());
+            var opType = (commonOp != null) ? commonOp : first.getOperationType();
+
+            // Build the single aggregated "global oil reception" record
+            UnifiedDelivery global = new UnifiedDelivery();
+            global.setGlobalLotNumber(gln);
+            global.setLotNumber(gln);  // Use global lot number as the lotNumber for oil rec
+            global.setDeliveryType(DeliveryType.OIL);  // Explicitly set as OIL
+            global.setPoidsNet(round(totalOliveKg, 3));  // Olive input for reference
+            global.setOliveQuantity(round(totalOliveKg, 3));
+            global.setOliveType(commonolivtype);
+            global.setOilQuantity(oilQuantity);
+            global.setUnpaidAmount(round(totalUnpaid, 3));
+            global.setRegion(commoneregion);
+            global.setTrtDuration(totalDuration);
+            global.setRendement(rendement);
+            global.setOilType(oilType);
+            global.setOilVariety(oilVariety);
+            global.setDeliveryDate(LocalDateTime.now());
+            if (mill != null) global.setMillMachine(mill);
+            global.setOperationType(opType);
+            global.setSupplier(first.getSupplier());  // Inherit from first (assumed uniform)
+            global.setPaid(true);
+            global.setStatus(OliveLotStatus.COMPLETED);  // Set intent
+
+            // Save via standard flow (will set status to NEW for OIL), then update to COMPLETED
+            UnifiedDelivery savedDto = deliveryRepo.save(modelMapper.map(global, UnifiedDelivery.class));
+            UnifiedDelivery savedGlobal = modelMapper.map(savedDto, UnifiedDelivery.class);
+            savedGlobal.setStatus(OliveLotStatus.NEW);
+            deliveryRepo.save(savedGlobal);
+
+
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[GLOBAL_RECEPTION] Created global oil reception gln={} totalOliveKg={} totalOilKg={} rendement={} totalUnpaid={} trtDurationMin={}",
+                    gln, round(totalOliveKg, 3), round(totalOilKg, 3), rendement, round(totalUnpaid, 3), totalDuration);
+
+            OSMLogger.logMethodExit(this.getClass(), "createAggregatedOilReceptionFromGlobalLot", savedDto);
+            OSMLogger.logPerformance(this.getClass(), "createAggregatedOilReceptionFromGlobalLot", startTime, System.currentTimeMillis());
+
+        } catch (Exception e) {
+            OSMLogger.logException(this.getClass(), "createAggregatedOilReceptionFromGlobalLot", e);
+            throw e;
+        }
+    }
+
+
 }

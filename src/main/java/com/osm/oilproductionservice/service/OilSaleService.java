@@ -4,7 +4,7 @@ package com.osm.oilproductionservice.service;
 import com.osm.oilproductionservice.dto.OilSaleDTO;
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
 import com.osm.oilproductionservice.dto.PaymentDTO;
-import com.osm.oilproductionservice.enums.SaleStatus;
+import com.xdev.communicator.models.enums.SaleStatus;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.repository.OilSaleRepository;

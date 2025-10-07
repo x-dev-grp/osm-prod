@@ -1,9 +1,10 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.Olive_Oil_Type;
-import com.osm.oilproductionservice.enums.TransactionState;
-import com.osm.oilproductionservice.enums.TransactionType;
+
 import com.osm.oilproductionservice.model.OilTransaction;
+import com.xdev.communicator.models.enums.Olive_Oil_Type;
+import com.xdev.communicator.models.enums.TransactionState;
+import com.xdev.communicator.models.enums.TransactionType;
 import com.xdev.xdevbase.dtos.BaseDto;
 
 import java.util.UUID;

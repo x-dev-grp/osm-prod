@@ -1,6 +1,6 @@
 package com.osm.oilproductionservice.model;
 
-import com.osm.oilproductionservice.enums.TypeCategory;
+import com.xdev.communicator.models.enums.TypeCategory;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.Entity;
 

@@ -1,7 +1,7 @@
 package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.enums.QualityGrades;
-import com.osm.oilproductionservice.enums.StorageStatus;
+import com.xdev.communicator.models.enums.QualityGrades;
+import com.xdev.communicator.models.enums.StorageStatus;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.xdev.communicator.models.shared.SupplierDto;
 import com.xdev.xdevbase.dtos.BaseDto;
