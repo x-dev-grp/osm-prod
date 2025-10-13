@@ -52,7 +52,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
            AND d.isDeleted = false
            AND (
                  (d.operationType = 'BASE'             AND d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))
-              OR (d.operationType = 'OLIVE_PURCHASE'  AND d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))
+              OR (d.operationType = 'OLIVE_PURCHASE'  AND d.status IN ('IN_PROGRESS','PROD_READY'))
               OR (d.operationType = 'PAYMENT'         AND d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY'))
               OR (d.operationType = 'EXCHANGE'        AND d.status IN ('OLIVE_CONTROLLED','IN_PROGRESS','PROD_READY')
                       AND COALESCE(d.unitPrice, 0) <> 0)
