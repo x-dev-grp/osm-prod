@@ -33,6 +33,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     private Boolean paid;
     private Integer trtDuration;
     private Double poidsCamionVide;
+    private String description;
 
     public Boolean getPaid() {
         return paid;
@@ -391,5 +392,11 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
         this.poidsCamionVide = poidsCamionVide;
     }
 
+    public String getDescription() {
+        return description;
+    }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }

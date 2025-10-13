@@ -45,6 +45,9 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
 
     // E.g., OIL, OLIVE, etc.
     private String lotNumber;
+
+    private String description;
+
     private String lotOliveNumber;
     private LocalDateTime deliveryDate;
 
@@ -118,6 +121,13 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.poidsCamionVide = poidsCamionVide == null ? null : round(poidsCamionVide, 3);
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
     public Integer getTrtDuration() {
         return trtDuration;
     }

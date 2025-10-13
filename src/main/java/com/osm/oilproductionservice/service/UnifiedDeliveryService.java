@@ -293,8 +293,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.OLIVE_QUALITY));
                 actions.add(Action.GEN_PDF);
             }
-            case IN_PROGRESS -> {
-                // No extra actions for now
+            case PROD_READY -> {
+                actions.add(Action.DELETE);
+                actions.add(Action.GEN_PDF);
             }
             case OLIVE_CONTROLLED -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.GEN_PDF_QC_OLIVE));
@@ -704,7 +705,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
      * @throws RuntimeException         if there's an error during processing
      */
     @Transactional
-    public void updateStatus(UUID id, OliveLotStatus status) {
+    public void updateStatus(UUID id, OliveLotStatus status, String cause) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "updateStatus", String.format("id=%s, status=%s", id, status));
 
@@ -725,7 +726,9 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateStatus] Delivery not found with ID: " + id);
                 return new EntityNotFoundException("Delivery not found: " + id);
             });
-
+            if (cause != null) {
+                delivery.setDescription(cause);
+            }
             OliveLotStatus oldStatus = delivery.getStatus();
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateStatus] Found delivery %s (Type: %s, Old Status: %s, New Status: %s)", delivery.getLotNumber(), delivery.getDeliveryType(), oldStatus, status);
 

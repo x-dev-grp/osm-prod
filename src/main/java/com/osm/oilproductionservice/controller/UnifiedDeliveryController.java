@@ -5,8 +5,6 @@ import com.osm.oilproductionservice.dto.ApiResponse;
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
-import com.xdev.communicator.models.enums.DeliveryType;
-import com.xdev.communicator.models.enums.OliveLotStatus;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.UnifiedDeliveryService;
 import com.xdev.communicator.models.enums.DeliveryType;
@@ -99,10 +97,10 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     }
 
     @GetMapping("/updateStatue/{id}/{status}")
-    public ResponseEntity<ApiResponse<Void>> updateStatue(@PathVariable("id") UUID id, @PathVariable("status") OliveLotStatus status) {
+    public ResponseEntity<ApiResponse<Void>> updateStatue(@PathVariable("id") UUID id, @PathVariable("status") OliveLotStatus status, @RequestParam(value = "cause", required = false) String cause) {
         // delegate to your service
        try{
-           this.UnifiedDeliveryService.updateStatus(id, status);
+           this.UnifiedDeliveryService.updateStatus(id, status, cause);
            ApiResponse<Void> response = new ApiResponse<>(true, "Status updated successfully", null);
            return ResponseEntity.ok(response);
        } catch (Exception e) {
