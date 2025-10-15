@@ -296,6 +296,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case PROD_READY -> {
                 actions.add(Action.DELETE);
                 actions.add(Action.GEN_PDF);
+                actions.add(Action.GEN_PDF_QC_OLIVE);
             }
             case OLIVE_CONTROLLED -> {
                 actions.addAll(Set.of(Action.DELETE, Action.UPDATE, Action.GEN_PDF_QC_OLIVE));
@@ -398,7 +399,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case COMPLETED, IN_STOCK -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_PRODUCTION);
-                actions.add(Action.GEN_PDF);
+                actions.add(Action.GEN_PDF_QC_OIL);
                 actions.add(Action.GEN_INVOICE);
 
             }
@@ -527,7 +528,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Set basic delivery information
             newDelivery.setLotNumber(delivery.getLotNumber());
-            newDelivery.setDeliveryNumber(newDeliveryNumber);
+            newDelivery.setDeliveryNumber(delivery.getDeliveryNumber());
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
             // Set oil quantity with null safety
@@ -620,7 +621,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Set basic delivery information
             newDelivery.setLotNumber(delivery.getLotNumber());
-            newDelivery.setDeliveryNumber(newDeliveryNumber);
+            newDelivery.setDeliveryNumber(delivery.getDeliveryNumber());
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
             // Initialize payment-related fields
@@ -629,11 +630,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             // Copy relevant information from original delivery
             newDelivery.setOilType(delivery.getOliveType());
+            newDelivery.setOliveType(delivery.getOliveType());
             newDelivery.setRegion(delivery.getRegion());
             newDelivery.setSupplier(delivery.getSupplier());
             newDelivery.setLotOliveNumber(delivery.getLotNumber()); // Link to original olive delivery
             newDelivery.setOperationType(OperationType.PAYMENT);
+            newDelivery.setParcel(delivery.getParcel());
             newDelivery.setOilVariety(delivery.getOliveVariety());
+            newDelivery.setOliveVariety(delivery.getOliveVariety());
 
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Created oil reception with operation type PAYMENT, linked to olive lot: %s", delivery.getLotNumber());
 
