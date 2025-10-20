@@ -2,6 +2,7 @@ package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.ExchangePricingDto;
 import com.osm.oilproductionservice.dto.PaymentDTO;
+import com.osm.oilproductionservice.dto.StorageUnitDto;
 import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.feignClients.services.FinancialTransactionFeignService;
 import com.osm.oilproductionservice.model.*;
@@ -417,12 +418,13 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
      *
      * @param uuid      The UUID of the original olive delivery
      * @param isPayment Boolean flag indicating if this is for payment purposes
+     * @param std
      * @return The newly created oil reception delivery
      * @throws IllegalArgumentException if uuid is null or delivery is not found
      * @throws RuntimeException         if there's an error during processing
      */
     @Transactional
-    public UnifiedDelivery createOilRecFromOliveRecImpl(UUID uuid, Boolean isPayment) {
+    public UnifiedDelivery createOilRecFromOliveRecImpl(UUID uuid, Boolean isPayment, String std) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "createOilRecFromOliveRecImpl", String.format("uuid=%s, isPayment=%s", uuid, isPayment));
 
@@ -467,7 +469,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
             } else if (isPayment) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecFromOliveRecImpl] Creating oil reception for payment purposes");
-                oilDelivery = createOilRecForPayment(delivery);
+                oilDelivery = createOilRecForPayment(delivery, std);
 
             } else {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "[createOilRecFromOliveRecImpl] No oil reception created for delivery %s (Operation: %s, isPayment: %s)", delivery.getLotNumber(), delivery.getOperationType(), isPayment);
@@ -519,14 +521,6 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             UnifiedDelivery newDelivery = new UnifiedDelivery();
             newDelivery.setDeliveryType(DeliveryType.OIL);
             newDelivery.setStatus(OliveLotStatus.NEW);
-
-            // Generate new delivery number and lot number
-            Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
-            String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
-
-
-            // Set basic delivery information
             newDelivery.setLotNumber(delivery.getLotNumber());
             newDelivery.setDeliveryNumber(delivery.getDeliveryNumber());
             newDelivery.setDeliveryDate(LocalDateTime.now());
@@ -584,7 +578,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
      * @throws RuntimeException         if there's an error during processing
      */
     @Transactional
-    protected UnifiedDelivery createOilRecForPayment(UnifiedDelivery delivery) {
+    protected UnifiedDelivery createOilRecForPayment(UnifiedDelivery delivery, String std) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "createOilRecForPayment", delivery);
 
@@ -608,16 +602,15 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] Creating oil reception for payment from olive delivery %s (Supplier: %s)", delivery.getLotNumber(), delivery.getSupplier().getName());
 
         try {
+
             UnifiedDelivery newDelivery = new UnifiedDelivery();
+            if (std != null && !std.isEmpty()) {
+                Optional<StorageUnitDto> stdModel = storageUnitRepo.findById(UUID.fromString(std)).map((element) -> modelMapper.map(element, StorageUnitDto.class));
+                newDelivery.setStorageUnit(modelMapper.map(stdModel.get(), StorageUnit.class));
+            }
             newDelivery.setDeliveryType(DeliveryType.OIL);
             newDelivery.setStatus(OliveLotStatus.OIL_CONTROLLED);
-
-            // Generate new delivery number and lot number
-            Map<String, Object> deliveryMap = generateDeliveryNumber(delivery);
-//            String newLotNumber = deliveryMap.get(LOT_NUMBER).toString();
-            String newDeliveryNumber = deliveryMap.get(DELIVERY_NUMBER).toString();
-
-            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] used the original olive reception lot number as new lot number: %s, delivery number: %s", delivery.getLotNumber(), newDeliveryNumber);
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[createOilRecForPayment] used the original olive reception lot number as new lot number: %s, delivery number: %s", delivery.getLotNumber(), delivery.getDeliveryNumber());
 
             // Set basic delivery information
             newDelivery.setLotNumber(delivery.getLotNumber());
@@ -823,11 +816,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     delivery.setStatus(OliveLotStatus.IN_STOCK);
                     switch (delivery.getOperationType()) {
                         case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
-//                        case BASE -> {
-//                            UnifiedDelivery originalDelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotOliveNumber(), DeliveryType.OLIVE);
-//                            originalDelivery.setUnpaidAmount(totalPrice);
-//                            deliveryRepository.save(originalDelivery);
-//                        }
+
                     }
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OIL delivery %s: unitPrice=%.2f, oilQuantity=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getOilQuantity(), totalPrice);
 
@@ -1197,8 +1186,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     }
 
     public List<UnifiedDeliveryDTO> getDeliveriesByGlobalLotNumber(String lotNumber) {
-        List<UnifiedDelivery> deliveries =
-                deliveryRepository.findByGlobalLotNumberAndDeliveryType(lotNumber, DeliveryType.OLIVE);
+        List<UnifiedDelivery> deliveries = deliveryRepository.findByGlobalLotNumberAndDeliveryType(lotNumber, DeliveryType.OLIVE);
         List<UnifiedDeliveryDTO> result = new ArrayList<>(deliveries.size());
         deliveries.forEach(d -> result.add(modelMapper.map(d, UnifiedDeliveryDTO.class)));
         return result;

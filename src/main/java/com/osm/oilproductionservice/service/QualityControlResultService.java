@@ -1,17 +1,14 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.QualityControlResultDto;
-import com.xdev.communicator.models.enums.DeliveryType;
-import com.xdev.communicator.models.enums.OliveLotStatus;
-import com.xdev.communicator.models.enums.RuleType;
 import com.osm.oilproductionservice.model.QualityControlResult;
 import com.osm.oilproductionservice.model.QualityControlRule;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
-import com.osm.oilproductionservice.repository.DeliveryRepository;
-import com.osm.oilproductionservice.repository.OilTransactionRepository;
-import com.osm.oilproductionservice.repository.QualityControlResultRepository;
-import com.osm.oilproductionservice.repository.QualityControlRuleRepository;
+import com.osm.oilproductionservice.repository.*;
+import com.xdev.communicator.models.enums.DeliveryType;
+import com.xdev.communicator.models.enums.OliveLotStatus;
 import com.xdev.communicator.models.enums.OperationType;
+import com.xdev.communicator.models.enums.RuleType;
 import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
@@ -36,23 +33,17 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     private final DeliveryRepository deliveryRepo;
     private final ModelMapper modelMapper;
     private final UnifiedDeliveryService unifiedDeliveryService;
-    private final QualityControlResultRepository qualityControlResultRepository;
-    private final OilTransactionRepository oilTransactionRepository;
-    private final OilTransactionService oilTransactionService;
-    Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
+      Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
 
-    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, QualityControlResultRepository qualityControlResultRepository, OilTransactionRepository oilTransactionRepository, OilTransactionService oilTransactionService, DeliveryRepository deliveryRepository) {
+    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, DeliveryRepository deliveryRepository) {
         super(repository, modelMapper);
         this.repository = repository1;
         this.ruleRepository = ruleRepository;
         this.deliveryRepo = deliveryRepo;
         this.modelMapper = modelMapper1;
         this.unifiedDeliveryService = unifiedDeliveryService;
-        this.qualityControlResultRepository = qualityControlResultRepository;
-        this.oilTransactionRepository = oilTransactionRepository;
-        this.oilTransactionService = oilTransactionService;
         this.deliveryRepository = deliveryRepository;
-    }
+     }
 
     @Override
     public List<QualityControlResultDto> findAll() {
@@ -143,7 +134,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     }
 
     @Transactional
-    public List<QualityControlResultDto> saveOilQcForOliveRec(UUID idx, List<QualityControlResultDto> dtos) {
+    public List<QualityControlResultDto> saveOilQcForOliveRec(UUID idx, List<QualityControlResultDto> dtos, String std) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "saveAllForIdx", idx, dtos);
         if (dtos.isEmpty()) {
@@ -151,8 +142,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
             OSMLogger.logPerformance(this.getClass(), "saveAllForIdx", startTime, System.currentTimeMillis());
             return Collections.emptyList();
         }
-        // You can add custom logic for idx here (e.g., link to a batch, etc.)
-        UnifiedDelivery newOIlRec = unifiedDeliveryService.createOilRecFromOliveRecImpl(idx, true);
+        UnifiedDelivery newOIlRec = unifiedDeliveryService.createOilRecFromOliveRecImpl(idx, true, std);
         log.info("Saving QC results for idx: {} ({} results)", idx, dtos.size());
         // Validate rules
         Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);

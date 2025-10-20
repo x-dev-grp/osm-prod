@@ -335,7 +335,7 @@ public class PlanningService {
                 updateMachinWorkTime(lot.getMillMachine(), lot.getTrtDuration());
                 switch (lot.getOperationType()) {
                     case EXCHANGE, BASE, OLIVE_PURCHASE ->
-                            unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(), false);
+                            unifiedDeliveryService.createOilRecFromOliveRecImpl(lot.getId(), false, null);
                     case null, default -> {
                     }
                 }

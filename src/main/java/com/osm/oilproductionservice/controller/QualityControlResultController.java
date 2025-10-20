@@ -58,15 +58,15 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
         }
     }
 
-    @PostMapping("/save-batch-direct/{idx}")
+    @PostMapping("/save-batch-direct/{idx}/{std}")
     public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> saveBatchDirect(
-            @PathVariable UUID idx,
+            @PathVariable UUID idx,@PathVariable String std,
             @RequestBody List<QualityControlResultDto> dtos) {
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "saveBatchDirect", dtos.size());
         try {
             // Call a new service method (to be implemented) that saves results for idx
-            ApiResponse<QualityControlResult, QualityControlResultDto> response = new ApiResponse<>(true, "", qualityControlResultService.saveOilQcForOliveRec(idx, dtos));
+            ApiResponse<QualityControlResult, QualityControlResultDto> response = new ApiResponse<>(true, "", qualityControlResultService.saveOilQcForOliveRec(idx, dtos,std));
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             log.error("Bad request: {}", e.getMessage());
