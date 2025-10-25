@@ -1,10 +1,7 @@
 package com.osm.oilproductionservice.model;
 
 
-
-import com.xdev.communicator.models.enums.Olive_Oil_Type;
-import com.xdev.communicator.models.enums.QualityGrades;
-import com.xdev.communicator.models.enums.SaleStatus;
+import com.xdev.communicator.models.enums.*;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
@@ -13,8 +10,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
-import static org.apache.commons.math3.util.Precision.round;
 
 /**
  * Oil Sale entity for managing oil sales transactions
@@ -31,11 +26,101 @@ public class OilSale extends BaseEntity implements Serializable {
     /**
      * Unique invoice number for the sale
      */
-    @Column(unique = true,  length = 50)
+    @Column(unique = true, length = 50)
     private String invoiceNumber;
 
     @Enumerated(EnumType.STRING)
     private QualityGrades qualityGrade;
+
+
+    /**
+     * Sale status (PENDING, CONFIRMED, DELIVERED, CANCELLED)
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SaleStatus status = SaleStatus.PENDING;
+    /**
+     * Sale date
+     */
+    @Column(nullable = false)
+    private LocalDateTime saleDate;
+    /**
+     * Supplier who is selling the oil
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id")
+    private Supplier supplier;
+    /**
+     * Storage unit from which oil is sold
+     */
+    private UUID storageUnit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "oil_type")
+    private Olive_Oil_Type oilType;
+
+    // ==================== STORAGE UNIT INFORMATION ====================
+    /**
+     * Quantity sold in liters
+     */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal quantity;
+    /**
+     * Unit price per liter
+     */
+    @Column(precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+
+
+    // ==================== QUANTITY & PRICING ====================
+    /**
+     * Total amount for the sale
+     */
+    @Column(precision = 15, scale = 2)
+    private BigDecimal totalAmount;
+    private Currency currency;
+    /**
+     * Payment method used
+     */
+    private PaymentMethod paymentMethod;
+    /**
+     * Bank account used (if applicable)
+     */
+    @Column(length = 100)
+    private String bankAccount;
+
+    // ==================== PAYMENT INFORMATION ====================
+    /**
+     * Check number (if payment method is CHECK)
+     */
+    @Column(length = 50)
+    private String checkNumber;
+    /**
+     * External transaction ID (for bank transfers, etc.)
+     */
+    @Column(length = 100)
+    private String externalTransactionId;
+    /**
+     * Description or notes about the sale
+     */
+    @Column(length = 1000)
+    private String description;
+    /**
+     * Delivery date (when oil was/will be delivered)
+     */
+    private LocalDateTime deliveryDate;
+
+    // ==================== ADDITIONAL INFORMATION ====================
+    /**
+     * Delivery address
+     */
+    @Column(length = 500)
+    private String deliveryAddress;
+    /**
+     * Delivery notes
+     */
+    @Column(length = 1000)
+    private String deliveryNotes;
 
     public QualityGrades getQualityGrade() {
         return qualityGrade;
@@ -45,134 +130,17 @@ public class OilSale extends BaseEntity implements Serializable {
         this.qualityGrade = qualityGrade;
     }
 
-    /**
-     * Sale status (PENDING, CONFIRMED, DELIVERED, CANCELLED)
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SaleStatus status = SaleStatus.PENDING;
-
-    /**
-     * Sale date
-     */
-    @Column(nullable = false)
-    private LocalDateTime saleDate;
-
-    // ==================== CUSTOMER INFORMATION ====================
-
-    /**
-     * Customer who made the purchase
-     */
-
-    // ==================== SUPPLIER INFORMATION ====================
-
-    /**
-     * Supplier who is selling the oil
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_id")
-    private Supplier supplier;
-
-    // ==================== STORAGE UNIT INFORMATION ====================
-
-    /**
-     * Storage unit from which oil is sold
-     */
-      private UUID storageUnit;
-
-    /**
-     * Oil type being sold
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "oil_type")
-    private Olive_Oil_Type oilType;
-
-
-    // ==================== QUANTITY & PRICING ====================
-
-    /**
-     * Quantity sold in liters
-     */
-    @Column( precision = 10, scale = 2)
-    private BigDecimal quantity;
-
-    /**
-     * Unit price per liter
-     */
-    @Column( precision = 10, scale = 2)
-    private BigDecimal unitPrice;
-
-    /**
-     * Total amount for the sale
-     */
-    @Column( precision = 15, scale = 2)
-    private BigDecimal totalAmount;
-
-    /**
-     * Currency used for the transaction
-     */
-    @Column(length = 3)
-    private String currency= "TND";
-
-    // ==================== PAYMENT INFORMATION ====================
-
-    /**
-     * Payment method used
-     */
-    @Column(length = 50)
-    private String paymentMethod;
-
-    /**
-     * Bank account used (if applicable)
-     */
-    @Column(length = 100)
-    private String bankAccount;
-
-    /**
-     * Check number (if payment method is CHECK)
-     */
-    @Column(length = 50)
-    private String checkNumber;
-
-    /**
-     * External transaction ID (for bank transfers, etc.)
-     */
-    @Column(length = 100)
-    private String externalTransactionId;
-
-    // ==================== ADDITIONAL INFORMATION ====================
-
-    /**
-     * Description or notes about the sale
-     */
-    @Column(length = 1000)
-    private String description;
-
-    /**
-     * Delivery date (when oil was/will be delivered)
-     */
-    private LocalDateTime deliveryDate;
-
-    /**
-     * Delivery address
-     */
-    @Column(length = 500)
-    private String deliveryAddress;
-
-    /**
-     * Delivery notes
-     */
-    @Column(length = 1000)
-    private String deliveryNotes;
-
     // ==================== CONSTRUCTORS ====================
 
-    public Double getPaiedAmount() {
+
+    // ==================== GETTERS AND SETTERS ====================
+
+    public Double getPaidAmount() {
         return paidAmount;
     }
 
-    public void setPaiedAmount(Double paidAmount) {
-        this.paidAmount = paidAmount == null ? null :  round(paidAmount, 3);
+    public void setPaidAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
     }
 
     public Double getUnpaidAmount() {
@@ -180,14 +148,8 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount == null ? null : round(unpaidAmount, 3);
+        this.unpaidAmount = unpaidAmount;
     }
-
-    public OilSale() {
-        super();
-    }
-
-    // ==================== GETTERS AND SETTERS ====================
 
     public boolean isPaid() {
         return paid;
@@ -221,8 +183,6 @@ public class OilSale extends BaseEntity implements Serializable {
         this.saleDate = saleDate;
     }
 
-
-
     public Supplier getSupplier() {
         return supplier;
     }
@@ -237,14 +197,6 @@ public class OilSale extends BaseEntity implements Serializable {
 
     public void setStorageUnit(UUID storageUnit) {
         this.storageUnit = storageUnit;
-    }
-
-    public Double getPaidAmount() {
-        return paidAmount;
-    }
-
-    public void setPaidAmount(Double paidAmount) {
-        this.paidAmount = paidAmount;
     }
 
     public Olive_Oil_Type getOilType() {
@@ -281,19 +233,19 @@ public class OilSale extends BaseEntity implements Serializable {
         this.totalAmount = totalAmount;
     }
 
-    public String getCurrency() {
+    public Currency getCurrency() {
         return currency;
     }
 
-    public void setCurrency(String currency) {
+    public void setCurrency(Currency currency) {
         this.currency = currency;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
         return paymentMethod;
     }
 
-    public void setPaymentMethod(String paymentMethod) {
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
@@ -353,6 +305,7 @@ public class OilSale extends BaseEntity implements Serializable {
         this.deliveryNotes = deliveryNotes;
     }
 
+
     // ==================== BUSINESS LOGIC METHODS ====================
 
     /**
@@ -394,19 +347,5 @@ public class OilSale extends BaseEntity implements Serializable {
         return SaleStatus.PENDING.equals(status);
     }
 
-    @Override
-    public String toString() {
-        return "OilSale{" +
-                "id=" + getId() +
-                ", invoiceNumber='" + invoiceNumber + '\'' +
-                ", status=" + status +
-                ", saleDate=" + saleDate +
-                  ", oilType=" + (oilType != null ? oilType.getName() : "null") +
-                ", quantity=" + quantity +
-                ", unitPrice=" + unitPrice +
-                ", totalAmount=" + totalAmount +
-                ", currency='" + currency + '\'' +
-                ", paymentMethod='" + paymentMethod + '\'' +
-                '}';
-    }
+
 }

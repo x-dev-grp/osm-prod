@@ -13,5 +13,6 @@ public interface OilTransactionRepository extends BaseRepository<OilTransaction>
     List<OilTransaction> findByStorageUnitDestinationId(UUID storageUnitId);
     // Add this method for payment validation
     List<OilTransaction> findByOilSaleId(UUID oilSaleId);
+    Optional<OilTransaction> findByOilSaleIdAndIsDeletedFalse(UUID oilSaleId);
     Optional<OilTransaction> findFirstByOilSaleIdOrderByCreatedDateDesc(UUID oilSaleId);
 }

@@ -139,33 +139,31 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         // 1. Load existing or fail
         UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
-        dto.setStatus(existing.getStatus());
+        // 2. Copy simple fields (exclude those we manage manually, including status)
+        BeanUtils.copyProperties(dto, existing, "id", "supplier", "storageUnit", "externalId", "paid", "oliveVariety", "parcel", "status");
 
-        // Whether the caller actually provided a poidsCamionVide this update
-        final boolean poidsVideProvided = dto.getPoidsCamionVide() != null;
-
-        // 2) Copy simple fields (exclude those we manage manually)
-        BeanUtils.copyProperties(dto, existing, ID, SUPPLIER, STORAGE_UNIT, EXTERNAL_ID, PAID, "oliveVariety", "parcel");
-
-        // 3) Resolve Supplier
+        // 3. Resolve Supplier
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
-            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId()).orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
+            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId())
+                    .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             existing.setSupplierType(supplier);
         } else {
             existing.setSupplierType(null);
         }
 
-        // 4) Resolve StorageUnit
+        // 4. Resolve StorageUnit
         if (dto.getStorageUnit() != null && dto.getStorageUnit().getId() != null) {
-            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId()).orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
+            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId())
+                    .orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
             existing.setStorageUnit(stu);
         } else {
             existing.setStorageUnit(null);
         }
 
-        // 5) Resolve OliveVariety
+        // 5. Resolve OliveVariety
         if (dto.getOliveVariety() != null && dto.getOliveVariety().getId() != null) {
-            BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId()).orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
+            BaseType oliveVariety = genericRepository.findById(dto.getOliveVariety().getId())
+                    .orElseThrow(() -> new RuntimeException("OliveVariety not found with id: " + dto.getOliveVariety().getId()));
             existing.setOliveVariety(oliveVariety);
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to: %s (ID: %s)", oliveVariety.getName(), oliveVariety.getId());
         } else {
@@ -173,28 +171,53 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] Set oliveVariety to null");
         }
 
-        // 6) Merge poidsCamionVide explicitly (do NOT clear it when DTO omits it)
-        //    If DTO sends a value, apply it; else keep the existing value.
+        // 6. Merge poidsCamionVide explicitly (do NOT clear it when DTO omits it)
         if (dto.getPoidsCamionVide() != null) {
+            if (dto.getPoidsCamionVide() < 0) {
+                throw new IllegalArgumentException("poidsCamionVide cannot be negative: " + dto.getPoidsCamionVide());
+            }
             existing.setPoidsCamionVide(dto.getPoidsCamionVide());
         }
+
+
+
+        // 8. Handle status for OLIVE deliveries
         if (existing.getDeliveryType() == DeliveryType.OLIVE) {
-            // 7) Status rules (exactly as you described)
             OliveLotStatus prev = existing.getStatus();
 
-            boolean poidsValid = isValidPoids(BigDecimal.valueOf(existing.getPoidsCamionVide())); // > 0
+            // Check if poidsCamionVide or status is being updated
+            boolean isPoidsUpdated = dto.getPoidsCamionVide() != null;
+            boolean isStatusUpdated = dto.getStatus() != null;
 
-            if (poidsValid) {
-                existing.setStatus(OliveLotStatus.NEW);
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] poidsCamionVide valid (>0): status -> NEW (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+            if (isPoidsUpdated || isStatusUpdated) {
+                // Apply status logic only if poidsCamionVide or status is explicitly updated
+                boolean poidsValid = isValidPoids(existing.getPoidsCamionVide() != null ? BigDecimal.valueOf(existing.getPoidsCamionVide()) : null);
+                if (poidsValid && prev == OliveLotStatus.WAITING) {
+                    existing.setStatus(OliveLotStatus.NEW);
+                    OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                            "[update] poidsCamionVide valid (>0) and previous status WAITING: status -> NEW (prev=%s, poids=%s)",
+                            prev, existing.getPoidsCamionVide());
+                } else if (!poidsValid && prev == OliveLotStatus.NEW) {
+                    existing.setStatus(OliveLotStatus.WAITING);
+                    OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                            "[update] poidsCamionVide invalid (null/0/<=0) and previous status NEW: status -> WAITING (prev=%s, poids=%s)",
+                            prev, existing.getPoidsCamionVide());
+                } else {
+                    OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                            "[update] Status unchanged: poidsValid=%s, prev=%s", poidsValid, prev);
+                }
             } else {
-                existing.setStatus(OliveLotStatus.WAITING);
-                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[update] poidsCamionVide missing/invalid (null/0/<=0): status -> WAITING (prev=%s, poids=%s)", prev, existing.getPoidsCamionVide());
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                        "[update] No update to poidsCamionVide or status: retaining status %s", prev);
             }
+        } else if (dto.getStatus() != null) {
+            // For non-OLIVE deliveries, allow direct status update
+            existing.setStatus(dto.getStatus());
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO,
+                    "[update] Non-OLIVE delivery: status updated to %s", dto.getStatus());
         }
 
-
-        // 7) Persist
+        // 9. Persist
         UnifiedDelivery updated = deliveryRepository.save(existing);
 
         OSMLogger.logMethodExit(this.getClass(), "update", updated);
@@ -814,10 +837,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     double totalPrice = unitPrice * delivery.getOilQuantity();
                     delivery.setPrice(totalPrice);
                     delivery.setStatus(OliveLotStatus.IN_STOCK);
-                    switch (delivery.getOperationType()) {
-                        case OIL_PURCHASE -> delivery.setUnpaidAmount(totalPrice);
-
-                    }
+                    delivery.setUnpaidAmount(totalPrice);
                     OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[updateprice] Updated OIL delivery %s: unitPrice=%.2f, oilQuantity=%.2f, totalPrice=%.2f", delivery.getLotNumber(), unitPrice, delivery.getOilQuantity(), totalPrice);
 
                     // Create oil transaction
@@ -1068,8 +1088,12 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                     prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.OIL_PURCHASE);
             case OLIVE_PURCHASE ->
                     prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.OLIVE_PURCHASE);
-            case BASE ->
-                    prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.BASE);
+            case BASE -> {
+//                UnifiedDelivery olivedelivery = deliveryRepository.findByLotNumberAndDeliveryType(delivery.getLotNumber(), DeliveryType.OLIVE);
+//                olivedelivery.setPaid(true);
+//                deliveryRepository.save(olivedelivery);
+                prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.OUTBOUND, TransactionType.PURCHASE, OperationType.BASE);
+            }
             case SIMPLE_RECEPTION ->
                     prepareFinanacalTransaction(paymentDTO, amount, delivery, TransactionDirection.INBOUND, TransactionType.PAYMENT, OperationType.SIMPLE_RECEPTION);
         }

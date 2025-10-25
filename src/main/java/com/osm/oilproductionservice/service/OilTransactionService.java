@@ -99,6 +99,56 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
     }
 
     /**
+     * Reverses an oil transaction associated with a given OilSale ID.
+     *
+     * @param oilSaleId UUID of the OilSale to reverse
+     * @throws IllegalArgumentException if the transaction is not found or already reversed
+     * @throws RuntimeException         if there’s an error during reversal
+     */
+    @Transactional
+    public void reverseOilTransactionForSale(UUID oilSaleId) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "reverseOilTransactionForSale", oilSaleId);
+
+        try {
+            // 1. Find the oil transaction
+            OilTransaction oilTransaction = oilTransactionRepository.findByOilSaleIdAndIsDeletedFalse(oilSaleId).orElseThrow(() -> new IllegalArgumentException("No oil transaction found for OilSale ID: " + oilSaleId));
+
+            // 2. Validate transaction state
+            if (oilTransaction.getTransactionState() == TransactionState.CANCELED) {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Oil transaction for OilSale %s is already canceled", oilSaleId);
+                throw new IllegalStateException("Oil transaction is already canceled for OilSale: " + oilSaleId);
+            }
+
+            // 3. Restore oil quantity to source storage unit
+            if (oilTransaction.getStorageUnitSource() != null) {
+                StorageUnit source = storageUnitRepo.findById(oilTransaction.getStorageUnitSource().getId()).orElseThrow(() -> new IllegalArgumentException("Source storage unit not found: " + oilTransaction.getStorageUnitSource().getId()));
+                source.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
+                storageUnitRepo.save(source);
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "Restored %.2f kg to storage unit %s", oilTransaction.getQuantityKg(), source.getId());
+            } else {
+                OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "No source storage unit found for oil transaction %s", oilTransaction.getId());
+            }
+
+            // 4. Mark transaction as canceled or deleted
+            oilTransaction.setTransactionState(TransactionState.CANCELED);
+            oilTransaction.setDeleted(true); // Soft-delete
+            oilTransactionRepository.save(oilTransaction);
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "Oil transaction %s canceled for OilSale %s", oilTransaction.getId(), oilSaleId);
+
+        } catch (IllegalArgumentException e) {
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "Validation error in reverseOilTransactionForSale: %s", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "Unexpected error in reverseOilTransactionForSale: %s", e.getMessage(), e);
+            throw new RuntimeException("Failed to reverse oil transaction for OilSale: " + oilSaleId, e);
+        }
+
+        OSMLogger.logMethodExit(this.getClass(), "reverseOilTransactionForSale", null);
+        OSMLogger.logPerformance(this.getClass(), "reverseOilTransactionForSale", startTime, System.currentTimeMillis());
+    }
+
+    /**
      * Saves a new or updated oil transaction, updating storage units as needed.
      *
      * @param request OilTransactionDTO to save
