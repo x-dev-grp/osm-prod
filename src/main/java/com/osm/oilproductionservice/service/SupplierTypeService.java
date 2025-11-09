@@ -84,7 +84,7 @@ public class SupplierTypeService extends BaseServiceImpl<Supplier, SupplierDto, 
 
         try {
             Set<Action> actions = new HashSet<>();
-            actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
+            actions.addAll(Set.of(Action.UPDATE, Action.DELETE, Action.READ, Action.DETAIL));
 
             OSMLogger.logMethodExit(this.getClass(), "actionsMapping", "Actions: " + actions);
             OSMLogger.logPerformance(this.getClass(), "actionsMapping", startTime, System.currentTimeMillis());

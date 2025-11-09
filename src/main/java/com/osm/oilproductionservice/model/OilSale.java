@@ -1,6 +1,5 @@
 package com.osm.oilproductionservice.model;
 
-
 import com.xdev.communicator.models.enums.*;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
@@ -17,10 +16,13 @@ import java.util.UUID;
 @Entity
 @Table(name = "oil_sales")
 public class OilSale extends BaseEntity implements Serializable {
-    private Double paidAmount;
-    private Double unpaidAmount;
+
+    // Doubles default to 0d
+    private Double paidAmount = 0d;
+    private Double unpaidAmount = 0d;
 
     private boolean paid = false;
+
     // ==================== CORE SALE FIELDS ====================
 
     /**
@@ -32,24 +34,26 @@ public class OilSale extends BaseEntity implements Serializable {
     @Enumerated(EnumType.STRING)
     private QualityGrades qualityGrade;
 
-
     /**
      * Sale status (PENDING, CONFIRMED, DELIVERED, CANCELLED)
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SaleStatus status = SaleStatus.PENDING;
+
     /**
      * Sale date
      */
     @Column(nullable = false)
     private LocalDateTime saleDate;
+
     /**
      * Supplier who is selling the oil
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
+
     /**
      * Storage unit from which oil is sold
      */
@@ -65,24 +69,27 @@ public class OilSale extends BaseEntity implements Serializable {
      */
     @Column(precision = 10, scale = 2)
     private BigDecimal quantity;
+
     /**
      * Unit price per liter
      */
     @Column(precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-
     // ==================== QUANTITY & PRICING ====================
     /**
      * Total amount for the sale
      */
     @Column(precision = 15, scale = 2)
-    private BigDecimal totalAmount;
+    private BigDecimal totalAmount = BigDecimal.ZERO; // keep non-null for safety
+
     private Currency currency;
+
     /**
      * Payment method used
      */
     private PaymentMethod paymentMethod;
+
     /**
      * Bank account used (if applicable)
      */
@@ -95,16 +102,19 @@ public class OilSale extends BaseEntity implements Serializable {
      */
     @Column(length = 50)
     private String checkNumber;
+
     /**
      * External transaction ID (for bank transfers, etc.)
      */
     @Column(length = 100)
     private String externalTransactionId;
+
     /**
      * Description or notes about the sale
      */
     @Column(length = 1000)
     private String description;
+
     /**
      * Delivery date (when oil was/will be delivered)
      */
@@ -116,6 +126,7 @@ public class OilSale extends BaseEntity implements Serializable {
      */
     @Column(length = 500)
     private String deliveryAddress;
+
     /**
      * Delivery notes
      */
@@ -132,7 +143,6 @@ public class OilSale extends BaseEntity implements Serializable {
 
     // ==================== CONSTRUCTORS ====================
 
-
     // ==================== GETTERS AND SETTERS ====================
 
     public Double getPaidAmount() {
@@ -140,7 +150,7 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setPaidAmount(Double paidAmount) {
-        this.paidAmount = paidAmount;
+        this.paidAmount = (paidAmount == null) ? 0d : paidAmount;
     }
 
     public Double getUnpaidAmount() {
@@ -148,7 +158,7 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount;
+        this.unpaidAmount = (unpaidAmount == null) ? 0d : unpaidAmount;
     }
 
     public boolean isPaid() {
@@ -230,7 +240,7 @@ public class OilSale extends BaseEntity implements Serializable {
     }
 
     public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
+        this.totalAmount = (totalAmount == null) ? BigDecimal.ZERO : totalAmount;
     }
 
     public Currency getCurrency() {
@@ -305,7 +315,6 @@ public class OilSale extends BaseEntity implements Serializable {
         this.deliveryNotes = deliveryNotes;
     }
 
-
     // ==================== BUSINESS LOGIC METHODS ====================
 
     /**
@@ -346,6 +355,4 @@ public class OilSale extends BaseEntity implements Serializable {
     public boolean isPending() {
         return SaleStatus.PENDING.equals(status);
     }
-
-
 }
