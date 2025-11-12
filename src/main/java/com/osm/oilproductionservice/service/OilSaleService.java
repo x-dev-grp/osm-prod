@@ -10,6 +10,7 @@ import com.osm.oilproductionservice.repository.*;
 import com.xdev.communicator.models.enums.*;
 import com.xdev.communicator.models.shared.FinancialTransactionDto;
 import com.xdev.communicator.models.shared.SupplierDto;
+import com.xdev.xdevbase.models.Action;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import jakarta.validation.ValidationException;
 import org.modelmapper.ModelMapper;
@@ -18,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.xdev.communicator.models.enums.OperationType.OIL_CONTAINER_SALE;
@@ -361,5 +364,9 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
 
         // 8. Delete container sale lines (optional, depending on requirements)
         lineRepo.deleteAll(containerSales);
+    }
+    @Override
+    public Set<Action> actionsMapping(OilSale oilSale) {
+        return new HashSet<>(Set.of(Action.UPDATE, Action.DELETE, Action.READ));
     }
 }

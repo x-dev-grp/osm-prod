@@ -110,7 +110,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         UnifiedDelivery delivery = modelMapper.map(dto, UnifiedDelivery.class);
         if (dto.getDeliveryType() == DeliveryType.OIL) {
             delivery.setStatus(OliveLotStatus.NEW);
-        } else if (delivery.getPoidsCamionVide() != null && dto.getDeliveryType() == DeliveryType.OLIVE) {
+        } else if (delivery.getPoidsCamionVide() != null &&delivery.getPoidsCamionVide() != 0 && dto.getDeliveryType() == DeliveryType.OLIVE) {
             delivery.setStatus(OliveLotStatus.NEW);
         } else {
             delivery.setStatus(OliveLotStatus.WAITING);

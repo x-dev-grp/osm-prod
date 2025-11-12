@@ -38,6 +38,7 @@ public class Waste extends BaseEntity {
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 3)
     private Currency currency;
 
     private String storageLocationCode;
