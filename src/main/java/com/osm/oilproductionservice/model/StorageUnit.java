@@ -45,7 +45,7 @@ public class StorageUnit extends BaseEntity {
     @JoinColumn(name = "supplier_id", unique = true)
     private Supplier supplier;
     private Boolean paidStorage  ;
-    private Double monthlyRentalPrice  ;
+    private Double monthlyRentalPrice = 0.0 ;
 
     public double getMonthlyRentalPrice() {
         return monthlyRentalPrice;

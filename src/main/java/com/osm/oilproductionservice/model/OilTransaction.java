@@ -16,6 +16,7 @@ import static org.apache.commons.math3.util.Precision.round;
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
 
+    @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
 
     /**
@@ -23,6 +24,7 @@ public class OilTransaction extends BaseEntity implements Serializable {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnitDestination;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnitSource;
 
@@ -31,13 +33,25 @@ public class OilTransaction extends BaseEntity implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "oil_type")
     private Olive_Oil_Type oilType;
+
+    @Enumerated(EnumType.STRING)
     private TransactionState transactionState = TransactionState.COMPLETED;
+
     /**
      * Net quantity moved, in kilograms (positive for IN, negative for OUT)
      */
-    private Double quantityKg;
-    private Double unitPrice;
-    private double totalPrice;
+    private Double quantityKg = 0d;
+
+    private Double unitPrice = 0d;
+
+    private double totalPrice = 0d;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private UnifiedDelivery reception;
+
+    private UUID oilSaleId;
+
+    // ==================== Getters / Setters ====================
 
     public Olive_Oil_Type getOilType() {
         return oilType;
@@ -47,11 +61,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
         this.oilType = oilType;
     }
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private UnifiedDelivery reception;
-
-    private UUID oilSaleId;
-
     public UUID getOilSaleId() {
         return oilSaleId;
     }
@@ -59,7 +68,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
     public void setOilSaleId(UUID oilSaleId) {
         this.oilSaleId = oilSaleId;
     }
-
 
     public TransactionState getTransactionState() {
         return transactionState;
@@ -106,7 +114,8 @@ public class OilTransaction extends BaseEntity implements Serializable {
     }
 
     public void setQuantityKg(Double quantityKg) {
-        this.quantityKg = quantityKg == null ? null :  round(quantityKg, 3);
+        this.quantityKg = (quantityKg == null) ? 0d : round(quantityKg, 3);
+        setTotalPrice(); // auto-recalc
     }
 
     public Double getUnitPrice() {
@@ -114,25 +123,31 @@ public class OilTransaction extends BaseEntity implements Serializable {
     }
 
     public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice == null ? null : round(unitPrice, 3);
+        this.unitPrice = (unitPrice == null) ? 0d : round(unitPrice, 3);
+        setTotalPrice(); // auto-recalc
     }
 
     public double getTotalPrice() {
         return totalPrice;
     }
 
+    /**
+     * Allows manual override (kept for compatibility).
+     */
     public void setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
     }
 
+    /**
+     * Recalculate totalPrice from unitPrice × quantityKg (scale 2).
+     */
     public void setTotalPrice() {
-
         if (unitPrice == null || quantityKg == null) {
             this.totalPrice = 0.0;
             return;
         }
-        this.totalPrice = (BigDecimal.valueOf(unitPrice).multiply(BigDecimal.valueOf(quantityKg)).setScale(2, RoundingMode.HALF_UP)).doubleValue();
-        }
+        this.totalPrice = BigDecimal.valueOf(unitPrice).multiply(BigDecimal.valueOf(quantityKg)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
 
     public UnifiedDelivery getReception() {
         return reception;
@@ -141,5 +156,4 @@ public class OilTransaction extends BaseEntity implements Serializable {
     public void setReception(UnifiedDelivery receptionId) {
         this.reception = receptionId;
     }
-
 }

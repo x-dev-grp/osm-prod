@@ -8,7 +8,7 @@ import com.xdev.xdevbase.dtos.BaseDto;
  */
 
 public class SupplierDto extends BaseDto<Supplier> {
-     private BaseTypeDto genericSupplierType;
+    private BaseTypeDto genericSupplierType;
     private Boolean hasStorage;
     private String name;
     private String lastname;
@@ -19,7 +19,14 @@ public class SupplierDto extends BaseDto<Supplier> {
     private String rib;
     private String bankName;
     private String matriculeFiscal;
+    private String fullName;
     private StorageUnitDto storageUnit;
+
+    public String getFullName() {
+        return fullName;
+    }
+
+
 
     public String getMatriculeFiscal() {
         return matriculeFiscal;
@@ -35,6 +42,7 @@ public class SupplierDto extends BaseDto<Supplier> {
     }
 
     public void setName(String name) {
+        this.fullName = name+" "+lastname;
         this.name = name;
     }
 
@@ -102,8 +110,6 @@ public class SupplierDto extends BaseDto<Supplier> {
     public void setHasStorage(Boolean hasStorage) {
         this.hasStorage = hasStorage;
     }
-
-
 
 
     public BaseTypeDto getGenericSupplierType() {

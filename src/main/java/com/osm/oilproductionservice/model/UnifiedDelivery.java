@@ -20,7 +20,6 @@ import java.util.Set;
 
 import static org.apache.commons.math3.util.Precision.round;
 
-
 /**
  * The UnifiedDelivery entity combines common delivery fields, oil-specific properties, and olive-specific properties.
  * Depending on the deliveryType, only a subset of these fields may be populated.
@@ -36,7 +35,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private String deliveryNumber;
     private String categoryOliveOil;
 
-
     @Enumerated(EnumType.STRING)
     private DeliveryType deliveryType;
 
@@ -49,37 +47,77 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     private String description;
 
     private String lotOliveNumber;
+
     private LocalDateTime deliveryDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType region;
 
-    // Example weight fields (if these are required)
-    private Double poidsBrute;
-    private Double poidsNet;
+    // Numeric (default to 0)
+    private Double poidsBrute = 0d;
+    private Double poidsNet = 0d;
 
     private String matriculeCamion;
     private String etatCamion;
+
     private boolean paid = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Supplier supplier;
+
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<QualityControlResult> qualityControlResults = new HashSet<>();
+
     @Column(name = "has_quality_control")
     private boolean hasQualityControl = false;
+
     // --- Oil Delivery Specific Fields ---
-    // Note: globalLotNumber is common to both oil and olive deliveries.
     private String globalLotNumber;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private BaseType oilVariety; // The variety of oil
-    private Double oilQuantity;   // In appropriate unit, e.g., liters
-    private Double unitPrice;
-    private Double price;
-    private Double paidAmount;
-    private Double unpaidAmount;
+
+    private Double oilQuantity = 0d;   // e.g., liters
+    private Double unitPrice = 0d;
+    private Double price = 0d;
+    private Double paidAmount = 0d;
+    private Double unpaidAmount = 0d;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private StorageUnit storageUnit;
 
+    @Enumerated(EnumType.STRING)
+    private Olive_Oil_Type oilType;
+
+    // --- Olive Delivery Specific Fields ---
+    private LocalDateTime trtDate;   // Treatment date
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType oliveVariety;
+
+    private int sackCount;
+
+    @Enumerated(EnumType.STRING)
+    private Olive_Oil_Type oliveType;
+
+    @Enumerated(EnumType.STRING)
+    private OliveLotStatus status;  // Olive lot status
+
+    private Double rendement = 0d; // Yield/performance
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private MillMachine millMachine;
+
+    private Double oliveQuantity = 0d;
+
+    private Double poidsCamionVide = 0d;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private BaseType parcel;
+
+    private Integer trtDuration;
+
+    // ----- Getters / Setters -----
 
     public Olive_Oil_Type getOilType() {
         return oilType;
@@ -89,36 +127,12 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.oilType = oilType;
     }
 
-    @Enumerated(EnumType.STRING)
-    private Olive_Oil_Type oilType;
-    // --- Olive Delivery Specific Fields ---
-    private LocalDateTime trtDate;   // Treatment date for olive delivery
-    /*   @ManyToOne(fetch = FetchType.LAZY)
-       private BaseType operationType;
-   */
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType oliveVariety;
-    private int sackCount;
-    @Enumerated(EnumType.STRING)
-    private Olive_Oil_Type oliveType;
-    @Enumerated(EnumType.STRING)
-    private OliveLotStatus status;  // Status of the olive lot
-    // Additional fields found in the UnifiedDelivery constructor, if needed
-    private Double rendement; // Yield or performance measure
-    @ManyToOne(fetch = FetchType.LAZY)
-    private MillMachine millMachine;
-    private Double oliveQuantity;
-    private Double poidsCamionVide;
-    @ManyToOne(fetch = FetchType.LAZY)
-    private BaseType parcel;
-    private Integer trtDuration;
-
     public Double getPoidsCamionVide() {
         return poidsCamionVide;
     }
 
     public void setPoidsCamionVide(Double poidsCamionVide) {
-        this.poidsCamionVide = poidsCamionVide == null ? null : round(poidsCamionVide, 3);
+        this.poidsCamionVide = poidsCamionVide == null ? 0d : round(poidsCamionVide, 3);
     }
 
     public String getDescription() {
@@ -128,6 +142,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setDescription(String description) {
         this.description = description;
     }
+
     public Integer getTrtDuration() {
         return trtDuration;
     }
@@ -135,7 +150,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setTrtDuration(Integer trtDuration) {
         this.trtDuration = trtDuration;
     }
-
 
     public boolean getPaid() {
         return paid;
@@ -185,14 +199,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
         this.categoryOliveOil = categoryOlivOil;
     }
 
-    /**
-     * A full-argument constructor to initialize all common fields along with delivery-specific properties.
-     * In real usage, you might create helper constructors or builders to handle the optional fields.
-     */
-
-
-    // --- Getters and Setters ---
-    // Common getters and setters
     public String getDeliveryNumber() {
         return deliveryNumber;
     }
@@ -241,7 +247,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPoidsBrute(Double poidsBrute) {
-        this.poidsBrute = poidsBrute == null ? null : round(poidsBrute, 3);
+        this.poidsBrute = poidsBrute == null ? 0d : round(poidsBrute, 3);
     }
 
     public Double getPoidsNet() {
@@ -249,7 +255,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPoidsNet(Double poidsNet) {
-        this.poidsNet = poidsNet == null ? null : round(poidsNet, 3);
+        this.poidsNet = poidsNet == null ? 0d : round(poidsNet, 3);
     }
 
     public String getMatriculeCamion() {
@@ -306,7 +312,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setOilQuantity(Double oilQuantity) {
-        this.oilQuantity = oilQuantity == null ? null : round(oilQuantity, 3);
+        this.oilQuantity = oilQuantity == null ? 0d : round(oilQuantity, 3);
     }
 
     public Double getUnitPrice() {
@@ -314,7 +320,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice == null ? null : round(unitPrice, 3);
+        this.unitPrice = unitPrice == null ? 0d : round(unitPrice, 3);
     }
 
     public Double getPrice() {
@@ -322,7 +328,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPrice(Double price) {
-        this.price = price == null ? null : round(price, 3);
+        this.price = price == null ? 0d : round(price, 3);
     }
 
     public Double getPaidAmount() {
@@ -330,7 +336,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setPaidAmount(Double paidAmount) {
-        this.paidAmount = paidAmount == null ? null : round(paidAmount, 3);
+        this.paidAmount = paidAmount == null ? 0d : round(paidAmount, 3);
     }
 
     public Double getUnpaidAmount() {
@@ -338,7 +344,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setUnpaidAmount(Double unpaidAmount) {
-        this.unpaidAmount = unpaidAmount == null ? null : round(unpaidAmount, 3);
+        this.unpaidAmount = unpaidAmount == null ? 0d : round(unpaidAmount, 3);
     }
 
     public StorageUnit getStorageUnit() {
@@ -348,7 +354,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setStorageUnit(StorageUnit storageUnit) {
         this.storageUnit = storageUnit;
     }
-
 
     // Olive-specific getters and setters
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -361,7 +366,6 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     public void setTrtDate(LocalDateTime trtDate) {
         this.trtDate = trtDate;
     }
-
 
     public BaseType getOliveVariety() {
         return oliveVariety;
@@ -400,7 +404,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setRendement(Double rendement) {
-        this.rendement = rendement == null ? null : round(rendement, 3);
+        this.rendement = rendement == null ? 0d : round(rendement, 3);
     }
 
     public MillMachine getMillMachine() {
@@ -416,7 +420,7 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
     public void setOliveQuantity(Double oliveQuantity) {
-        this.oliveQuantity = oliveQuantity == null ? null : round(oliveQuantity, 3);
+        this.oliveQuantity = oliveQuantity == null ? 0d : round(oliveQuantity, 3);
     }
 
     public BaseType getParcel() {

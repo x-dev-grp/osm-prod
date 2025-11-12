@@ -8,23 +8,27 @@ import jakarta.persistence.ManyToOne;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @Entity
 public class OilContainerSale extends BaseEntity implements Serializable {
+
     // ✅ Owning side with the join column; the field name is "oilSale"
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "oil_sale_id", nullable = false)
     private OilSale oilSale;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "container_id", nullable = false)
     private OilContainer container;
 
-    private Integer count;
+    // Defaults
+    private Integer count = 0;
+    private BigDecimal unitPrice = BigDecimal.ZERO;
+    private BigDecimal lineTotal = BigDecimal.ZERO;
 
-    private BigDecimal unitPrice;
+    // ==================== Getters / Setters ====================
 
-    private BigDecimal lineTotal;
-
-    // getters/setters
     public OilSale getOilSale() {
         return oilSale;
     }
@@ -46,7 +50,8 @@ public class OilContainerSale extends BaseEntity implements Serializable {
     }
 
     public void setCount(Integer count) {
-        this.count = count;
+        this.count = (count == null) ? 0 : count;
+        recalcLineTotal();
     }
 
     public BigDecimal getUnitPrice() {
@@ -54,7 +59,8 @@ public class OilContainerSale extends BaseEntity implements Serializable {
     }
 
     public void setUnitPrice(BigDecimal unitPrice) {
-        this.unitPrice = unitPrice;
+        this.unitPrice = (unitPrice == null) ? BigDecimal.ZERO : unitPrice;
+        recalcLineTotal();
     }
 
     public BigDecimal getLineTotal() {
@@ -62,6 +68,17 @@ public class OilContainerSale extends BaseEntity implements Serializable {
     }
 
     public void setLineTotal(BigDecimal lineTotal) {
-        this.lineTotal = lineTotal;
+        // allow manual override but keep non-null for safety
+        this.lineTotal = (lineTotal == null) ? BigDecimal.ZERO : lineTotal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // ==================== Helpers ====================
+
+    private void recalcLineTotal() {
+        // lineTotal = unitPrice * count, 2 decimals
+        BigDecimal qty = BigDecimal.valueOf(this.count == null ? 0 : this.count);
+        this.lineTotal = (this.unitPrice == null ? BigDecimal.ZERO : this.unitPrice)
+                .multiply(qty)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 }

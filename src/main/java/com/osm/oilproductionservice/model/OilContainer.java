@@ -4,17 +4,31 @@ import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.Entity;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 public class OilContainer extends BaseEntity {
 
     private String name;
     private String description;
-    private BigDecimal capacityInLiters;
+
+    // Defaults for safety
+    private BigDecimal capacityInLiters = BigDecimal.ZERO;
     private Integer stockQuantity = 0;
-    private BigDecimal buyPrice;
-    private BigDecimal sellingPrice;
+    private BigDecimal buyPrice = BigDecimal.ZERO;
+    private BigDecimal sellingPrice = BigDecimal.ZERO;
     private Boolean active = Boolean.TRUE;
+
+    // ---- getters/setters ----
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        // trim; allow null
+        this.name = (name == null) ? null : name.trim();
+    }
 
     public String getDescription() {
         return description;
@@ -24,21 +38,13 @@ public class OilContainer extends BaseEntity {
         this.description = description;
     }
 
-    // ---- getters/setters ----
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name != null ? name.trim() : null;
-    }
-
     public BigDecimal getCapacityInLiters() {
         return capacityInLiters;
     }
 
     public void setCapacityInLiters(BigDecimal capacityInLiters) {
-        this.capacityInLiters = capacityInLiters;
+        // keep non-null
+        this.capacityInLiters = (capacityInLiters == null) ? BigDecimal.ZERO : capacityInLiters;
     }
 
     public Integer getStockQuantity() {
@@ -46,7 +52,7 @@ public class OilContainer extends BaseEntity {
     }
 
     public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
+        this.stockQuantity = (stockQuantity == null) ? 0 : stockQuantity;
     }
 
     public BigDecimal getBuyPrice() {
@@ -54,7 +60,8 @@ public class OilContainer extends BaseEntity {
     }
 
     public void setBuyPrice(BigDecimal buyPrice) {
-        this.buyPrice = buyPrice;
+        // 2 decimals for monetary values
+        this.buyPrice = (buyPrice == null) ? BigDecimal.ZERO : buyPrice.setScale(2, RoundingMode.HALF_UP);
     }
 
     public BigDecimal getSellingPrice() {
@@ -62,7 +69,8 @@ public class OilContainer extends BaseEntity {
     }
 
     public void setSellingPrice(BigDecimal sellingPrice) {
-        this.sellingPrice = sellingPrice;
+        // 2 decimals for monetary values
+        this.sellingPrice = (sellingPrice == null) ? BigDecimal.ZERO : sellingPrice.setScale(2, RoundingMode.HALF_UP);
     }
 
     public Boolean getActive() {
@@ -70,6 +78,6 @@ public class OilContainer extends BaseEntity {
     }
 
     public void setActive(Boolean active) {
-        this.active = active;
+        this.active = (active == null) ? Boolean.TRUE : active;
     }
 }
