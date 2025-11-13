@@ -329,6 +329,7 @@ public class PlanningService {
             lot.setOilType(lot.getOilType());
             lot.setOilVariety(lot.getOliveVariety());
             lot.setStatus(OliveLotStatus.COMPLETED);
+            lot.setUnitPrice(unpaidPrice/lot.getPoidsNet());
 
             deliveryRepo.save(lot);
             if (Objects.equals(globalLotNumber, "0") || globalLotNumber.isEmpty()) {
