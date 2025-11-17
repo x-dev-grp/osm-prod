@@ -335,7 +335,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case COMPLETED -> {
                 actions.add(Action.GEN_PDF_QC_OLIVE);
                 actions.add(Action.GEN_PDF_PRODUCTION); // ✅ Bon de production quand réception olive terminée
-                actions.add(Action.GEN_INVOICE);
+//                actions.add(Action.GEN_INVOICE);
                 actions.add(Action.GEN_PDF);
 
                 switch (delivery.getOperationType()) {
@@ -367,7 +367,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             case IN_STOCK -> {
                 // ✅ Même logique que COMPLETED → possibilité de générer bon de production
                 actions.add(Action.GEN_PDF_PRODUCTION);
-                actions.add(Action.GEN_INVOICE);
+//                actions.add(Action.GEN_INVOICE);
                 actions.add(Action.GEN_PDF);
 
             }
@@ -424,7 +424,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "[mapOilDeliveryActions] Adding GEN_PDF_BON_PROD status actions for oil delivery " + delivery.getLotNumber());
                 actions.add(Action.GEN_PDF_PRODUCTION);
                 actions.add(Action.GEN_PDF_QC_OIL);
-                actions.add(Action.GEN_INVOICE);
+//                actions.add(Action.GEN_INVOICE);
 
             }
         }
@@ -555,6 +555,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 oilQuantity = 0.0;
             }
             newDelivery.setOilQuantity(oilQuantity);
+            newDelivery.setPoidsNet(oilQuantity);
 
             // Initialize pricing
             newDelivery.setUnitPrice(0.0);
@@ -1153,7 +1154,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         financialTransactionDto.setOperationType(simpleReception);
         financialTransactionDto.setExternalTransactionId(delivery.getExternalId().toString());
         financialTransactionDto.setResourceName(ResourceName.UnifiedDelivery);
-
+//todo recheck the supplier id saved
         // Send to finance service
         financialTransactionFeignService.create(financialTransactionDto);
     }
