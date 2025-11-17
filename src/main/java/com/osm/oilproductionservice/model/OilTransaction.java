@@ -16,7 +16,6 @@ import static org.apache.commons.math3.util.Precision.round;
 @Entity
 public class OilTransaction extends BaseEntity implements Serializable {
 
-    @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
 
     /**
@@ -33,8 +32,6 @@ public class OilTransaction extends BaseEntity implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "oil_type")
     private Olive_Oil_Type oilType;
-
-    @Enumerated(EnumType.STRING)
     private TransactionState transactionState = TransactionState.COMPLETED;
 
     /**
