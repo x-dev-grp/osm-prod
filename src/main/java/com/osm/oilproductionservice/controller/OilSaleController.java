@@ -6,6 +6,7 @@ import com.osm.oilproductionservice.dto.OilSaleDTO;
 import com.osm.oilproductionservice.dto.PaymentDTO;
 import com.osm.oilproductionservice.model.OilSale;
 import com.osm.oilproductionservice.service.OilSaleService;
+import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * REST controller for managing oil sales
@@ -45,9 +48,13 @@ public class OilSaleController extends BaseControllerImpl<OilSale, OilSaleDTO, O
     }
 
     @PostMapping("/create")
-    public ResponseEntity<OilSale> create(@RequestBody OilSaleCreateRequest request) {
-        OilSale saved = oilSaleService.createWithContainers(request);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<ApiResponse<OilSale, OilSaleDTO>> create(@RequestBody OilSaleCreateRequest request) {
+        try {
+            OilSaleDTO saved = oilSaleService.createWithContainers(request);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Pricing updated successfully", List.of(saved)));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse<>(false, e.getMessage(), null));
+        }
     }
 
 }

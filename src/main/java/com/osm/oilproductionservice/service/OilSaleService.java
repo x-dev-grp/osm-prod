@@ -108,7 +108,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
     }
 
     @Transactional
-    public OilSale createWithContainers(OilSaleCreateRequest req) {
+    public OilSaleDTO createWithContainers(OilSaleCreateRequest req) {
 
         // ---- 0) Basic validation
         if (req.getQuantity() == null || req.getQuantity().signum() <= 0) {
@@ -223,7 +223,7 @@ public class OilSaleService extends BaseServiceImpl<OilSale, OilSaleDTO, OilSale
         }
 
 
-        return sale;
+        return modelMapper.map(sale,OilSaleDTO.class);
     }
 
     private FinancialTransactionDto getTransactionDto(OilSaleCreateRequest req, BigDecimal containerTotal, Supplier supplier, OilSale sale) {
