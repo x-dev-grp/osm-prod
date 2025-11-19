@@ -2,7 +2,6 @@ package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.OilContainerDTO;
 import com.osm.oilproductionservice.model.OilContainer;
-import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.service.OilContainerService;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;

@@ -545,6 +545,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             newDelivery.setDeliveryType(DeliveryType.OIL);
             newDelivery.setStatus(OliveLotStatus.NEW);
             newDelivery.setLotNumber(delivery.getLotNumber());
+            newDelivery.setOliveQuantity(delivery.getPoidsNet());
             newDelivery.setDeliveryNumber(delivery.getDeliveryNumber());
             newDelivery.setDeliveryDate(LocalDateTime.now());
 
