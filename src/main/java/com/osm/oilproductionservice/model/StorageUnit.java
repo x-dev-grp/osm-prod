@@ -4,26 +4,28 @@ import com.xdev.communicator.models.enums.QualityGrades;
 import com.xdev.communicator.models.enums.StorageStatus;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-
 import static org.apache.commons.math3.util.Precision.round;
 
 /**
- * StorageUnit (mise à jour) :
- * - Ajout de la partie FILTRATION :
- *   1) filteredOil : indique si l'huile de la cuve est filtrée
- *   2) lastFiltrationDate : date du dernier filtrage
+ * StorageUnit (Entité JPA)
+ *
+ * Représente une unité de stockage (cuve, réservoir) dans le système
+ *
+ * MODIFICATIONS APPORTÉES:
+ * - Ajout des champs pour la gestion de la filtration (filteredOil, lastFiltrationDate)
+ * - Ces champs sont utilisés dans FiltrationService.completeFiltration()
+ * - Ils permettent de savoir si l'huile dans une cuve est filtrée et quand
  */
 @Entity
 @Table(name = "storage_unit")
 public class StorageUnit extends BaseEntity {
 
-    // =======================
+    // ========================
     // Données générales cuve
-    // =======================
+    // ========================
     private String name;
 
     /** Numéro de lot actuellement stocké (simplifié) */
@@ -72,42 +74,55 @@ public class StorageUnit extends BaseEntity {
     private Boolean paidStorage;
     private Double monthlyRentalPrice = 0.0;
 
-    // =======================
-    // FILTRATION (NOUVEAU)
-    // =======================
+    // ========================
+    // FILTRATION (NOUVEAU - AJOUTÉ POUR LA GESTION DES FILTRATIONS)
+    // ========================
 
     /**
-     * Indique si l'huile actuellement stockée dans cette cuve est filtrée.
-     * - false : huile brute / non filtrée
-     * - true  : huile filtrée
+     * [NOUVEAU] Indique si l'huile actuellement stockée dans cette cuve est filtrée.
+     *
+     * Utilité:
+     * - false : huile brute / non filtrée (valeur par défaut)
+     * - true  : huile filtrée (après une opération de filtration terminée)
+     *
+     * Utilisé dans:
+     * - FiltrationService.completeFiltration() pour marquer la cuve cible
+     * - Permet de savoir si on peut utiliser cette huile comme produit fini
      */
     @Column(name = "filtered_oil")
     private Boolean filteredOil = false;
 
     /**
-     * Date du dernier filtrage réalisé sur cette cuve.
+     * [NOUVEAU] Date du dernier filtrage réalisé sur cette cuve.
+     *
+     * Utilité:
+     * - Enregistre quand l'huile a été filtrée pour la dernière fois
+     * - Permet le suivi de la qualité et la traçabilité
+     *
+     * Utilisé dans:
+     * - FiltrationService.completeFiltration() pour mettre à jour la date
      */
     @Column(name = "last_filtration_date")
     private LocalDateTime lastFiltrationDate;
 
-    // =======================
+    // ========================
     // Constructeur
-    // =======================
+    // ========================
     public StorageUnit() {
     }
 
-    // =======================
+    // ========================
     // Méthodes utilitaires
-    // =======================
+    // ========================
     public double getFillPercentage() {
         return maxCapacity != null && maxCapacity > 0
                 ? (currentVolume / maxCapacity) * 100.0
                 : 0.0;
     }
 
-    // =======================
-    // Getters / Setters
-    // =======================
+    // ========================
+    // Getters / Setters existants
+    // ========================
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -124,22 +139,34 @@ public class StorageUnit extends BaseEntity {
     public void setDescription(String description) { this.description = description; }
 
     public Double getMaxCapacity() { return maxCapacity; }
-    public void setMaxCapacity(Double maxCapacity) { this.maxCapacity = maxCapacity == null ? null : round(maxCapacity, 3); }
+    public void setMaxCapacity(Double maxCapacity) {
+        this.maxCapacity = maxCapacity == null ? null : round(maxCapacity, 3);
+    }
 
     public Double getCurrentVolume() { return currentVolume; }
-    public void setCurrentVolume(Double currentVolume) { this.currentVolume = currentVolume == null ? null : round(currentVolume, 3); }
+    public void setCurrentVolume(Double currentVolume) {
+        this.currentVolume = currentVolume == null ? null : round(currentVolume, 3);
+    }
 
     public LocalDateTime getNextMaintenanceDate() { return nextMaintenanceDate; }
-    public void setNextMaintenanceDate(LocalDateTime nextMaintenanceDate) { this.nextMaintenanceDate = nextMaintenanceDate; }
+    public void setNextMaintenanceDate(LocalDateTime nextMaintenanceDate) {
+        this.nextMaintenanceDate = nextMaintenanceDate;
+    }
 
     public LocalDateTime getLastInspectionDate() { return lastInspectionDate; }
-    public void setLastInspectionDate(LocalDateTime lastInspectionDate) { this.lastInspectionDate = lastInspectionDate; }
+    public void setLastInspectionDate(LocalDateTime lastInspectionDate) {
+        this.lastInspectionDate = lastInspectionDate;
+    }
 
     public Double getAvgCost() { return avgCost; }
-    public void setAvgCost(Double avgCost) { this.avgCost = avgCost == null ? null : round(avgCost, 3); }
+    public void setAvgCost(Double avgCost) {
+        this.avgCost = avgCost == null ? null : round(avgCost, 3);
+    }
 
     public Double getTotalCost() { return totalCost; }
-    public void setTotalCost(Double totalCost) { this.totalCost = totalCost == null ? null : round(totalCost, 3); }
+    public void setTotalCost(Double totalCost) {
+        this.totalCost = totalCost == null ? null : round(totalCost, 3);
+    }
 
     public BaseType getOilVariety() { return oilVariety; }
     public void setOilVariety(BaseType oilVariety) { this.oilVariety = oilVariety; }
@@ -160,19 +187,32 @@ public class StorageUnit extends BaseEntity {
     public void setPaidStorage(Boolean paidStorage) { this.paidStorage = paidStorage; }
 
     public Double getMonthlyRentalPrice() { return monthlyRentalPrice; }
-    public void setMonthlyRentalPrice(Double monthlyRentalPrice) { this.monthlyRentalPrice = monthlyRentalPrice == null ? null : round(monthlyRentalPrice, 3); }
+    public void setMonthlyRentalPrice(Double monthlyRentalPrice) {
+        this.monthlyRentalPrice = monthlyRentalPrice == null ? null : round(monthlyRentalPrice, 3);
+    }
 
-    // ====== Filtration getters/setters (NOUVEAU) ======
-    public Boolean getFilteredOil() { return filteredOil; }
-    public void setFilteredOil(Boolean filteredOil) { this.filteredOil = filteredOil; }
+    // ========================
+    // [NOUVEAU] Getters/Setters pour les champs de filtration
+    // ========================
+    public Boolean getFilteredOil() {
+        return filteredOil;
+    }
 
-    public LocalDateTime getLastFiltrationDate() { return lastFiltrationDate; }
-    public void setLastFiltrationDate(LocalDateTime lastFiltrationDate) { this.lastFiltrationDate = lastFiltrationDate; }
-    // ==================================================
+    public void setFilteredOil(Boolean filteredOil) {
+        this.filteredOil = filteredOil;
+    }
 
-    // =======================
-    // Mise à jour volume + coûts
-    // =======================
+    public LocalDateTime getLastFiltrationDate() {
+        return lastFiltrationDate;
+    }
+
+    public void setLastFiltrationDate(LocalDateTime lastFiltrationDate) {
+        this.lastFiltrationDate = lastFiltrationDate;
+    }
+
+    // ========================
+    // Mise à jour volume + coûts (existant)
+    // ========================
     public void updateCurrentVolume(Double volume, int direction, Double unitPrice) {
         java.util.function.Function<Double, Double> rd =
                 v -> BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP).doubleValue();

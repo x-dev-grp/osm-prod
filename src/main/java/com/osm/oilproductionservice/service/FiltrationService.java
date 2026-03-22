@@ -1,9 +1,7 @@
 package com.osm.oilproductionservice.service;
 
-import com.osm.oilproductionservice.dto.FiltrationRequestDto;
-import com.osm.oilproductionservice.dto.FiltrationResultDto;
-import com.osm.oilproductionservice.dto.FiltrationStatu;
-import com.osm.oilproductionservice.dto.UpdateFiltrationStatusDto;
+import com.osm.oilproductionservice.dto.*;
+import com.osm.oilproductionservice.dto.FiltrationStatus;
 import com.osm.oilproductionservice.model.FiltrationOperation;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.FiltrationOperationRepo;
@@ -14,320 +12,422 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
-
-import static org.apache.commons.math3.util.Precision.round;
+import java.util.stream.Collectors;
 
 @Service
 public class FiltrationService {
+
     private static final Logger logger = LoggerFactory.getLogger(FiltrationService.class);
 
     private final StorageUnitRepo storageUnitRepo;
     private final FiltrationOperationRepo filtrationRepo;
+    private final org.modelmapper.ModelMapper modelMapper;
 
-    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo) {
+    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo, org.modelmapper.ModelMapper modelMapper) {
         this.storageUnitRepo = storageUnitRepo;
         this.filtrationRepo = filtrationRepo;
+        this.modelMapper = modelMapper;
     }
+
+    /**
+     * [DÉJÀ EXISTANT] Créer une nouvelle opération
+     */
     @Transactional
-    public FiltrationResultDto filter(FiltrationRequestDto req) {
+    public FiltrationResultDto createFiltration(FiltrationRequestDto req) {
         String operationId = generateOperationId();
 
         try {
-            logger.info("Operation ID: {} - Starting filtration process", operationId);
-            logger.debug("Operation ID: {} - Request details: source={}, target={}, volume={}",
-                    operationId, req.getSource(), req.getTarget(), req.getVolumeToFilter());
+            logger.info("Opération {} - Début de création", operationId);
 
-            // Validate input
             validateRequest(req);
 
-            var sourceId = req.getSource();
-            var targetId = req.getTarget();
-            double volumeToFilter = req.getVolumeToFilter();
+            StorageUnit sourceUnit = findStorageUnitById(req.getSource(), "Source");
+            StorageUnit targetUnit = findStorageUnitById(req.getTarget(), "Target");
 
-            // 1) Charger les cuves
-            StorageUnit sourceUnit = findStorageUnitById(sourceId, "Source");
-            StorageUnit targetUnit = findStorageUnitById(targetId, "Target");
+            logger.info("Opération {} - Unités chargées: Source vol={}, Target vol={}/{}", operationId, sourceUnit.getCurrentVolume(), targetUnit.getCurrentVolume(), targetUnit.getMaxCapacity());
 
-            logger.info("Operation ID: {} - Storage units loaded - Source: {} (current volume: {}), Target: {} (current volume: {})",
-                    operationId, sourceId, sourceUnit.getCurrentVolume(), targetId, targetUnit.getCurrentVolume());
+            validateBusinessRules(sourceUnit, targetUnit, req.getVolumeToFilter());
 
-            // 2) Validations métier
-            validateBusinessRules(sourceUnit, targetUnit, volumeToFilter, operationId);
+            FiltrationOperation operation = new FiltrationOperation();
+            operation.setSourceStorageUnit(sourceUnit);
+            operation.setTargetStorageUnit(targetUnit);
+            operation.setVolumeToFilter(req.getVolumeToFilter());
+            operation.setStatus(FiltrationStatus.CREATED);
+            operation.setNote(req.getNote());
+            operation.setOperationDate(LocalDateTime.now());
 
-            // 3) Create and save filtration operation
-            FiltrationOperation operation = createFiltrationOperation(sourceUnit, targetUnit, volumeToFilter, req.getNote());
-            filtrationRepo.save(operation);
+            FiltrationOperation saved = filtrationRepo.save(operation);
+            logger.info("Opération {} - Sauvegardée avec ID: {}", operationId, saved.getId());
 
-            logger.info("Operation ID: {} - Filtration operation created successfully with ID: {}",
-                    operationId, operation.getId());
-
-            // 4) Create result DTO
-            return createFiltrationResult(operation, operationId);
+            return mapToDto(saved);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Operation ID: {} - Validation error: {}", operationId, e.getMessage());
-            throw e; // Let the controller handle validation errors
-
+            logger.error("Opération {} - Erreur validation: {}", operationId, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            logger.error("Operation ID: {} - Unexpected error during filtration: {}", operationId, e.getMessage(), e);
-            throw new RuntimeException("Failed to process filtration operation: " + e.getMessage(), e);
+            logger.error("Opération {} - Erreur technique: {}", operationId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la création de l'opération", e);
         }
     }
 
-    private void validateRequest(FiltrationRequestDto req) {
-        if (req == null) {
-            throw new IllegalArgumentException("Filtration request cannot be null");
-        }
-        if (req.getSource() == null) {
-            throw new IllegalArgumentException("Source storage unit ID cannot be null");
-        }
-        if (req.getTarget() == null) {
-            throw new IllegalArgumentException("Target storage unit ID cannot be null");
-        }
-        if (req.getVolumeToFilter() <= 0) {
-            throw new IllegalArgumentException("Volume to filter must be positive");
-        }
-    }
-
-    private StorageUnit findStorageUnitById(UUID id, String unitType) {
-        return storageUnitRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("%s storage unit not found with ID: %d", unitType, id)));
-    }
-
-    private void validateBusinessRules(StorageUnit source, StorageUnit target, double volumeToFilter, String operationId) {
-        // Check if source has enough volume
-        if (volumeToFilter > source.getCurrentVolume()) {
-            logger.warn("Operation ID: {} - Insufficient volume in source. Available: {}, Requested: {}",
-                    operationId, source.getCurrentVolume(), volumeToFilter);
-            throw new IllegalArgumentException(
-                    String.format("Insufficient volume in source storage unit. Available: %.2f, Requested: %.2f",
-                            source.getCurrentVolume(), volumeToFilter));
-        }
-
-        // Check if target has enough capacity
-        double targetNewVolume = target.getCurrentVolume() + volumeToFilter;
-        if (targetNewVolume > target.getMaxCapacity()) {
-            logger.warn("Operation ID: {} - Insufficient capacity in target. Current: {}, Max: {}, Would become: {}",
-                    operationId, target.getCurrentVolume(), target.getMaxCapacity(), targetNewVolume);
-            throw new IllegalArgumentException(
-                    String.format("Insufficient capacity in target storage unit. Current: %.2f, Max capacity: %.2f, Would become: %.2f",
-                            target.getCurrentVolume(), target.getMaxCapacity(), targetNewVolume));
-        }
-
-        // Optional: Check if source and target are different
-        if (source.getId().equals(target.getId())) {
-            throw new IllegalArgumentException("Source and target storage units must be different");
-        }
-
-        logger.info("Operation ID: {} - Business rules validation passed", operationId);
-    }
-
-    private FiltrationOperation createFiltrationOperation(StorageUnit source, StorageUnit target,
-                                                          double volumeToFilter, String note) {
-        FiltrationOperation op = new FiltrationOperation();
-        op.setSourceStorageUnit(source);
-        op.setTargetStorageUnit(target);
-        op.setVolumeToFilter(volumeToFilter);
-        op.setStatus(FiltrationStatu.CREATED);
-        op.setNote(note);
-        return op;
-    }
-
-    private FiltrationResultDto createFiltrationResult(FiltrationOperation operation, String operationId) {
-        FiltrationResultDto result = new FiltrationResultDto();
-
-        result.setSourceId(operation.getSourceStorageUnit().getId());
-        result.setTargetId(operation.getTargetStorageUnit().getId());
-        result.setVolumeFiltered(operation.getVolumeToFilter());
-        result.setStatus(operation.getStatus().toString());
-        result.setTimestamp(LocalDateTime.now()); // Assuming you have createdAt field
-        result.setNote(operation.getNote());
-
-        logger.info("Operation ID: {} - Filtration result prepared successfully", operationId);
-        return result;
-    }
-
-    private String generateOperationId() {
-        return "FILTER-" + System.currentTimeMillis() + "-" +
-                java.util.UUID.randomUUID().toString().substring(0, 4);
-    }
-    // Ajouter ces méthodes dans FiltrationService.java
-
+    /**
+     * [DÉJÀ EXISTANT] Démarrer une opération
+     */
     @Transactional
     public FiltrationResultDto startFiltration(UUID operationId) {
         String operationId_log = generateOperationId();
+        String traceId = generateOperationId();
 
         try {
-            logger.info("Operation ID: {} - Starting filtration operation with ID: {}", operationId_log, operationId);
+            logger.info("Trace {} - Démarrage opération ID: {}", traceId, operationId);
 
             FiltrationOperation operation = findFiltrationOperationById(operationId);
 
-            // Vérifier que l'opération est dans un état valide pour démarrer
-            if (operation.getStatus() != FiltrationStatu.CREATED) {
-                throw new IllegalArgumentException(
-                        String.format("Cannot start filtration operation with status: %s. Expected status: CREATED",
-                                operation.getStatus()));
+            if (operation.getStatus() != FiltrationStatus.CREATED) {
+                throw new IllegalArgumentException(String.format("Impossible de démarrer: statut actuel = %s, attendu = CREATED", operation.getStatus()));
             }
 
-            // Mettre à jour le statut
-            operation.setStatus(FiltrationStatu.IN_PROGRESS);
-            filtrationRepo.save(operation);
+            operation.setStatus(FiltrationStatus.IN_PROGRESS);
 
-            logger.info("Operation ID: {} - Filtration operation {} started successfully", operationId_log, operationId);
+            FiltrationOperation updated = filtrationRepo.save(operation);
+            logger.info("Trace {} - Opération {} démarrée", traceId, operationId);
 
-            return createFiltrationResult(operation, operationId_log);
+            return mapToDto(updated);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Operation ID: {} - Validation error: {}", operationId_log, e.getMessage());
+            logger.error("Trace {} - Erreur validation: {}", traceId, e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Operation ID: {} - Unexpected error starting filtration: {}", operationId_log, e.getMessage(), e);
-            throw new RuntimeException("Failed to start filtration operation: " + e.getMessage(), e);
+            logger.error("Trace {} - Erreur technique: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors du démarrage", e);
         }
     }
 
+    /**
+     * [MODIFIÉ] Terminer une opération et mettre à jour les unités de stockage
+     * <p>
+     * MODIFICATIONS IMPORTANTES:
+     * 1. Ajout du paramètre FiltrationCompletionDto pour recevoir le volume après filtration
+     * 2. Calcul automatique des pertes (volumeInitial - volumeAfter)
+     * 3. Mise à jour des volumes des unités de stockage
+     * 4. Marquage de l'huile comme filtrée dans la cuve cible
+     * 5. Enregistrement de la date de dernière filtration
+     */
     @Transactional
     public FiltrationResultDto completeFiltration(UUID operationId) {
         String operationId_log = generateOperationId();
+        String traceId = generateOperationId();
 
         try {
-            logger.info("Operation ID: {} - Completing filtration operation with ID: {}", operationId_log, operationId);
+            logger.info("Trace {} - Terminaison opération ID: {}", traceId, operationId);
 
+            // Récupération de l'opération
             FiltrationOperation operation = findFiltrationOperationById(operationId);
 
-            // Vérifier que l'opération est en cours
-            if (operation.getStatus() != FiltrationStatu.IN_PROGRESS) {
-                throw new IllegalArgumentException(
-                        String.format("Cannot complete filtration operation with status: %s. Expected status: IN_PROGRESS",
-                                operation.getStatus()));
+            // Vérification du statut
+            if (operation.getStatus() != FiltrationStatus.IN_PROGRESS) {
+                throw new IllegalArgumentException(String.format("Impossible de terminer: statut actuel = %s, attendu = IN_PROGRESS", operation.getStatus()));
             }
 
-            // Mettre à jour le statut
-            operation.setStatus(FiltrationStatu.COMPLETED);
+            // [NOUVEAU] Validation du volume après filtration
+            if (completionData.getVolumeAfter() == null || completionData.getVolumeAfter() < 0) {
+                throw new IllegalArgumentException("Le volume après filtration doit être positif");
+            }
+            if (completionData.getVolumeAfter() > operation.getVolumeToFilter()) {
+                throw new IllegalArgumentException("Le volume après filtration ne peut pas dépasser le volume initial");
+            }
 
-            // Mettre à jour les volumes après filtration (si nécessaire)
-            // operation.setVolumeAfter(calculateVolumeAfter(operation));
-            // operation.setLossVolume(calculateLoss(operation));
-            // operation.setLossPercent(calculateLossPercent(operation));
+            // [NOUVEAU] Calcul des pertes
+            double volumeInitial = operation.getVolumeToFilter();
+            double volumeAfter = completionData.getVolumeAfter();
+            double lossVolume = volumeInitial - volumeAfter;
+            double lossPercent = (lossVolume / volumeInitial) * 100;
 
-            filtrationRepo.save(operation);
+            // [NOUVEAU] Récupération des unités de stockage
+            StorageUnit sourceUnit = operation.getSourceStorageUnit();
+            StorageUnit targetUnit = operation.getTargetStorageUnit();
 
-            logger.info("Operation ID: {} - Filtration operation {} completed successfully", operationId_log, operationId);
+            // [NOUVEAU] MISE À JOUR DES UNITÉS DE STOCKAGE
+            Double sourceAvgCost = sourceUnit.getAvgCost() != null ? sourceUnit.getAvgCost() : 0.0;
 
-            return createFiltrationResult(operation, operationId_log);
+            // 1. Retirer le volume de la source
+            sourceUnit.updateCurrentVolume(volumeInitial, 0, null);
+
+            // 2. Ajouter le volume filtré à la cible
+            targetUnit.updateCurrentVolume(volumeAfter, 1, sourceAvgCost);
+
+            // 3. Marquer l'huile comme filtrée dans la cuve cible
+            targetUnit.setFilteredOil(true);                 // [NOUVEAU] Champ utilisé
+            targetUnit.setLastFiltrationDate(LocalDateTime.now()); // [NOUVEAU] Champ utilisé
+
+            // 4. Sauvegarder les unités mises à jour
+            storageUnitRepo.save(sourceUnit);
+            storageUnitRepo.save(targetUnit);
+
+            // [NOUVEAU] Mise à jour de l'opération avec les données de completion
+            operation.setStatus(FiltrationStatus.COMPLETED);
+            operation.setVolumeAfter(volumeAfter);
+            operation.setLossVolume(lossVolume);
+            operation.setLossPercent(lossPercent);
+
+            // Ajouter la note de completion si fournie
+            if (completionData.getNote() != null && !completionData.getNote().isEmpty()) {
+                String updatedNote = operation.getNote() == null ? "" : operation.getNote() + " | ";
+                operation.setNote(updatedNote + "Completion: " + completionData.getNote());
+            }
+
+            FiltrationOperation updated = filtrationRepo.save(operation);
+
+            // [NOUVEAU] Logs détaillés des modifications
+            logger.info("Trace {} - Opération terminée: perte={}L ({}%)", traceId, String.format("%.3f", lossVolume), String.format("%.2f", lossPercent));
+            logger.info("Trace {} - Unités mises à jour: Source {} -> {}L, Target {} -> {}L", traceId, sourceUnit.getId(), sourceUnit.getCurrentVolume(), targetUnit.getId(), targetUnit.getCurrentVolume());
+
+            return mapToDto(updated);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Operation ID: {} - Validation error: {}", operationId_log, e.getMessage());
+            logger.error("Trace {} - Erreur validation: {}", traceId, e.getMessage());
             throw e;
         } catch (Exception e) {
-            logger.error("Operation ID: {} - Unexpected error completing filtration: {}", operationId_log, e.getMessage(), e);
-            throw new RuntimeException("Failed to complete filtration operation: " + e.getMessage(), e);
+            logger.error("Trace {} - Erreur technique: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la terminaison", e);
         }
     }
 
+    /**
+     * [DÉJÀ EXISTANT] Mettre à jour le statut
+     */
     @Transactional
     public FiltrationResultDto updateFiltrationStatus(UUID operationId, UpdateFiltrationStatusDto statusDto) {
         String operationId_log = generateOperationId();
+        String traceId = generateOperationId();
 
         try {
-            logger.info("Operation ID: {} - Updating filtration operation {} status to: {}",
-                    operationId_log, operationId, statusDto.getStatus());
+            logger.info("Trace {} - Mise à jour statut opération {} vers {}",
+                    traceId, operationId, statusDto.getStatus());
 
             FiltrationOperation operation = findFiltrationOperationById(operationId);
 
-            // Valider la transition d'état
-            validateStatusTransition(operation.getStatus(), statusDto.getStatus());
+            FiltrationStatus currentStatus = operation.getStatus();
+            FiltrationStatus newStatus = statusDto.getStatus();
 
-            // Mettre à jour le statut
-            operation.setStatus(statusDto.getStatus());
+            // Cancellation allowed only if IN_PROGRESS
+            if (FiltrationStatus.CANCELLED.equals(newStatus)
+                    && !FiltrationStatus.IN_PROGRESS.equals(currentStatus)) {
 
-            // Mettre à jour les volumes si fournis
-            if (statusDto.getVolumeAfter() != null) {
-                operation.setVolumeAfter(statusDto.getVolumeAfter());
+                logger.error("Trace {} - Annulation refusée. Statut actuel: {}",
+                        traceId, currentStatus);
+
+                throw new IllegalStateException(
+                        "L’opération ne peut être annulée que si elle est en cours (IN_PROGRESS)"
+                );
             }
 
-            if (statusDto.getLossVolume() != null) {
-                operation.setLossVolume(statusDto.getLossVolume());
+            operation.setStatus(newStatus);
+
+            // Note: always append a status trace + optional user note
+            String statusNote = "STATUS -> " + newStatus.name();
+            if (statusDto.getNote() != null && !statusDto.getNote().isBlank()) {
+                statusNote = statusNote + " : " + statusDto.getNote().trim();
             }
 
-            if (statusDto.getLossPercent() != null) {
-                operation.setLossPercent(statusDto.getLossPercent());
-            }
+            String currentNote = operation.getNote();
+            operation.setNote(currentNote == null || currentNote.isBlank()
+                    ? statusNote
+                    : currentNote + " | " + statusNote);
 
-            if (statusDto.getNote() != null) {
-                operation.setNote(statusDto.getNote());
-            }
+            FiltrationOperation updated = filtrationRepo.save(operation);
 
-            filtrationRepo.save(operation);
+            logger.info("Trace {} - Statut mis à jour vers {}", traceId, newStatus);
 
-            logger.info("Operation ID: {} - Filtration operation {} status updated successfully to {}",
-                    operationId_log, operationId, operation.getStatus());
-
-            return createFiltrationResult(operation, operationId_log);
+            return mapToDto(updated);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Operation ID: {} - Validation error: {}", operationId_log, e.getMessage());
+            logger.error("Trace {} - Erreur validation: {}", traceId, e.getMessage());
             throw e;
+
         } catch (Exception e) {
-            logger.error("Operation ID: {} - Unexpected error updating filtration status: {}", operationId_log, e.getMessage(), e);
-            throw new RuntimeException("Failed to update filtration status: " + e.getMessage(), e);
+            logger.error("Trace {} - Erreur technique: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la mise à jour", e);
         }
     }
 
-    public FiltrationResultDto getFiltrationStatus(UUID operationId) {
-        String operationId_log = generateOperationId();
+    /**
+     * [NOUVEAU] Ajouter une note à une opération
+     * <p>
+     * Cette méthode permet d'ajouter une note sans modifier le statut
+     * Les notes sont concaténées avec un séparateur " | " pour garder l'historique
+     */
+    @Transactional
+    public FiltrationResultDto addNote(UUID operationId, String note) {
+        String traceId = generateOperationId();
 
         try {
-            logger.info("Operation ID: {} - Getting filtration operation status for ID: {}", operationId_log, operationId);
+            logger.info("Trace {} - Ajout de note à l'opération {}", traceId, operationId);
 
             FiltrationOperation operation = findFiltrationOperationById(operationId);
 
-            logger.info("Operation ID: {} - Filtration operation {} status retrieved: {}",
-                    operationId_log, operationId, operation.getStatus());
+            // [NOUVEAU] Ajout de la note (concaténation avec l'existante)
+            String currentNote = operation.getNote();
+            String newNote = note;
+            operation.setNote(currentNote == null ? newNote : currentNote + " | " + newNote);
 
-            return createFiltrationResult(operation, operationId_log);
+            FiltrationOperation updated = filtrationRepo.save(operation);
+
+            logger.info("Trace {} - Note ajoutée avec succès", traceId);
+
+            return mapToDto(updated);
+
+        } catch (Exception e) {
+            logger.error("Trace {} - Erreur: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'ajout de la note", e);
+        }
+    }
+
+    /**
+     * [MODIFIÉ] Récupérer une opération par son ID (renommée pour plus de clarté)
+     * Ancien nom: getFiltrationStatus
+     * Nouveau nom: getFiltrationById
+     */
+    public FiltrationResultDto getFiltrationById(UUID operationId) { // [MODIFIÉ] Nom de méthode
+        String traceId = generateOperationId();
+
+        try {
+            logger.info("Trace {} - Consultation opération ID: {}", traceId, operationId);
+
+            FiltrationOperation operation = findFiltrationOperationById(operationId);
+
+            return mapToDto(operation);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Operation ID: {} - Operation not found: {}", operationId_log, e.getMessage());
+            logger.error("Trace {} - Opération non trouvée: {}", traceId, e.getMessage());
             throw e;
+        }
+    }
+
+    /**
+     * [MODIFIÉ] Récupérer toutes les opérations avec tri par date
+     * Modification: Ajout du tri par date décroissante
+     */
+    public List<FiltrationResultDto> getAllFiltrations() {
+        String traceId = generateOperationId();
+
+        try {
+            logger.info("Trace {} - Récupération de toutes les opérations", traceId);
+
+            // [MODIFIÉ] Utilisation de la nouvelle méthode avec tri
+            List<FiltrationOperation> operations = filtrationRepo.findAllByOrderByOperationDateDesc();
+
+            return operations.stream().map(this::mapToDto).collect(Collectors.toList());
+
         } catch (Exception e) {
-            logger.error("Operation ID: {} - Unexpected error getting filtration status: {}", operationId_log, e.getMessage(), e);
-            throw new RuntimeException("Failed to get filtration status: " + e.getMessage(), e);
+            logger.error("Trace {} - Erreur: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la récupération", e);
         }
     }
 
-    private FiltrationOperation findFiltrationOperationById(UUID operationId) {
-        return filtrationRepo.findById(operationId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Filtration operation not found with ID: %d", operationId)));
-    }
+    /**
+     * [NOUVEAU] Récupérer les opérations par statut
+     * <p>
+     * Utile pour filtrer l'affichage dans le frontend
+     * Exemple: voir seulement les opérations en cours
+     */
+    public List<FiltrationResultDto> getFiltrationsByStatus(FiltrationStatus status) {
+        String traceId = generateOperationId();
 
-    private void validateStatusTransition(FiltrationStatu currentStatus, FiltrationStatu newStatus) {
-        // Définir les transitions valides
-        boolean isValidTransition = false;
+        try {
+            logger.info("Trace {} - Récupération des opérations avec statut: {}", traceId, status);
 
-        switch (currentStatus) {
-            case CREATED:
-                isValidTransition = (newStatus == FiltrationStatu.IN_PROGRESS);
-                break;
-            case IN_PROGRESS:
-                isValidTransition = (newStatus == FiltrationStatu.COMPLETED);
-                break;
-            case COMPLETED:
-                isValidTransition = false; // Une opération terminée ne peut pas changer de statut
-                break;
-            default:
-                isValidTransition = false;
-        }
+            // [NOUVEAU] Appel à la nouvelle méthode du repository
+            List<FiltrationOperation> operations = filtrationRepo.findByStatus(status);
 
-        if (!isValidTransition) {
-            throw new IllegalArgumentException(
-                    String.format("Invalid status transition from %s to %s", currentStatus, newStatus));
+            return operations.stream().map(this::mapToDto).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            logger.error("Trace {} - Erreur: {}", traceId, e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de la récupération", e);
         }
     }
 
+    // ==================== MÉTHODES PRIVÉES ====================
+
+    /**
+     * [DÉJÀ EXISTANT] Valide la requête
+     */
+    private void validateRequest(FiltrationRequestDto req) {
+        if (req == null) {
+            throw new IllegalArgumentException("La requête ne peut pas être nulle");
+        }
+        if (req.getSource() == null) {
+            throw new IllegalArgumentException("L'ID de l'unité source est requis");
+        }
+        if (req.getTarget() == null) {
+            throw new IllegalArgumentException("L'ID de l'unité cible est requis");
+        }
+        if (req.getVolumeToFilter() == null || req.getVolumeToFilter() <= 0) {
+            throw new IllegalArgumentException("Le volume à filtrer doit être positif");
+        }
+        // [NOUVEAU] Vérification que source et cible sont différentes
+        if (req.getSource().equals(req.getTarget())) {
+            throw new IllegalArgumentException("La source et la cible doivent être différentes");
+        }
+    }
+
+    /**
+     * [DÉJÀ EXISTANT] Recherche une unité
+     */
+    private StorageUnit findStorageUnitById(UUID id, String type) {
+        return storageUnitRepo.findById(id).orElseThrow(() -> new IllegalArgumentException(String.format("%s non trouvée avec l'ID: %s", type, id)));
+    }
+
+    /**
+     * [DÉJÀ EXISTANT] Valide les règles métier
+     */
+    private void validateBusinessRules(StorageUnit source, StorageUnit target, double volume) {
+        if (volume > source.getCurrentVolume()) {
+            throw new IllegalArgumentException(String.format("Volume insuffisant dans la source: disponible=%.2fL, requis=%.2fL", source.getCurrentVolume(), volume));
+        }
+
+        double newTargetVolume = target.getCurrentVolume() + volume;
+        if (newTargetVolume > target.getMaxCapacity()) {
+            throw new IllegalArgumentException(String.format("Capacité insuffisante dans la cible: disponible=%.2fL, max=%.2fL, nouveau volume=%.2fL", target.getMaxCapacity() - target.getCurrentVolume(), target.getMaxCapacity(), newTargetVolume));
+        }
+    }
+
+    /**
+     * [DÉJÀ EXISTANT] Recherche une opération
+     */
+    private FiltrationOperation findFiltrationOperationById(UUID id) {
+        return filtrationRepo.findById(id).orElseThrow(() -> new IllegalArgumentException(String.format("Opération non trouvée avec l'ID: %s", id)));
+    }
+
+
+
+    /**
+     * [MODIFIÉ] Convertit une entité en DTO avec les nouveaux champs
+     * Ajout des champs: volumeAfter, lossVolume, lossPercent
+     */
+    private FiltrationResultDto mapToDto(FiltrationOperation operation) {
+        FiltrationResultDto dto = new FiltrationResultDto();
+        dto.setOperationId(operation.getId());
+        dto.setSource(modelMapper.map(operation.getSourceStorageUnit(), StorageUnitDto.class));
+        dto.setTarget(modelMapper.map(operation.getTargetStorageUnit(), StorageUnitDto.class));
+        dto.setVolumeFiltered(operation.getVolumeToFilter());
+        // [NOUVEAU] Nouveaux champs ajoutés au DTO
+        dto.setVolumeAfter(operation.getVolumeAfter());
+        dto.setLossVolume(operation.getLossVolume());
+        dto.setLossPercent(operation.getLossPercent());
+        dto.setStatus(operation.getStatus() != null ? operation.getStatus().toString() : null);
+        dto.setTimestamp(operation.getOperationDate());
+        dto.setNote(operation.getNote());
+        return dto;
+    }
+
+    /**
+     * [DÉJÀ EXISTANT] Génère un ID de trace
+     */
+    private String generateOperationId() {
+        return "OP-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
+    }
 }
-
-

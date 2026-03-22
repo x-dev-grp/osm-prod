@@ -2,22 +2,13 @@ package com.osm.oilproductionservice.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 @Data
 public class UpdateFiltrationStatusDto {
 
-    @NotNull(message = "Status cannot be null")
-    private FiltrationStatu status;
+    @NotNull(message = "Le statut est requis")
+    private FiltrationStatus status;  // Nouveau statut
 
-    private Double volumeAfter;
-
-    private Double lossVolume;
-
-    private Double lossPercent;
-
-    private String note;
+    // [NOUVEAU] Ajout de la note optionnelle
+    private String note;              // Note à ajouter lors du changement de statut
 }

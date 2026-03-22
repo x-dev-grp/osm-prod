@@ -1,7 +1,10 @@
 server:
+  address: 0.0.0.0
   port: ${SERVER_PORT:8083}
-  max-http-request-header-size: 32KB      # Boot 3.x+
-
+  max-http-request-header-size: 32KB
+  error:
+    include-message: always
+    include-binding-errors: always
 
 spring:
   application:
@@ -15,6 +18,12 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASS:root}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
@@ -58,7 +67,7 @@ spring:
           default:
             connectTimeout: 10000
             readTimeout: 60000
-            loggerLevel: basic
+            loggerLevel: full
 
 eureka:
   client:
@@ -71,12 +80,20 @@ eureka:
   instance:
     prefer-ip-address: true
     hostname: ${HOSTNAME:localhost}
-    # heartbeat every 5s (default 30s)
     lease-renewal-interval-in-seconds: 5
-    # expire missing instances after ~15s (default 90s)
     lease-expiration-duration-in-seconds: 15
+    metadata-map:
+      startup: ${random.int}
 
+# Configuration des opérations offline
+offline:
+  sync:
+    max-retry: 3
+    retention-days: 30
+    batch-size: 100
+    retry-interval: 1800000
 
+# Configuration du logging
 logging:
   level:
     com.osm.oilproductionservice: DEBUG
@@ -87,19 +104,59 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
     feign: DEBUG
     com.netflix.discovery: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/oilproductionservice.log
+    max-size: 10MB
+    max-history: 10
 
+# Configuration SpringDoc OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: true
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    try-it-out-enabled: true
+  packages-to-scan: com.osm.oilproductionservice.controller
+  paths-to-match: /api/**
+
+# Configuration Actuator
 management:
-  endpoint:
+  endpoints:
     web:
       exposure:
-        include:*
+        include: "health,info,metrics,prometheus"
+      base-path: /actuator
+  endpoint:
     health:
       show-details: always
+      show-components: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# Configuration des threads pour les tâches asynchrones
+task:
+  execution:
+    pool:
+      core-size: 5
+      max-size: 10
+      queue-capacity: 100
+      keep-alive: 60s
+    thread-name-prefix: "offline-sync-"
+  scheduling:
+    pool:
+      size: 5
+    thread-name-prefix: "offline-scheduler-"
 inventory:
   service:
     url: http://localhost:8080
