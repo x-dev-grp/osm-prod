@@ -156,7 +156,7 @@ public class FiltrationService {
     // Ajouter ces méthodes dans FiltrationService.java
 
     @Transactional
-    public FiltrationResultDto startFiltration(Long operationId) {
+    public FiltrationResultDto startFiltration(UUID operationId) {
         String operationId_log = generateOperationId();
 
         try {
@@ -189,7 +189,7 @@ public class FiltrationService {
     }
 
     @Transactional
-    public FiltrationResultDto completeFiltration(Long operationId) {
+    public FiltrationResultDto completeFiltration(UUID operationId) {
         String operationId_log = generateOperationId();
 
         try {
@@ -228,7 +228,7 @@ public class FiltrationService {
     }
 
     @Transactional
-    public FiltrationResultDto updateFiltrationStatus(Long operationId, UpdateFiltrationStatusDto statusDto) {
+    public FiltrationResultDto updateFiltrationStatus(UUID operationId, UpdateFiltrationStatusDto statusDto) {
         String operationId_log = generateOperationId();
 
         try {

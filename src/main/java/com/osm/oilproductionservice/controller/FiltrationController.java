@@ -52,7 +52,7 @@ public class FiltrationController {
     }
 
     @PutMapping("/{operationId}/start")
-    public ResponseEntity<?> startFiltration(@PathVariable Long operationId) {
+    public ResponseEntity<?> startFiltration(@PathVariable UUID operationId) {
         String requestId = generateRequestId();
 
         try {
@@ -78,7 +78,7 @@ public class FiltrationController {
     }
 
     @PutMapping("/{operationId}/complete")
-    public ResponseEntity<?> completeFiltration(@PathVariable Long operationId) {
+    public ResponseEntity<?> completeFiltration(@PathVariable UUID operationId) {
         String requestId = generateRequestId();
 
         try {
@@ -105,7 +105,7 @@ public class FiltrationController {
 
     @PutMapping("/{operationId}/status")
     public ResponseEntity<?> updateFiltrationStatus(
-            @PathVariable Long operationId,
+            @PathVariable UUID operationId,
             @Valid @RequestBody UpdateFiltrationStatusDto statusDto) {
         String requestId = generateRequestId();
 

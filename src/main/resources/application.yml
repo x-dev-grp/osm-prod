@@ -100,3 +100,6 @@ management:
         include:*
     health:
       show-details: always
+inventory:
+  service:
+    url: http://localhost:8080

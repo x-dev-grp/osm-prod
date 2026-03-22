@@ -44,6 +44,7 @@ BEGIN
                         WHEN 'PRODUCTION'   THEN 2
                         WHEN 'FINANCE'      THEN 3
                         WHEN 'HABILITATION' THEN 4
+                        WHEN 'INVENTAIR' THEN 5
                         ELSE NULL
                         END;
 
@@ -474,7 +475,15 @@ SELECT public.seed_permissions_from_json($$
     "REJECT": "Reject operations or requests",
     "MAINTENANCE": "Perform maintenance operations",
     "PLANNING": "Manage planning and scheduling",
-    "DELIVERYHISTORY": "Manage the history of deliveries"
+    "DELIVERYHISTORY": "Manage the history of deliveries",
+    "ENTREE_STOCK":"" ,
+    "SORTIE_STOCK":"",
+    "AJUSTER_STOCK":"",
+    "ASSIGN_EMPLACEMENT":"",
+    "RESERVER_STOCK":"",
+    "LIBERER_STOCK":"",
+    "CHECK_STOCK":"",
+    "TRANSFERER_STOCK":""
   },
   "security_entities": {
     "COMPANYPROFILE": {
@@ -519,6 +528,148 @@ SELECT public.seed_permissions_from_json($$
         "CREATE",
         "UPDATE",
         "DELETE"
+      ]
+    },
+    "CLIENT": {
+      "table": "abiooc_inventory.public.clients",
+      "description": "System users",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "ARTICLESEC": {
+      "description": "Article management",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "BOM": {
+      "description": "Bill of materials",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "BONCOMMANDE": {
+      "description": "Purchase order",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+
+    "CLIENT": {
+      "description": "Client management",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "EMPLACEMENTSTOCK": {
+      "description": "Stock location",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "FOURNISSEUR": {
+      "description": "Supplier management",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "LIGNEBONCOMMANDE": {
+      "description": "Purchase order line",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "LIGNECONDITIONNEMENT": {
+      "description": "Packaging line",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "MOUVEMENTSTOCKSEC": {
+      "description": "Stock movement",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+
+      ]
+    },
+
+    "SKU": {
+      "description": "Stock keeping unit",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "STOCKSEC": {
+      "description": "Stock management",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ENTREE_STOCK" ,
+        " SORTIE_STOCK",
+        "AJUSTER_STOCK",
+        "ASSIGN_EMPLACEMENT",
+        "RESERVER_STOCK",
+        "LIBERER_STOCK",
+        "CHECK_STOCK",
+        "TRANSFERER_STOCK"
       ]
     }
   }
