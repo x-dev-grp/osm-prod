@@ -116,7 +116,7 @@ public class FiltrationService {
      * 5. Enregistrement de la date de dernière filtration
      */
     @Transactional
-    public FiltrationResultDto completeFiltration(UUID operationId) {
+    public FiltrationResultDto completeFiltration(UUID operationId,FiltrationCompletionDto completionData) {
         String operationId_log = generateOperationId();
         String traceId = generateOperationId();
 
