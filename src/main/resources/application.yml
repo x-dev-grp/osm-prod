@@ -12,6 +12,14 @@ spring:
 
   main:
     banner-mode: console
+    allow-bean-definition-overriding: true
+  #main:
+    #banner-mode: console
+    # ============================================================
+    # Ajouté pour permettre le remplacement du bean qrMappingRepository
+    # (évite l'erreur "already defined" au démarrage)
+    # ============================================================
+    #allow-bean-definition-overriding: true
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/osmproduction}
@@ -34,6 +42,7 @@ spring:
   data:
     jdbc:
       dialect: postgresql
+
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -49,9 +58,8 @@ spring:
             enable: ${MAIL_STARTTLS:true}
           timeout: ${MAIL_TIMEOUT:5000}
           connectiontimeout: ${MAIL_CONN_TIMEOUT:5000}
-      default-encoding: UTF-8
       messages:
-        cache-duration: PT1S   # 1 s
+        cache-duration: PT1S
 
   security:
     oauth2:
@@ -71,9 +79,7 @@ spring:
 
 eureka:
   client:
-    # pull the registry every 5s (default 30s)
     registry-fetch-interval-seconds: 5
-    # don’t block startup waiting for registry sync
     wait-for-registry-sync: false
     service-url:
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
@@ -137,10 +143,15 @@ management:
     health:
       show-details: always
       show-components: always
-  metrics:
-    export:
-      prometheus:
+  # ============================================================
+  # Correction de la propriété dépréciée :
+  # management.metrics.export.prometheus.enabled → management.prometheus.metrics.export.enabled
+  # ============================================================
+  prometheus:
+    metrics:
+      export:
         enabled: true
+  metrics:
     tags:
       application: ${spring.application.name}
 
@@ -157,6 +168,7 @@ task:
     pool:
       size: 5
     thread-name-prefix: "offline-scheduler-"
+
 inventory:
   service:
     url: http://localhost:8080
