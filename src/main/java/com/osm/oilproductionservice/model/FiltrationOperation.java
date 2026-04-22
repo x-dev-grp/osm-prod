@@ -57,4 +57,20 @@ public class FiltrationOperation extends BaseEntity {
 
     public void setLossPercent(Double lossPercent) { this.lossPercent = lossPercent == null ? null : round(lossPercent, 3); }
 
+
+
+
+    //pour une traçabilité fiable, même si la cuve change de lot plus tard
+    @Getter
+    @Setter
+    @Column(name = "source_lot_number")
+    private String sourceLotNumber;
+
+    @Getter
+    @Setter
+    @Column(name = "target_lot_number")
+    private String targetLotNumber;
+
+// Getters / setters
+
 }

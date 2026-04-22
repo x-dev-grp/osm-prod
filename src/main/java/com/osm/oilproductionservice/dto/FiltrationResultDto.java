@@ -24,5 +24,12 @@ public class FiltrationResultDto {
 
     private String status;                // Statut (CREATED, IN_PROGRESS, COMPLETED)
     private LocalDateTime timestamp;      // Date de l'opération
-    private String note;                   // Note
+    private String note;
+
+
+
+    //pour une traçabilité fiable, même si la cuve change de lot plus tard
+    //pour les renvoyer au frontend.
+    private String sourceLotNumber;
+    private String targetLotNumber;// Note
 }

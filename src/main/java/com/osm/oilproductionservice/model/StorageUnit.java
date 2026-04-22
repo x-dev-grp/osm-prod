@@ -28,8 +28,10 @@ public class StorageUnit extends BaseEntity {
     // ========================
     private String name;
 
+
+
     /** Numéro de lot actuellement stocké (simplifié) */
-    private String lotNumber;
+    private String lotNumber;  // //
 
     @Enumerated(EnumType.STRING)
     private QualityGrades qualityGrade;
@@ -74,34 +76,9 @@ public class StorageUnit extends BaseEntity {
     private Boolean paidStorage;
     private Double monthlyRentalPrice = 0.0;
 
-    // ========================
-    // FILTRATION (NOUVEAU - AJOUTÉ POUR LA GESTION DES FILTRATIONS)
-    // ========================
-
-    /**
-     * [NOUVEAU] Indique si l'huile actuellement stockée dans cette cuve est filtrée.
-     *
-     * Utilité:
-     * - false : huile brute / non filtrée (valeur par défaut)
-     * - true  : huile filtrée (après une opération de filtration terminée)
-     *
-     * Utilisé dans:
-     * - FiltrationService.completeFiltration() pour marquer la cuve cible
-     * - Permet de savoir si on peut utiliser cette huile comme produit fini
-     */
     @Column(name = "filtered_oil")
     private Boolean filteredOil = false;
 
-    /**
-     * [NOUVEAU] Date du dernier filtrage réalisé sur cette cuve.
-     *
-     * Utilité:
-     * - Enregistre quand l'huile a été filtrée pour la dernière fois
-     * - Permet le suivi de la qualité et la traçabilité
-     *
-     * Utilisé dans:
-     * - FiltrationService.completeFiltration() pour mettre à jour la date
-     */
     @Column(name = "last_filtration_date")
     private LocalDateTime lastFiltrationDate;
 

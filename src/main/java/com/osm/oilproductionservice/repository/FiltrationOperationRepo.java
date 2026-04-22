@@ -1,47 +1,35 @@
 package com.osm.oilproductionservice.repository;
 
-import com.osm.oilproductionservice.dto.FiltrationStatus;
 import com.osm.oilproductionservice.model.FiltrationOperation;
 import com.xdev.xdevbase.repos.BaseRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface FiltrationOperationRepo extends BaseRepository<FiltrationOperation> {
 
-    /**
-     * [NOUVEAU] Trouver les opérations par statut
-     *
-     * Cette méthode est automatiquement implémentée par Spring Data JPA
-     * Grâce à la convention de nommage "findBy" + "NomDuChamp"
-     *
-     * @param status Le statut recherché
-     * @return Liste des opérations avec ce statut
-     */
-    List<FiltrationOperation> findByStatus(FiltrationStatus status);
+    // Override the base findById to exclude soft-deleted records
+    @Query(value = "SELECT * FROM filtration_operation WHERE id = :id AND is_deleted = false", nativeQuery = true)
+    Optional<FiltrationOperation> findById(@Param("id") UUID id);
 
-    /**
-     * [NOUVEAU] Trouver les opérations par unité source
-     *
-     * @param sourceId ID de l'unité source
-     * @return Liste des opérations où cette unité est la source
-     */
-    List<FiltrationOperation> findBySourceStorageUnitId(UUID sourceId);
+    // Exclude deleted from all-results query, ordered by date desc
+    @Query(value = "SELECT * FROM filtration_operation WHERE is_deleted = false ORDER BY operation_date DESC", nativeQuery = true)
+    List<FiltrationOperation> findAllByIsDeletedFalseOrderByOperationDateDesc();
 
-    /**
-     * [NOUVEAU] Trouver les opérations par unité cible
-     *
-     * @param targetId ID de l'unité cible
-     * @return Liste des opérations où cette unité est la cible
-     */
-    List<FiltrationOperation> findByTargetStorageUnitId(UUID targetId);
+    // Filter by status, excluding deleted
+    @Query(value = "SELECT * FROM filtration_operation WHERE status = :status AND is_deleted = false", nativeQuery = true)
+    List<FiltrationOperation> findByStatusAndIsDeletedFalse(@Param("status") String status);
 
-    /**
-     * [NOUVEAU] Trouver toutes les opérations triées par date (du plus récent au plus ancien)
-     *
-     * @return Liste des opérations triées
-     */
-    List<FiltrationOperation> findAllByOrderByOperationDateDesc();
+    // Filter by source unit, excluding deleted
+    @Query(value = "SELECT * FROM filtration_operation WHERE source_storage_unit_id = :sourceId AND is_deleted = false", nativeQuery = true)
+    List<FiltrationOperation> findBySourceStorageUnitIdAndIsDeletedFalse(@Param("sourceId") UUID sourceId);
+
+    // Filter by target unit, excluding deleted
+    @Query(value = "SELECT * FROM filtration_operation WHERE target_storage_unit_id = :targetId AND is_deleted = false", nativeQuery = true)
+    List<FiltrationOperation> findByTargetStorageUnitIdAndIsDeletedFalse(@Param("targetId") UUID targetId);
 }

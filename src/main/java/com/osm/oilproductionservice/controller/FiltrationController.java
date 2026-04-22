@@ -28,48 +28,42 @@ public class FiltrationController {
      */
     @PostMapping
     public ResponseEntity<?> createFiltration(@Valid @RequestBody FiltrationRequestDto req) {
-        String requestId = generateRequestId();
-
         try {
-            logger.info("Request ID: {} - Création d'une opération de filtration", requestId);
-            logger.debug("Request ID: {} - Détails: source={}, target={}, volume={}",
-                    requestId, req.getSource(), req.getTarget(), req.getVolumeToFilter());
 
             FiltrationResultDto result = filtrationService.createFiltration(req);
 
-            logger.info("Request ID: {} - Opération créée avec succès, ID: {}", requestId, result.getOperationId());
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Request ID: {} - Erreur de validation: {}", requestId, e.getMessage());
             return ResponseEntity
                     .badRequest()
                     .body(new ErrorResponse("Erreur de validation: " + e.getMessage()));
 
         } catch (Exception e) {
-            logger.error("Request ID: {} - Erreur inattendue: {}", requestId, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Une erreur technique est survenue"));
         }
     }
 
-    /**
-     * [DÉJÀ EXISTANT] Démarrer une opération (CREATED -> IN_PROGRESS)
-     */
-    @PutMapping("/{operationId}/start")
-    public ResponseEntity<?> startFiltration(@PathVariable UUID operationId) {
+
+
+    //endpoint de modification générale
+    @PutMapping("/{operationId}")
+    public ResponseEntity<?> updateFiltration(
+            @PathVariable UUID operationId,
+            @Valid @RequestBody FiltrationRequestDto req) {
         String requestId = generateRequestId();
 
         try {
-            logger.info("Request ID: {} - Démarrage de l'opération ID: {}", requestId, operationId);
+            logger.info("Request ID: {} - Modification de l'opération {}", requestId, operationId);
 
-            FiltrationResultDto result = filtrationService.startFiltration(operationId);
+            FiltrationResultDto result = filtrationService.updateFiltration(operationId, req);
 
-            logger.info("Request ID: {} - Opération {} démarrée avec succès", requestId, operationId);
+            logger.info("Request ID: {} - Opération {} modifiée avec succès", requestId, operationId);
             return ResponseEntity.ok(result);
 
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             logger.error("Request ID: {} - Erreur de validation: {}", requestId, e.getMessage());
             return ResponseEntity
                     .badRequest()
@@ -83,14 +77,29 @@ public class FiltrationController {
         }
     }
 
-    /**
-     * [MODIFIÉ] Terminer une opération avec mise à jour des unités de stockage
-     *
-     * MODIFICATIONS APPORTÉES:
-     * 1. Ajout du paramètre @RequestBody FiltrationCompletionDto pour recevoir le volume après filtration
-     * 2. La méthode appelle maintenant completeFiltration avec les données de completion
-     * 3. Le service mettra à jour les unités de stockage automatiquement
-     */
+
+    @PutMapping("/{operationId}/start")
+    public ResponseEntity<?> startFiltration(@PathVariable UUID operationId) {
+        String requestId = generateRequestId();
+
+        try {
+
+            FiltrationResultDto result = filtrationService.startFiltration(operationId);
+
+            return ResponseEntity.ok(result);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new ErrorResponse("Erreur: " + e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Une erreur technique est survenue"));
+        }
+    }
+
     @PutMapping("/{operationId}/complete")
     public ResponseEntity<?> completeFiltration(
             @PathVariable UUID operationId,
@@ -98,11 +107,7 @@ public class FiltrationController {
         String requestId = generateRequestId();
 
         try {
-            logger.info("Request ID: {} - Terminaison de l'opération ID: {}", requestId, operationId);
-            // [NOUVEAU] Log du volume après filtration
-            logger.info("Request ID: {} - Volume après filtration: {} L", requestId, completionData.getVolumeAfter());
-
-            // [MODIFIÉ] Appel du service avec les données de completion
+            // Appel du service avec les données de completion
             FiltrationResultDto result = filtrationService.completeFiltration(operationId, completionData);
 
             logger.info("Request ID: {} - Opération {} terminée avec succès", requestId, operationId);
@@ -122,9 +127,6 @@ public class FiltrationController {
         }
     }
 
-    /**
-     * [DÉJÀ EXISTANT] Mettre à jour le statut d'une opération
-     */
     @PutMapping("/{operationId}/status")
     public ResponseEntity<?> updateFiltrationStatus(
             @PathVariable UUID operationId,
@@ -137,29 +139,21 @@ public class FiltrationController {
 
             FiltrationResultDto result = filtrationService.updateFiltrationStatus(operationId, statusDto);
 
-            logger.info("Request ID: {} - Statut mis à jour avec succès", requestId);
             return ResponseEntity.ok(result);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Request ID: {} - Erreur de validation: {}", requestId, e.getMessage());
             return ResponseEntity
                     .badRequest()
                     .body(new ErrorResponse("Erreur: " + e.getMessage()));
 
         } catch (Exception e) {
-            logger.error("Request ID: {} - Erreur inattendue: {}", requestId, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Une erreur technique est survenue"));
         }
     }
 
-    /**
-     * [NOUVEAU] Ajouter une note à une opération
-     *
-     * Ce nouvel endpoint permet d'ajouter une note sans changer le statut
-     * Utile pour les commentaires ou observations pendant l'opération
-     */
+
     @PutMapping("/{operationId}/note")
     public ResponseEntity<?> addNote(
             @PathVariable UUID operationId,
@@ -167,51 +161,62 @@ public class FiltrationController {
         String requestId = generateRequestId();
 
         try {
-            logger.info("Request ID: {} - Ajout d'une note à l'opération {}", requestId, operationId);
 
             // [NOUVEAU] Appel à la nouvelle méthode du service
             FiltrationResultDto result = filtrationService.addNote(operationId, note);
 
-            logger.info("Request ID: {} - Note ajoutée avec succès", requestId);
             return ResponseEntity.ok(result);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Request ID: {} - Erreur: {}", requestId, e.getMessage());
             return ResponseEntity
                     .badRequest()
                     .body(new ErrorResponse("Erreur: " + e.getMessage()));
 
         } catch (Exception e) {
-            logger.error("Request ID: {} - Erreur inattendue: {}", requestId, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Une erreur technique est survenue"));
         }
     }
+    @DeleteMapping("/{operationId}")
+    public ResponseEntity<?> deleteFiltration(@PathVariable UUID operationId) {
+        String requestId = generateRequestId();
+        try {
 
+            filtrationService.deleteFiltration(operationId);
+
+            return ResponseEntity.noContent().build(); // 204 — matches Observable<void> on the frontend
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Opération non trouvée: " + e.getMessage()));
+
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Une erreur technique est survenue"));
+        }
+    }
     /**
-     * [DÉJÀ EXISTANT] Récupérer une opération spécifique
+     *  Récupérer une opération spécifique
      */
     @GetMapping("/{operationId}")
     public ResponseEntity<?> getFiltration(@PathVariable UUID operationId) {
         String requestId = generateRequestId();
 
         try {
-            logger.info("Request ID: {} - Consultation de l'opération ID: {}", requestId, operationId);
 
             FiltrationResultDto result = filtrationService.getFiltrationById(operationId);
 
-            logger.info("Request ID: {} - Opération trouvée", requestId);
             return ResponseEntity.ok(result);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Request ID: {} - Opération non trouvée: {}", requestId, e.getMessage());
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse("Opération non trouvée: " + e.getMessage()));
 
         } catch (Exception e) {
-            logger.error("Request ID: {} - Erreur inattendue: {}", requestId, e.getMessage(), e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Une erreur technique est survenue"));
@@ -219,7 +224,7 @@ public class FiltrationController {
     }
 
     /**
-     * [DÉJÀ EXISTANT] Récupérer toutes les opérations
+     * Récupérer toutes les opérations
      */
     @GetMapping("/all")
     public ResponseEntity<?> getAllFiltrations() {
@@ -241,12 +246,6 @@ public class FiltrationController {
         }
     }
 
-    /**
-     * [NOUVEAU] Récupérer les opérations filtrées par statut
-     *
-     * Exemple: /api/production/filtration/status/CREATED
-     * Retourne toutes les opérations avec le statut CREATED
-     */
     @GetMapping("/status/{status}")
     public ResponseEntity<?> getFiltrationsByStatus(@PathVariable FiltrationStatus status) {
         String requestId = generateRequestId();
@@ -265,6 +264,18 @@ public class FiltrationController {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Une erreur technique est survenue"));
         }
+
+
+
+
+    }
+
+    // retourner les détails de traçabilité d’une opération
+    @GetMapping("/{operationId}/traceability")
+    public ResponseEntity<?> getTraceability(@PathVariable UUID operationId) {
+        FiltrationResultDto dto = filtrationService.getFiltrationById(operationId);
+        // On peut aussi enrichir avec les livraisons associées au lot source.
+        return ResponseEntity.ok(dto);
     }
 
     private String generateRequestId() {
