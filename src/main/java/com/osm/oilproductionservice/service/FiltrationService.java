@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 @Service
 public class FiltrationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(FiltrationService.class);
-
     private final StorageUnitRepo storageUnitRepo;
     private final FiltrationOperationRepo filtrationRepo;
     private final org.modelmapper.ModelMapper modelMapper;
@@ -49,17 +47,13 @@ public class FiltrationService {
     }
     @Transactional
     public FiltrationResultDto createFiltration(FiltrationRequestDto req) {
-        String operationId = generateOperationId();
 
         try {
-            logger.info("Opération {} - Début de création", operationId);
 
-            validateRequest(req);
 
             StorageUnit sourceUnit = findStorageUnitById(req.getSource(), "Source");
             StorageUnit targetUnit = findStorageUnitById(req.getTarget(), "Target");
 
-            logger.info("Opération {} - Unités chargées: Source vol={}, Target vol={}/{}", operationId, sourceUnit.getCurrentVolume(), targetUnit.getCurrentVolume(), targetUnit.getMaxCapacity());
 
             validateBusinessRules(sourceUnit, targetUnit, req.getVolumeToFilter());
 
@@ -112,7 +106,7 @@ public class FiltrationService {
         }
     }
     @Transactional
-    public FiltrationResultDto completeFiltration(UUID operationId) {
+    public FiltrationResultDto completeFiltration(UUID operationId, FiltrationCompletionDto completionData) {
 
         try {
 
@@ -124,17 +118,17 @@ public class FiltrationService {
                 throw new IllegalArgumentException(String.format("Impossible de terminer: statut actuel = %s, attendu = IN_PROGRESS", operation.getStatus()));
             }
 
-            // [NOUVEAU] Validation du volume après filtration
-            if (operation.getVolumeAfter() == null || operation.getVolumeAfter() < 0) {
+            // Validation du volume après filtration
+            if (completionData.getVolumeAfter() == null || completionData.getVolumeAfter() < 0) {
                 throw new IllegalArgumentException("Le volume après filtration doit être positif");
             }
-            if (operation.getVolumeAfter() > operation.getVolumeToFilter()) {
+            if (completionData.getVolumeAfter() > operation.getVolumeToFilter()) {
                 throw new IllegalArgumentException("Le volume après filtration ne peut pas dépasser le volume initial");
             }
 
             // Calcul des pertes
             double volumeInitial = operation.getVolumeToFilter();
-            double volumeAfter = operation.getVolumeAfter();
+            double volumeAfter = completionData.getVolumeAfter();
             double lossVolume = volumeInitial - volumeAfter;
             double lossPercent = (lossVolume / volumeInitial) * 100;
 
@@ -188,9 +182,9 @@ public class FiltrationService {
             operation.setTargetLotNumber(targetLotNumber);   // ← Stocker le lot cible dans l'opération
 
             // Ajouter la note de completion si fournie
-            if (operation.getNote() != null && !operation.getNote().isEmpty()) {
+            if (completionData.getNote() != null && !completionData.getNote().isEmpty()) {
                 String updatedNote = operation.getNote() == null ? "" : operation.getNote() + " | ";
-                operation.setNote(updatedNote + "Completion: " + operation.getNote());
+                operation.setNote(updatedNote + "Completion: " + completionData.getNote());
             }
 
             FiltrationOperation updated = filtrationRepo.save(operation);
