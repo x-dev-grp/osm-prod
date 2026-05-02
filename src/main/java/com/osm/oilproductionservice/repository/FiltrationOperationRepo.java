@@ -32,4 +32,6 @@ public interface FiltrationOperationRepo extends BaseRepository<FiltrationOperat
     // Filter by target unit, excluding deleted
     @Query(value = "SELECT * FROM filtration_operation WHERE target_storage_unit_id = :targetId AND is_deleted = false", nativeQuery = true)
     List<FiltrationOperation> findByTargetStorageUnitIdAndIsDeletedFalse(@Param("targetId") UUID targetId);
+
+    Optional<FiltrationOperation> findByTargetLotNumberAndIsDeletedFalse(String targetLotNumber);
 }

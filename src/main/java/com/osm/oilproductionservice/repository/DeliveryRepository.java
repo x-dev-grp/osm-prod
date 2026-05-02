@@ -33,6 +33,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
     List<UnifiedDelivery> findByLotNumberIn(Set<String> lotNumbers);
 
     UnifiedDelivery findByLotNumberAndDeliveryType(String lotNumber, DeliveryType deliveryType);
+    List<UnifiedDelivery> findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(String lotNumber, DeliveryType deliveryType);
 
     List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
 

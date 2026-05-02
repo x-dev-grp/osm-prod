@@ -171,4 +171,4 @@ task:
 
 inventory:
   service:
-    url: http://localhost:8080
+    url: ${INVENTORY_SERVICE_URL:http://localhost:1234}

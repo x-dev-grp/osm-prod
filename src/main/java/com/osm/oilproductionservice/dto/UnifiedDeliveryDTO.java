@@ -11,6 +11,7 @@ import com.xdev.xdevbase.dtos.BaseDto;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,6 +25,7 @@ public class UnifiedDeliveryDTO extends BaseDto<UnifiedDelivery> {
     // --- Common Fields ---
     private String deliveryNumber;
 
+    private LocalDate ddm; //expedition
 
     private String categoryOliveOil;
 

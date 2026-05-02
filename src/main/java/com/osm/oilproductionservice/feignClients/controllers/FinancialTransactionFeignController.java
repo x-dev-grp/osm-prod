@@ -6,7 +6,7 @@ import com.xdev.xdevsecurity.config.FeignConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 
 
-@FeignClient(name = "financeservice",     contextId = "financialTransactionClient",
+@FeignClient(name = "finance-service",     contextId = "financialTransactionClient",
         path = "/api/finance/transactions", configuration = FeignConfiguration.class)
 public interface FinancialTransactionFeignController extends BaseFeignController<FinancialTransactionDto, FinancialTransactionDto> {
     // The base controller already provides the standard POST endpoint for create operations

@@ -9,11 +9,15 @@ import com.xdev.communicator.models.enums.Olive_Oil_Type;
 import com.xdev.communicator.models.enums.OperationType;
 import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,12 +29,17 @@ import static org.apache.commons.math3.util.Precision.round;
  * Depending on the deliveryType, only a subset of these fields may be populated.
  */
 @Entity
+@Data
+@Getter
+@Setter
 @Table(name = "delivery")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @JsonIgnoreProperties(value = {"hibernateLazyInitializer", "handler"}, ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UnifiedDelivery extends BaseEntity implements Serializable {
 
+
+    private LocalDate ddm; // Expedition
     // --- Common Fields ---
     private String deliveryNumber;
     private String categoryOliveOil;
@@ -432,4 +441,5 @@ public class UnifiedDelivery extends BaseEntity implements Serializable {
     }
 
 
+// getter/setter
 }

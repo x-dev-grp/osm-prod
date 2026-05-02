@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import java.util.UUID;
 
 
-@FeignClient(name = "financeservice",    contextId = "oilCreditClient",
+@FeignClient(name = "finance-service",    contextId = "oilCreditClient",
         path = "/api/finance/oil-credit", configuration = FeignConfiguration.class)
 public interface OilCreditFeignController extends BaseFeignController<OilCreditDto, OilCreditDto> {
     @PutMapping("/{transactionId}/approve")
