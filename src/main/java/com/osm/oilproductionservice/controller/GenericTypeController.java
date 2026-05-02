@@ -29,7 +29,10 @@ public class GenericTypeController extends
         super(baseService, modelMapper);
         this.genericTypeService = genericTypeService;
     }
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
 
     //     @PostMapping("/")
 //    public ResponseEntity<ApiResponse<BaseTypeDto>> createType( @RequestBody BaseTypeDto baseType) {

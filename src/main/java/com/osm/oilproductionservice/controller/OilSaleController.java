@@ -56,5 +56,8 @@ public class OilSaleController extends BaseControllerImpl<OilSale, OilSaleDTO, O
             return ResponseEntity.ok(new ApiResponse<>(false, e.getMessage(), null));
         }
     }
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
 }

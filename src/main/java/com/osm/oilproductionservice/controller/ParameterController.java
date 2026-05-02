@@ -36,4 +36,9 @@ public class ParameterController extends BaseControllerImpl<Parameter, Parameter
     protected String getResourceName() {
         return "Parameter".toUpperCase();
     }
+
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
 }
