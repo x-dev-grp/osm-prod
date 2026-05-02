@@ -25,7 +25,10 @@ public class SupplierTypeController extends BaseControllerImpl<Supplier, Supplie
         super(baseService, modelMapper);
         this.supplierTypeService = supplierTypeService;
     }
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
     // Get count of paid payments for a supplier
     @GetMapping("/{supplierId}/payments/paid/count")
     public ResponseEntity<Long> getPaidPaymentsCount(@PathVariable UUID supplierId) {

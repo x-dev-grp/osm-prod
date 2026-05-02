@@ -195,5 +195,8 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
         // Return the modified payload
         return ResponseEntity.ok(body);
     }
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
 }

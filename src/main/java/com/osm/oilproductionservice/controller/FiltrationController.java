@@ -108,7 +108,7 @@ public class FiltrationController {
 
         try {
             // Appel du service avec les données de completion
-            FiltrationResultDto result = filtrationService.completeFiltration(operationId, completionData);
+            FiltrationResultDto result = filtrationService.completeFiltration(operationId);
 
             logger.info("Request ID: {} - Opération {} terminée avec succès", requestId, operationId);
             return ResponseEntity.ok(result);

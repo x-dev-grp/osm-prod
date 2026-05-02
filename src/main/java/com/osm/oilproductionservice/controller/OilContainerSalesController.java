@@ -5,6 +5,7 @@ import com.osm.oilproductionservice.model.OilContainerSale;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,7 +20,10 @@ public class OilContainerSalesController extends BaseControllerImpl<OilContainer
 
     }
 
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
     @Override
     protected String getResourceName() {
         return "OilContainer".toUpperCase();

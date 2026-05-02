@@ -8,6 +8,7 @@ import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,7 +22,10 @@ public class MillMachineController extends BaseControllerImpl<MillMachine, MillM
         super(baseService, modelMapper);
         this.UnifiedDeliveryService = UnifiedDeliveryService;
     }
-
+    @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
+    }
     @Override
     protected String getResourceName() {
         return "MillMachine".toUpperCase();

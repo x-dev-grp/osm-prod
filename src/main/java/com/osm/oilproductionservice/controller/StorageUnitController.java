@@ -27,6 +27,9 @@ public class StorageUnitController extends BaseControllerImpl<StorageUnit, Stora
             @RequestParam(required = false) UUID supplierId) {
         storageUnitService.changeSupplier(storageId, supplierId);
         return ResponseEntity.noContent().build();
+    } @Override
+    public ResponseEntity<?> resolve(String publicCode) {
+        return null;
     }
     @Override
     protected String getResourceName() {
