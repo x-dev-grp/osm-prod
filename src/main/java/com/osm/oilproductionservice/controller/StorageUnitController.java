@@ -5,7 +5,6 @@ import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.service.StorageUnitService;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
-import com.xdev.xdevbase.utils.OSMLogger;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +26,8 @@ public class StorageUnitController extends BaseControllerImpl<StorageUnit, Stora
             @RequestParam(required = false) UUID supplierId) {
         storageUnitService.changeSupplier(storageId, supplierId);
         return ResponseEntity.noContent().build();
-    } @Override
-    public ResponseEntity<?> resolve(String publicCode) {
-        return null;
     }
+
     @Override
     protected String getResourceName() {
         return "STORAGEUNIT".toUpperCase();

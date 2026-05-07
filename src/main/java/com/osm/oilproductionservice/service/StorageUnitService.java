@@ -5,16 +5,22 @@ import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.model.Supplier;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
 import com.osm.oilproductionservice.repository.SupplierRepository;
+import com.xdev.xdevbase.config.TenantContext;
 import com.xdev.xdevbase.models.Action;
+import com.xdev.xdevbase.qr.model.QrResolveResponse;
 import com.xdev.xdevbase.repos.BaseRepository;
 import com.xdev.xdevbase.services.impl.BaseServiceImpl;
 import com.xdev.xdevbase.utils.OSMLogger;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.HashSet;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -53,6 +59,99 @@ public class StorageUnitService extends BaseServiceImpl<StorageUnit, StorageUnit
         }
 
         storageUnitRepo.save(storageUnit);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StorageUnitDto findById(UUID id) {
+        return enrichQrFields(super.findById(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StorageUnitDto> findAll() {
+        return super.findAll().stream().map(this::enrichQrFields).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<StorageUnitDto> findAll(int page, int size, String sort, String direction) {
+        return super.findAll(page, size, sort, direction).map(this::enrichQrFields);
+    }
+
+    private String normalizeHex(String code) {
+        if (isBlank(code)) {
+            throw new IllegalArgumentException("Code cannot be null or blank");
+        }
+        return code.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private StorageUnitDto enrichQrFields(StorageUnitDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        if (isBlank(dto.getPublicCode()) && !isBlank(dto.getQrHex())) {
+            dto.setPublicCode(dto.getQrHex());
+        }
+        if (isBlank(dto.getQrHex()) && !isBlank(dto.getPublicCode())) {
+            dto.setQrHex(dto.getPublicCode());
+        }
+
+        if (isBlank(dto.getQrUrl()) && !isBlank(dto.getPublicCode())) {
+            try {
+                dto.setQrUrl(getQrUrlForPublicCode(dto.getPublicCode()));
+            } catch (UnsupportedOperationException ignored) {
+                // QR URL config is optional in some environments.
+            }
+        }
+
+        if (dto.getQrImageBase64() != null && dto.getQrImageBase64().isBlank()) {
+            dto.setQrImageBase64(null);
+        }
+
+        return dto;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    @Override
+    protected String getEntityType() {
+        return "STORAGEUNIT";
+    }
+
+    @Override
+    protected String getLabel(StorageUnit entity) {
+        if (entity == null) {
+            return "Storage Unit";
+        }
+        if (!isBlank(entity.getName())) {
+            return entity.getName();
+        }
+        return "Storage Unit " + entity.getId();
+    }
+
+    @Override
+    protected String getStatus(StorageUnit entity) {
+        if (entity == null || entity.getStatus() == null) {
+            return "UNKNOWN";
+        }
+        return entity.getStatus().name();
+    }
+
+    @Override
+    protected String getMobileRoute() {
+        return "/storage";
+    }
+
+    @Override
+    protected String getWebRoute(StorageUnit entity) {
+        if (entity == null || entity.getId() == null) {
+            return "/storage";
+        }
+        return "/storage/" + entity.getId() + "/view";
     }
 
 

@@ -37,6 +37,10 @@ public class StorageUnitDto extends BaseDto<StorageUnit> {
     private LocalDateTime lastFillDate;
     private LocalDateTime lastEmptyDate;
     private SupplierDto supplier;
+    private String qrHex;
+    private String publicCode;
+    private String qrUrl;
+    private String qrImageBase64;
 
     public StorageUnitDto() {
     }
