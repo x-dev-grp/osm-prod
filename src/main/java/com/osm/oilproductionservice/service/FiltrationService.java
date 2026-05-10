@@ -1,19 +1,22 @@
 package com.osm.oilproductionservice.service;
 
 import com.osm.oilproductionservice.dto.*;
-import com.osm.oilproductionservice.dto.FiltrationStatus;
 import com.osm.oilproductionservice.model.FiltrationOperation;
+import com.osm.oilproductionservice.model.OilTransaction;
 import com.osm.oilproductionservice.model.StorageUnit;
 import com.osm.oilproductionservice.repository.FiltrationOperationRepo;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.xdev.communicator.models.enums.TransactionState;
+import com.xdev.communicator.models.enums.TransactionType;
+import com.xdev.xdevbase.config.TenantContext;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,12 +25,14 @@ public class FiltrationService {
 
     private final StorageUnitRepo storageUnitRepo;
     private final FiltrationOperationRepo filtrationRepo;
-    private final org.modelmapper.ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
+    private final OilTransactionService oilTransactionService;
 
-    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo, org.modelmapper.ModelMapper modelMapper) {
+    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo, org.modelmapper.ModelMapper modelMapper, OilTransactionService oilTransactionService) {
         this.storageUnitRepo = storageUnitRepo;
         this.filtrationRepo = filtrationRepo;
         this.modelMapper = modelMapper;
+        this.oilTransactionService = oilTransactionService;
     }
     @Transactional
     public void deleteFiltration(UUID operationId) {
@@ -154,6 +159,8 @@ public class FiltrationService {
             targetUnit.setLotNumber(targetLotNumber);
             targetUnit.setFilteredOil(true);
             targetUnit.setLastFiltrationDate(LocalDateTime.now());
+            targetUnit.setQualityGrade(sourceUnit.getQualityGrade()); // Set quality grade from source
+            targetUnit.setOilVariety(sourceUnit.getOilVariety()); // Preserve oil variety for label generation
 
             // 4. (Optionnel) Si la cuve source devient vide, effacer son numéro de lot
             double newSourceVolume = sourceUnit.getCurrentVolume() - volumeInitial;
@@ -173,6 +180,37 @@ public class FiltrationService {
             // Sauvegarde des unités
             storageUnitRepo.save(sourceUnit);
             storageUnitRepo.save(targetUnit);
+
+            // Create oil transaction for the filtration
+            OilTransactionDTO transactionDto = new OilTransactionDTO();
+            transactionDto.setTransactionType(TransactionType.FILTRATION);
+            transactionDto.setStorageUnitSource(modelMapper.map(sourceUnit, StorageUnitDto.class));
+            transactionDto.setStorageUnitDestination(modelMapper.map(targetUnit, StorageUnitDto.class));
+            transactionDto.setQuantityKg(volumeAfter);
+            transactionDto.setQualityGrade(sourceUnit.getQualityGrade() != null ? sourceUnit.getQualityGrade().name() : null);
+            transactionDto.setTransactionState(TransactionState.COMPLETED);
+
+            // Preserve the original reception delivery for downstream label generation and quality propagation
+            var originalReception = oilTransactionService.findByStorageUnitId(sourceUnit.getId()).stream()
+                    .filter(tx -> tx.getTransactionType() == TransactionType.RECEPTION_IN)
+                    .map(OilTransaction::getReception)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .map(reception -> modelMapper.map(reception, UnifiedDeliveryDTO.class));
+
+            originalReception.ifPresent(reception -> {
+                transactionDto.setReception(reception);
+                if (reception.getCategoryOliveOil() != null && !reception.getCategoryOliveOil().isBlank()) {
+                    transactionDto.setQualityGrade(reception.getCategoryOliveOil());
+                    try {
+                        targetUnit.setQualityGrade(com.xdev.communicator.models.enums.QualityGrades.valueOf(reception.getCategoryOliveOil()));
+                    } catch (IllegalArgumentException ignored) {
+                        // keep existing target quality if the delivery category does not match enum values
+                    }
+                }
+            });
+
+            oilTransactionService.save(transactionDto);
 
             // Mise à jour de l'opération avec les données de completion
             operation.setStatus(FiltrationStatus.COMPLETED);
@@ -345,6 +383,7 @@ public class FiltrationService {
         }
     }
 
+    @Transactional(readOnly = true)
     public FiltrationResultDto getFiltrationById(UUID operationId) { // [MODIFIÉ] Nom de méthode
         String traceId = generateOperationId();
 
@@ -358,13 +397,16 @@ public class FiltrationService {
             throw e;
         }
     }
+
+    @Transactional(readOnly = true)
     public List<FiltrationResultDto> getAllFiltrations() {
         String traceId = generateOperationId();
+        UUID tenantId = TenantContext.getCurrentTenant();
 
         try {
 
             // [MODIFIÉ] Utilisation de la nouvelle méthode avec tri
-            List<FiltrationOperation> operations = filtrationRepo.findAllByIsDeletedFalseOrderByOperationDateDesc();
+            List<FiltrationOperation> operations = filtrationRepo.findAllByTenantIdAndIsDeletedFalse(tenantId);
 
             return operations.stream().map(this::mapToDto).collect(Collectors.toList());
 
@@ -372,6 +414,8 @@ public class FiltrationService {
             throw new RuntimeException("Erreur lors de la récupération", e);
         }
     }
+
+    @Transactional(readOnly = true)
     public List<FiltrationResultDto> getFiltrationsByStatus(FiltrationStatus status) {
         String traceId = generateOperationId();
 
@@ -428,37 +472,98 @@ public class FiltrationService {
     // Recherche une opération
 
     private FiltrationOperation findFiltrationOperationById(UUID id) {
-        FiltrationOperation op = filtrationRepo.findById(id)
+        FiltrationOperation op = filtrationRepo.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         String.format("Opération non trouvée avec l'ID: %s", id)));
-        if (Boolean.TRUE.equals(op.getDeleted())) {                         // ← added guard
-            throw new IllegalArgumentException(
-                    String.format("Opération supprimée, ID: %s", id));
-        }
+
         return op;
-    }
-    //Convertit une entité en DTO
-    private FiltrationResultDto mapToDto(FiltrationOperation operation) {
-        FiltrationResultDto dto = new FiltrationResultDto();
-        dto.setOperationId(operation.getId());
-        dto.setSource(modelMapper.map(operation.getSourceStorageUnit(), StorageUnitDto.class));
-        dto.setTarget(modelMapper.map(operation.getTargetStorageUnit(), StorageUnitDto.class));
-        dto.setVolumeFiltered(operation.getVolumeToFilter());
-        dto.setVolumeAfter(operation.getVolumeAfter());
-        dto.setLossVolume(operation.getLossVolume());
-        dto.setLossPercent(operation.getLossPercent());
-        dto.setStatus(operation.getStatus() != null ? operation.getStatus().toString() : null);
-        dto.setTimestamp(operation.getOperationDate());
-        dto.setNote(operation.getNote());
-
-        // Ajout des numéros de lot pour la traçabilité
-        dto.setSourceLotNumber(operation.getSourceLotNumber());
-        dto.setTargetLotNumber(operation.getTargetLotNumber());
-
-        return dto;
     }
 
     private String generateOperationId() {
         return "OP-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
+    }
+
+    private FiltrationResultDto mapToDto(FiltrationOperation operation) {
+        if (operation == null) {
+            return null;
+        }
+
+        FiltrationResultDto dto = new FiltrationResultDto();
+
+        dto.setOperationId(operation.getId());
+
+        StorageUnit sourceStorageUnit = operation.getSourceStorageUnit();
+        StorageUnit targetStorageUnit = operation.getTargetStorageUnit();
+
+        dto.setSource(mapStorageUnitToDto(sourceStorageUnit));
+        dto.setTarget(mapStorageUnitToDto(targetStorageUnit));
+
+        dto.setVolumeFiltered(operation.getVolumeToFilter());
+        dto.setVolumeAfter(operation.getVolumeAfter());
+        dto.setLossVolume(operation.getLossVolume());
+        dto.setLossPercent(operation.getLossPercent());
+
+        dto.setStatus(operation.getStatus() != null ? operation.getStatus().name() : null);
+        dto.setTimestamp(operation.getOperationDate());
+        dto.setNote(operation.getNote());
+
+        dto.setSourceLotNumber(sourceStorageUnit != null ? sourceStorageUnit.getLotNumber() : null);
+        dto.setTargetLotNumber(targetStorageUnit != null ? targetStorageUnit.getLotNumber() : null);
+
+        return dto;
+    }
+
+    private StorageUnitDto mapStorageUnitToDto(StorageUnit storageUnit) {
+        if (storageUnit == null) {
+            return null;
+        }
+
+        StorageUnitDto dto = new StorageUnitDto();
+
+        dto.setId(storageUnit.getId());
+        dto.setLotNumber(storageUnit.getLotNumber());
+
+        /*
+         * Keep only safe scalar/simple fields here.
+         * Do not map deep relations with ModelMapper.
+         */
+
+        try {
+            dto.setName(storageUnit.getName());
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        try {
+            dto.setQrHex(storageUnit.getQrHex());
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        try {
+            dto.setMaxCapacity(storageUnit.getMaxCapacity());
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        try {
+            dto.setCurrentVolume(storageUnit.getCurrentVolume());
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        try {
+            dto.setQualityGrade(storageUnit.getQualityGrade());
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        try {
+            dto.setOilVariety(modelMapper.map(storageUnit.getOilVariety(), BaseTypeDto.class));
+        } catch (Exception ignored) {
+            // Field/method not available in some versions.
+        }
+
+        return dto;
     }
 }
