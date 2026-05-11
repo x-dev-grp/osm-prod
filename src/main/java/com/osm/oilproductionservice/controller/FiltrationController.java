@@ -1,7 +1,11 @@
 package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.*;
+import com.osm.oilproductionservice.model.FiltrationOperation;
+import com.osm.oilproductionservice.model.FiltrationOperationDto;
+import com.osm.oilproductionservice.model.OilContainer;
 import com.osm.oilproductionservice.service.FiltrationService;
+import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
