@@ -88,6 +88,51 @@ BEGIN
 END;
 $$;
 
+-- ====== 1.1) Rename legacy product permission resources ======
+DO $$
+DECLARE
+    legacy_permission RECORD;
+    target_permission_id UUID;
+BEGIN
+    FOR legacy_permission IN
+        SELECT id, module, permission_name
+        FROM public.permission
+        WHERE UPPER(entity) IN ('SKU', 'PRODUCT')
+        LOOP
+            SELECT id
+            INTO target_permission_id
+            FROM public.permission
+            WHERE module = legacy_permission.module
+              AND UPPER(entity) = 'PRODUITFINAL'
+              AND permission_name = legacy_permission.permission_name
+            LIMIT 1;
+
+            IF target_permission_id IS NULL THEN
+                UPDATE public.permission
+                SET entity = 'PRODUITFINAL'
+                WHERE id = legacy_permission.id;
+            ELSE
+                INSERT INTO public.role_permissions (role_id, permissions_id)
+                SELECT rp.role_id, target_permission_id
+                FROM public.role_permissions rp
+                WHERE rp.permissions_id = legacy_permission.id
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM public.role_permissions existing_rp
+                      WHERE existing_rp.role_id = rp.role_id
+                        AND existing_rp.permissions_id = target_permission_id
+                  );
+
+                DELETE FROM public.role_permissions
+                WHERE permissions_id = legacy_permission.id;
+
+                DELETE FROM public.permission
+                WHERE id = legacy_permission.id;
+            END IF;
+        END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ====== 2) Exemple d'appel : colle ton JSON entre $$ ... $$ ======
 -- Remplace le contenu par TON fichier "permisisons and modules .json"
 SELECT public.seed_permissions_from_json($$
@@ -680,8 +725,8 @@ SELECT public.seed_permissions_from_json($$
       ]
     },
 
-    "SKU": {
-      "description": "Stock keeping unit",
+    "PRODUITFINAL": {
+      "description": "Finished product",
       "module": "INVENTAIR",
       "permissions": [
         "READ",
