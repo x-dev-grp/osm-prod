@@ -9,12 +9,12 @@ import com.osm.oilproductionservice.repository.StorageUnitRepo;
 import com.xdev.communicator.models.enums.TransactionState;
 import com.xdev.communicator.models.enums.TransactionType;
 import com.xdev.xdevbase.config.TenantContext;
+import com.xdev.xdevbase.utils.BusinessCodeGenerator;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,13 +27,18 @@ public class FiltrationService {
     private final FiltrationOperationRepo filtrationRepo;
     private final ModelMapper modelMapper;
     private final OilTransactionService oilTransactionService;
+    private final BusinessCodeGenerator businessCodeGenerator;
 
-    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo, org.modelmapper.ModelMapper modelMapper, OilTransactionService oilTransactionService) {
+    public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo,
+            org.modelmapper.ModelMapper modelMapper, OilTransactionService oilTransactionService,
+            BusinessCodeGenerator businessCodeGenerator) {
         this.storageUnitRepo = storageUnitRepo;
         this.filtrationRepo = filtrationRepo;
         this.modelMapper = modelMapper;
         this.oilTransactionService = oilTransactionService;
+        this.businessCodeGenerator = businessCodeGenerator;
     }
+
     @Transactional
     public void deleteFiltration(UUID operationId) {
         String traceId = generateOperationId();
@@ -50,15 +55,14 @@ public class FiltrationService {
             throw new RuntimeException("Erreur lors de la suppression", e);
         }
     }
+
     @Transactional
     public FiltrationResultDto createFiltration(FiltrationRequestDto req) {
 
         try {
 
-
             StorageUnit sourceUnit = findStorageUnitById(req.getSource(), "Source");
             StorageUnit targetUnit = findStorageUnitById(req.getTarget(), "Target");
-
 
             validateBusinessRules(sourceUnit, targetUnit, req.getVolumeToFilter());
 
@@ -76,13 +80,12 @@ public class FiltrationService {
 
             FiltrationOperation saved = filtrationRepo.save(operation);
 
-
             return mapToDto(saved);
 
         } catch (IllegalArgumentException e) {
-             throw e;
+            throw e;
         } catch (Exception e) {
-             throw new RuntimeException("Erreur lors de la création de l'opération", e);
+            throw new RuntimeException("Erreur lors de la création de l'opération", e);
         }
     }
 
@@ -94,7 +97,9 @@ public class FiltrationService {
             FiltrationOperation operation = findFiltrationOperationById(operationId);
 
             if (operation.getStatus() != FiltrationStatus.CREATED) {
-                throw new IllegalArgumentException(String.format("Impossible de démarrer: statut actuel = %s, attendu = CREATED", operation.getStatus()));
+                throw new IllegalArgumentException(String.format(
+                        "Impossible de démarrer: statut actuel = %s, attendu = CREATED", operation.getStatus()));
+
             }
 
             operation.setStatus(FiltrationStatus.IN_PROGRESS);
@@ -104,12 +109,13 @@ public class FiltrationService {
             return mapToDto(updated);
 
         } catch (IllegalArgumentException e) {
-             throw e;
+            throw e;
         } catch (Exception e) {
 
             throw new RuntimeException("Erreur lors du démarrage", e);
         }
     }
+
     @Transactional
     public FiltrationResultDto completeFiltration(UUID operationId, FiltrationCompletionDto completionData) {
 
@@ -120,7 +126,8 @@ public class FiltrationService {
 
             // Vérification du statut
             if (operation.getStatus() != FiltrationStatus.IN_PROGRESS) {
-                throw new IllegalArgumentException(String.format("Impossible de terminer: statut actuel = %s, attendu = IN_PROGRESS", operation.getStatus()));
+                throw new IllegalArgumentException(String.format(
+                        "Impossible de terminer: statut actuel = %s, attendu = IN_PROGRESS", operation.getStatus()));
             }
 
             // Validation du volume après filtration
@@ -141,21 +148,9 @@ public class FiltrationService {
             StorageUnit sourceUnit = operation.getSourceStorageUnit();
             StorageUnit targetUnit = operation.getTargetStorageUnit();
 
+            // Generate the target lot number with the shared business-code format.
+            String targetLotNumber = businessCodeGenerator.generate(FiltrationOperation.class, "targetLotNumber", "FI");
 
-            // 1. Récupérer le lot source stocké lors de la création
-            String sourceLotNumber = operation.getSourceLotNumber();
-
-            // 2. Générer un nouveau lot pour la cible
-            String targetLotNumber;
-            if (sourceLotNumber != null && !sourceLotNumber.isBlank()) {
-                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
-                targetLotNumber = "FILT-" + sourceLotNumber + "-" + timestamp;
-            } else {
-                // Fallback si la source n'a pas de lot (cas improbable, mais sécurité)
-                targetLotNumber = "FILT-" + UUID.randomUUID().toString().substring(0, 8);
-            }
-
-            // 3. Mettre à jour la cuve cible avec le nouveau lot
             targetUnit.setLotNumber(targetLotNumber);
             targetUnit.setFilteredOil(true);
             targetUnit.setLastFiltrationDate(LocalDateTime.now());
@@ -187,10 +182,12 @@ public class FiltrationService {
             transactionDto.setStorageUnitSource(modelMapper.map(sourceUnit, StorageUnitDto.class));
             transactionDto.setStorageUnitDestination(modelMapper.map(targetUnit, StorageUnitDto.class));
             transactionDto.setQuantityKg(volumeAfter);
-            transactionDto.setQualityGrade(sourceUnit.getQualityGrade() != null ? sourceUnit.getQualityGrade().name() : null);
+            transactionDto
+                    .setQualityGrade(sourceUnit.getQualityGrade() != null ? sourceUnit.getQualityGrade().name() : null);
             transactionDto.setTransactionState(TransactionState.COMPLETED);
 
-            // Preserve the original reception delivery for downstream label generation and quality propagation
+            // Preserve the original reception delivery for downstream label generation and
+            // quality propagation
             var originalReception = oilTransactionService.findByStorageUnitId(sourceUnit.getId()).stream()
                     .filter(tx -> tx.getTransactionType() == TransactionType.RECEPTION_IN)
                     .map(OilTransaction::getReception)
@@ -203,9 +200,11 @@ public class FiltrationService {
                 if (reception.getCategoryOliveOil() != null && !reception.getCategoryOliveOil().isBlank()) {
                     transactionDto.setQualityGrade(reception.getCategoryOliveOil());
                     try {
-                        targetUnit.setQualityGrade(com.xdev.communicator.models.enums.QualityGrades.valueOf(reception.getCategoryOliveOil()));
+                        targetUnit.setQualityGrade(com.xdev.communicator.models.enums.QualityGrades
+                                .valueOf(reception.getCategoryOliveOil()));
                     } catch (IllegalArgumentException ignored) {
-                        // keep existing target quality if the delivery category does not match enum values
+                        // keep existing target quality if the delivery category does not match enum
+                        // values
                     }
                 }
             });
@@ -217,7 +216,7 @@ public class FiltrationService {
             operation.setVolumeAfter(volumeAfter);
             operation.setLossVolume(lossVolume);
             operation.setLossPercent(lossPercent);
-            operation.setTargetLotNumber(targetLotNumber);   // ← Stocker le lot cible dans l'opération
+            operation.setTargetLotNumber(targetLotNumber); // ← Stocker le lot cible dans l'opération
 
             // Ajouter la note de completion si fournie
             if (completionData.getNote() != null && !completionData.getNote().isEmpty()) {
@@ -227,8 +226,6 @@ public class FiltrationService {
 
             FiltrationOperation updated = filtrationRepo.save(operation);
 
-
-
             return mapToDto(updated);
 
         } catch (IllegalArgumentException e) {
@@ -237,8 +234,6 @@ public class FiltrationService {
             throw new RuntimeException("Erreur lors de la terminaison", e);
         }
     }
-
-
 
     @Transactional
     public FiltrationResultDto updateFiltration(UUID operationId, FiltrationRequestDto req) {
@@ -306,10 +301,8 @@ public class FiltrationService {
         }
     }
 
-
     @Transactional
     public FiltrationResultDto updateFiltrationStatus(UUID operationId, UpdateFiltrationStatusDto statusDto) {
-
 
         try {
 
@@ -320,14 +313,12 @@ public class FiltrationService {
 
             if (currentStatus != FiltrationStatus.CREATED) {
                 throw new IllegalStateException(
-                        "Changement de statut interdit: seule une opération CREATED peut changer de statut"
-                );
+                        "Changement de statut interdit: seule une opération CREATED peut changer de statut");
             }
 
             if (newStatus != FiltrationStatus.IN_PROGRESS) {
                 throw new IllegalStateException(
-                        "Transition non autorisée: seule la transition CREATED -> IN_PROGRESS est permise"
-                );
+                        "Transition non autorisée: seule la transition CREATED -> IN_PROGRESS est permise");
             }
 
             operation.setStatus(FiltrationStatus.IN_PROGRESS);
@@ -344,7 +335,6 @@ public class FiltrationService {
 
             FiltrationOperation updated = filtrationRepo.save(operation);
 
-
             return mapToDto(updated);
 
         } catch (IllegalArgumentException | IllegalStateException e) {
@@ -354,6 +344,7 @@ public class FiltrationService {
             throw new RuntimeException("Erreur lors de la mise à jour", e);
         }
     }
+
     @Transactional
     public FiltrationResultDto addNote(UUID operationId, String note) {
 
@@ -367,7 +358,8 @@ public class FiltrationService {
 
             if (operation.getStatus() != FiltrationStatus.CREATED
                     && operation.getStatus() != FiltrationStatus.COMPLETED) {
-                throw new IllegalStateException("Modification de note non autorisée pour le statut: " + operation.getStatus());
+                throw new IllegalStateException(
+                        "Modification de note non autorisée pour le statut: " + operation.getStatus());
             }
 
             operation.setNote(note);
@@ -450,22 +442,25 @@ public class FiltrationService {
         }
     }
 
-
-     // Recherche une unité
+    // Recherche une unité
     private StorageUnit findStorageUnitById(UUID id, String type) {
-        return storageUnitRepo.findById(id).orElseThrow(() ->
-                new IllegalArgumentException(String.format("%s non trouvée avec l'ID: %s", type, id)));
+        return storageUnitRepo.findById(id).orElseThrow(
+                () -> new IllegalArgumentException(String.format("%s non trouvée avec l'ID: %s", type, id)));
     }
 
-     //Valide les règles métier
+    // Valide les règles métier
     private void validateBusinessRules(StorageUnit source, StorageUnit target, double volume) {
         if (volume > source.getCurrentVolume()) {
-            throw new IllegalArgumentException(String.format("Volume insuffisant dans la source: disponible=%.2fL, requis=%.2fL", source.getCurrentVolume(), volume));
+            throw new IllegalArgumentException(
+                    String.format("Volume insuffisant dans la source: disponible=%.2fL, requis=%.2fL",
+                            source.getCurrentVolume(), volume));
         }
 
         double newTargetVolume = target.getCurrentVolume() + volume;
         if (newTargetVolume > target.getMaxCapacity()) {
-            throw new IllegalArgumentException(String.format("Capacité insuffisante dans la cible: disponible=%.2fL, max=%.2fL, nouveau volume=%.2fL", target.getMaxCapacity() - target.getCurrentVolume(), target.getMaxCapacity(), newTargetVolume));
+            throw new IllegalArgumentException(String.format(
+                    "Capacité insuffisante dans la cible: disponible=%.2fL, max=%.2fL, nouveau volume=%.2fL",
+                    target.getMaxCapacity() - target.getCurrentVolume(), target.getMaxCapacity(), newTargetVolume));
         }
     }
 
@@ -480,7 +475,7 @@ public class FiltrationService {
     }
 
     private String generateOperationId() {
-        return "OP-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 4);
+        return "OP-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
     private FiltrationResultDto mapToDto(FiltrationOperation operation) {

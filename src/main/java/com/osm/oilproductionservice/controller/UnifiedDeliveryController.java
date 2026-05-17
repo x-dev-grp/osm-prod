@@ -47,7 +47,7 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
 
     @GetMapping("/planning")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getPlanning() {
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Delleveirs for planning fetched  successfully", this.UnifiedDeliveryService.getForPlanning());
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Delleveirs for planning fetched  successfully", attachPermittedActions(this.UnifiedDeliveryService.getForPlanning()));
 
         return ResponseEntity.ok(response);
     }
@@ -55,7 +55,7 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     @GetMapping("/findForQuality")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesWithoutQualityControl(@RequestParam("types") String types) {
         List<String> typeList = Arrays.asList(types.split(","));
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Delleveirs for planning fetched  successfully", this.UnifiedDeliveryService.findByDeliveryTypeInAndQualityControlResultsIsNull(typeList));
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Delleveirs for planning fetched  successfully", attachPermittedActions(this.UnifiedDeliveryService.findByDeliveryTypeInAndQualityControlResultsIsNull(typeList)));
 
         return ResponseEntity.ok(response);
     }
@@ -63,36 +63,36 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     // Get deliveries by supplier ID
     @GetMapping("/supplier/{supplierId}")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesBySupplier(@PathVariable UUID supplierId) {
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getDeliveriesBySupplier(supplierId));
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getDeliveriesBySupplier(supplierId)));
         return ResponseEntity.ok(response);
     }// Get deliveries by supplier ID
     @GetMapping("/getDeliveryByOliveLotNumber/{id}")
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByOliveLotNumber(@PathVariable UUID id) {
-        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByOliveLotNumber(id));
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getByOliveLotNumber(id)));
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/getDeliveryByLotNumber/{lotNumber}")
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber) {
-        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumber(lotNumber));
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getByLotNumber(lotNumber)));
         return ResponseEntity.ok(response);
     }
     @GetMapping("/getDeliveriesByGlobalLotNumber/{lotNumber}")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getDeliveriesByGlobalLotNumber(@PathVariable String lotNumber) {
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getDeliveriesByGlobalLotNumber(lotNumber));
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getDeliveriesByGlobalLotNumber(lotNumber)));
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/getDeliveryByLotNumber/{lotNumber}/{type}")
     public ResponseEntity<ApiResponse<UnifiedDeliveryDTO>> getDeliveryByLotNumber(@PathVariable String lotNumber, @PathVariable DeliveryType type) {
-        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getByLotNumberAndType(lotNumber, type));
+        ApiResponse<UnifiedDeliveryDTO> response = new ApiResponse<>(true, "Deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getByLotNumberAndType(lotNumber, type)));
         return ResponseEntity.ok(response);
     }
 
     // Get paid deliveries by supplier ID
     @GetMapping("/supplier/{supplierId}/paid")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getPaidDeliveriesBySupplier(@PathVariable UUID supplierId) {
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Paid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getPaidDeliveriesBySupplier(supplierId));
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Paid deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getPaidDeliveriesBySupplier(supplierId)));
         return ResponseEntity.ok(response);
     }
 
@@ -126,7 +126,7 @@ public class UnifiedDeliveryController extends BaseControllerImpl<UnifiedDeliver
     // Get unpaid deliveries by supplier ID
     @GetMapping("/supplier/{supplierId}/unpaid")
     public ResponseEntity<ApiResponse<List<UnifiedDeliveryDTO>>> getUnpaidDeliveriesBySupplier(@PathVariable UUID supplierId) {
-        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", this.UnifiedDeliveryService.getUnpaidDeliveriesBySupplier(supplierId));
+        ApiResponse<List<UnifiedDeliveryDTO>> response = new ApiResponse<>(true, "Unpaid deliveries for supplier fetched successfully", attachPermittedActions(this.UnifiedDeliveryService.getUnpaidDeliveriesBySupplier(supplierId)));
         return ResponseEntity.ok(response);
     }
 

@@ -33,7 +33,10 @@ BEGIN
     -- Parcourt spec.entities
     FOR ent_key, ent_val IN
         SELECT key, value
-        FROM jsonb_each(spec->'entities')
+            FROM jsonb_each(COALESCE(spec->'entities', '{}'::jsonb))
+            UNION ALL
+            SELECT key, value
+            FROM jsonb_each(COALESCE(spec->'security_entities', '{}'::jsonb))
         LOOP
             mod_txt := UPPER(trim((ent_val->>'module')));
             -- Mapping texte -> smallint (conforme à OSMModule)
@@ -44,7 +47,8 @@ BEGIN
                         WHEN 'PRODUCTION'   THEN 2
                         WHEN 'FINANCE'      THEN 3
                         WHEN 'HABILITATION' THEN 4
-                        WHEN 'INVENTAIR' THEN 5
+                        WHEN 'INVENTAIR'     THEN 5
+                        WHEN 'CONDITIONING'  THEN 6
                         ELSE NULL
                         END;
 
@@ -186,6 +190,11 @@ SELECT public.seed_permissions_from_json($$
         "UPDATE_OIL_QUALITY",
         "GEN_PDF_QC_OIL",
         "GEN_PDF_QC_OLIVE",
+        "GEN_PDF_PRODUCTION",
+        "SET_PRICE",
+        "PAY",
+        "OIL_RECEPTION",
+        "COMPLETE_PAYMENT_DETAILS",
         "PLANNING"
       ]
     },
@@ -447,6 +456,14 @@ SELECT public.seed_permissions_from_json($$
     "HABILITATION": {
       "value": 4,
       "description": "System administration and configuration"
+    },
+    "INVENTAIR": {
+      "value": 5,
+      "description": "Inventory and packaging stock management"
+    },
+    "CONDITIONING": {
+      "value": 6,
+      "description": "Conditioning, orders, projects, labels and expedition management"
     }
   },
   "actions": {
@@ -476,6 +493,20 @@ SELECT public.seed_permissions_from_json($$
     "MAINTENANCE": "Perform maintenance operations",
     "PLANNING": "Manage planning and scheduling",
     "DELIVERYHISTORY": "Manage the history of deliveries",
+    "START": "Start workflow execution",
+    "PAUSE": "Pause workflow execution",
+    "RESUME": "Resume workflow execution",
+    "CLOSE": "Close workflow execution",
+    "SHIP": "Ship expedition or delivery",
+    "DELIVER": "Mark expedition or delivery as delivered",
+    "ADD_LINE": "Add lines to a document or operation",
+    "REMOVE_LINE": "Remove lines from a document or operation",
+    "UPDATE_STATUS": "Update business status",
+    "DRAFT": "Move content back to draft",
+    "FINALIZE": "Finalize content",
+    "EXPORT": "Export content or reports",
+    "SYNC": "Synchronize mobile/offline data",
+    "REPORT": "Generate analytical reports",
     "ENTREE_STOCK":"" ,
     "SORTIE_STOCK":"",
     "AJUSTER_STOCK":"",
@@ -548,7 +579,9 @@ SELECT public.seed_permissions_from_json($$
         "READ",
         "CREATE",
         "UPDATE",
-        "DELETE"
+        "DELETE",
+        "ENTREE_STOCK",
+        "SORTIE_STOCK"
       ]
     },
 
@@ -594,7 +627,11 @@ SELECT public.seed_permissions_from_json($$
         "READ",
         "CREATE",
         "UPDATE",
-        "DELETE"
+        "DELETE",
+        "ASSIGN_EMPLACEMENT",
+        "RESERVER_STOCK",
+        "LIBERER_STOCK",
+        "TRANSFERER_STOCK"
       ]
     },
 
@@ -663,13 +700,151 @@ SELECT public.seed_permissions_from_json($$
         "UPDATE",
         "DELETE",
         "ENTREE_STOCK" ,
-        " SORTIE_STOCK",
+        "SORTIE_STOCK",
         "AJUSTER_STOCK",
         "ASSIGN_EMPLACEMENT",
         "RESERVER_STOCK",
         "LIBERER_STOCK",
         "CHECK_STOCK",
         "TRANSFERER_STOCK"
+      ]
+    },
+    "OF": {
+      "description": "Conditioning manufacturing orders",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "START",
+        "PAUSE",
+        "RESUME",
+        "CLOSE",
+        "AJUSTER_STOCK",
+        "GEN_PDF"
+      ]
+    },
+    "PROJET": {
+      "description": "Conditioning projects",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "CANCEL",
+        "UPDATE_STATUS",
+        "GEN_PDF"
+      ]
+    },
+    "CLIENT": {
+      "description": "Conditioning clients",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "CERTIFICATION": {
+      "description": "Conditioning certifications",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+    "SHIPPING": {
+      "description": "Conditioning shipping information",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ADD_LINE",
+        "REMOVE_LINE",
+        "UPDATE_STATUS",
+        "SHIP",
+        "DELIVER",
+        "GEN_PDF"
+      ]
+    },
+    "EXPEDITION": {
+      "description": "Conditioning expedition management",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ADD_LINE",
+        "REMOVE_LINE",
+        "VALIDATE",
+        "SHIP",
+        "DELIVER",
+        "CLOSE",
+        "CANCEL",
+        "GEN_PDF"
+      ]
+    },
+    "QUALITY": {
+      "description": "Conditioning quality control",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "UPDATE_STATUS",
+        "GEN_PDF"
+      ]
+    },
+    "LABELCONTENT": {
+      "description": "Conditioning label content",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "DRAFT",
+        "VALIDATE",
+        "FINALIZE",
+        "EXPORT",
+        "GEN_PDF"
+      ]
+    },
+    "ANALYTICS": {
+      "description": "Conditioning analytics and reports",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "REPORT",
+        "GEN_PDF",
+        "EXPORT"
+      ]
+    },
+    "MOBILESYNC": {
+      "description": "Conditioning mobile synchronization",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "SYNC"
+      ]
+    },
+    "AUDIT": {
+      "description": "Conditioning audit logs",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ"
       ]
     }
   }
