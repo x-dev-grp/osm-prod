@@ -1,7 +1,6 @@
-package com.osm.oilproductionservice.model;
+package com.osm.oilproductionservice.dto;
 
-import com.osm.oilproductionservice.dto.FiltrationStatus;
-import com.osm.oilproductionservice.dto.StorageUnitDto;
+import com.osm.oilproductionservice.model.FiltrationOperation;
 import lombok.Value;
 
 import java.io.Serializable;
