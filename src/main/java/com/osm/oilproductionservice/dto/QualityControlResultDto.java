@@ -19,6 +19,8 @@ public class QualityControlResultDto extends BaseDto<QualityControlResult> imple
     QualityControlRuleDto rule;
     String measuredValue;
     private UUID deliveryId;
+    private UUID filtrationOperationId;
+    private UUID traceabilityLotId;
 
 
     public QualityControlRuleDto getRule() {
@@ -43,5 +45,21 @@ public class QualityControlResultDto extends BaseDto<QualityControlResult> imple
 
     public void setDeliveryId(UUID deliveryId) {
         this.deliveryId = deliveryId;
+    }
+
+    public UUID getFiltrationOperationId() {
+        return filtrationOperationId;
+    }
+
+    public void setFiltrationOperationId(UUID filtrationOperationId) {
+        this.filtrationOperationId = filtrationOperationId;
+    }
+
+    public UUID getTraceabilityLotId() {
+        return traceabilityLotId;
+    }
+
+    public void setTraceabilityLotId(UUID traceabilityLotId) {
+        this.traceabilityLotId = traceabilityLotId;
     }
 }

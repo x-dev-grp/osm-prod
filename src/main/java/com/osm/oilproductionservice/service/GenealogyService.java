@@ -11,9 +11,11 @@ import com.osm.oilproductionservice.model.TraceabilitySourceType;
 import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.repository.DeliveryRepository;
 import com.osm.oilproductionservice.repository.FiltrationOperationRepo;
+import com.osm.oilproductionservice.repository.QualityControlResultRepository;
 import com.osm.oilproductionservice.repository.StorageUnitRepo;
 import com.xdev.communicator.models.enums.DeliveryType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,17 +30,21 @@ public class GenealogyService {
     private final FiltrationOperationRepo filtrationRepo;
     private final DeliveryRepository deliveryRepo;
     private final TraceabilityLotService traceabilityLotService;
+    private final QualityControlResultRepository qualityControlResultRepository;
 
     public GenealogyService(StorageUnitRepo storageUnitRepo,
                             FiltrationOperationRepo filtrationRepo,
                             DeliveryRepository deliveryRepo,
-                            TraceabilityLotService traceabilityLotService) {
+                            TraceabilityLotService traceabilityLotService,
+                            QualityControlResultRepository qualityControlResultRepository) {
         this.storageUnitRepo = storageUnitRepo;
         this.filtrationRepo = filtrationRepo;
         this.deliveryRepo = deliveryRepo;
         this.traceabilityLotService = traceabilityLotService;
+        this.qualityControlResultRepository = qualityControlResultRepository;
     }
 
+    @Transactional(readOnly = true)
     public GenealogyDto getFullGenealogy(UUID lotOrStorageId) {
         Optional<TraceabilityLot> traceabilityLotOpt = traceabilityLotService.resolveByLotOrStorage(lotOrStorageId);
         if (traceabilityLotOpt.isPresent()) {
@@ -71,6 +77,7 @@ public class GenealogyService {
         }
 
         buildTraceabilityChain(traceabilityLot, dto);
+        dto.setFilteredQualityControls(resolveQualityControls(traceabilityLot.getId(), traceabilityLot.getFiltrationOperationId()));
         appendRootSource(traceabilityLot, dto);
         return dto;
     }
@@ -79,8 +86,9 @@ public class GenealogyService {
         TraceabilityLot current = traceabilityLot;
         while (current != null) {
             if (current.getSourceType() == TraceabilitySourceType.FILTRATION && current.getFiltrationOperationId() != null) {
+                TraceabilityLot finalCurrent = current;
                 filtrationRepo.findByIdAndIsDeletedFalse(current.getFiltrationOperationId())
-                        .ifPresent(operation -> dto.getFiltrations().add(toFiltrationStep(operation)));
+                        .ifPresent(operation -> dto.getFiltrations().add(toFiltrationStep(operation, finalCurrent.getId())));
             }
 
             if (current.getParentLotId() == null) {
@@ -111,7 +119,7 @@ public class GenealogyService {
         Optional<FiltrationOperation> opOpt = filtrationRepo.findByTargetLotNumberAndIsDeletedFalse(lotNumber);
         if (opOpt.isPresent()) {
             FiltrationOperation op = opOpt.get();
-            dto.getFiltrations().add(toFiltrationStep(op));
+            dto.getFiltrations().add(toFiltrationStep(op, null));
             buildLegacyFiltrationChain(op.getSourceLotNumber(), dto);
             return;
         }
@@ -119,13 +127,14 @@ public class GenealogyService {
         findRootSources(lotNumber, dto);
     }
 
-    private FiltrationStepDto toFiltrationStep(FiltrationOperation op) {
+    private FiltrationStepDto toFiltrationStep(FiltrationOperation op, UUID traceabilityLotId) {
         FiltrationStepDto step = new FiltrationStepDto();
         step.setOperationId(op.getId());
         step.setSourceLotNumber(op.getSourceLotNumber());
         step.setTargetLotNumber(op.getTargetLotNumber());
         step.setVolumeFiltered(op.getVolumeAfter());
         step.setTimestamp(op.getOperationDate() != null ? op.getOperationDate().toString() : null);
+        step.setQualityControls(resolveQualityControls(traceabilityLotId, op.getId()));
 
         if (op.getSourceStorageUnit() != null) {
             step.setSourceStorageUnitId(op.getSourceStorageUnit().getId());
@@ -133,6 +142,33 @@ public class GenealogyService {
         }
 
         return step;
+    }
+
+    private Map<String, String> resolveQualityControls(UUID traceabilityLotId, UUID filtrationOperationId) {
+        List<QualityControlResult> results = traceabilityLotId != null
+                ? qualityControlResultRepository.findByTraceabilityLotIdAndIsDeletedFalse(traceabilityLotId)
+                : List.of();
+
+        if (results.isEmpty() && filtrationOperationId != null) {
+            results = qualityControlResultRepository.findByFiltrationOperationIdAndIsDeletedFalse(filtrationOperationId);
+        }
+
+        if (results.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, String> qcs = new HashMap<>();
+        for (QualityControlResult result : results) {
+            if (result.getRule() != null) {
+                String key = result.getRule().getRuleName() != null
+                        ? result.getRule().getRuleName()
+                        : result.getRule().getRuleKey();
+                if (key != null) {
+                    qcs.put(key, result.getMeasuredValue());
+                }
+            }
+        }
+        return qcs;
     }
 
     private void findRootSources(String lotNumber, GenealogyDto dto) {

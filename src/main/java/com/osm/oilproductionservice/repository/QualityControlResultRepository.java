@@ -12,4 +12,6 @@ public interface QualityControlResultRepository extends BaseRepository<QualityCo
     List<QualityControlResult> findByDeliveryId(UUID deliveryId);
     // Fetch only oil QC results for a given olive delivery (reception) id
     List<QualityControlResult> findByDeliveryIdAndRule_OilQcTrue(UUID deliveryId);
+    List<QualityControlResult> findByFiltrationOperationIdAndIsDeletedFalse(UUID filtrationOperationId);
+    List<QualityControlResult> findByTraceabilityLotIdAndIsDeletedFalse(UUID traceabilityLotId);
 }

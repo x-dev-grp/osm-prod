@@ -16,5 +16,7 @@ public interface TraceabilityLotRepository extends BaseRepository<TraceabilityLo
 
     Optional<TraceabilityLot> findFirstByLotNumberAndIsDeletedFalseOrderByCapturedAtDesc(String lotNumber);
 
+    Optional<TraceabilityLot> findFirstByFiltrationOperationIdAndIsDeletedFalseOrderByCapturedAtDesc(UUID filtrationOperationId);
+
     List<TraceabilityLot> findAllByRootReceptionIdAndIsDeletedFalse(UUID rootReceptionId);
 }

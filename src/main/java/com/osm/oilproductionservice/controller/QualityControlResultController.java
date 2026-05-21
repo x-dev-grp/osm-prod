@@ -102,6 +102,59 @@ public class QualityControlResultController extends BaseControllerImpl<QualityCo
             OSMLogger.logPerformance(this.getClass(), "getResultsByDelivery", startTime, System.currentTimeMillis());
         }
     }
+
+    @PostMapping("/filtration/{filtrationOperationId}/save-batch")
+    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> saveBatchForFiltration(
+            @PathVariable UUID filtrationOperationId,
+            @RequestBody List<QualityControlResultDto> dtos) {
+        try {
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    "Resultats qualite filtration enregistres",
+                    qualityControlResultService.saveForFiltration(filtrationOperationId, dtos)
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            log.error("Unexpected error while saving filtration QC results: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/filtration/{filtrationOperationId}")
+    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getResultsByFiltration(
+            @PathVariable UUID filtrationOperationId) {
+        try {
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    "Resultats qualite filtration recuperes",
+                    qualityControlResultService.findByFiltrationOperationId(filtrationOperationId)
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            log.error("Unexpected error while fetching filtration QC results: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/traceability-lot/{traceabilityLotId}")
+    public ResponseEntity<ApiResponse<QualityControlResult, QualityControlResultDto>> getResultsByTraceabilityLot(
+            @PathVariable UUID traceabilityLotId) {
+        try {
+            return ResponseEntity.ok(new ApiResponse<>(
+                    true,
+                    "Resultats qualite lot filtre recuperes",
+                    qualityControlResultService.findByTraceabilityLotId(traceabilityLotId)
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        } catch (Exception e) {
+            log.error("Unexpected error while fetching traceability lot QC results: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse<>(false, "Unexpected error: " + e.getMessage(), null));
+        }
+    }
+
     @Override
     protected String getResourceName() {
         return "QualityControlResult".toUpperCase();

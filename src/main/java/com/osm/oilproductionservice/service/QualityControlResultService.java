@@ -31,11 +31,12 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
     private final QualityControlResultRepository repository;
     private final QualityControlRuleRepository ruleRepository;
     private final DeliveryRepository deliveryRepo;
+    private final TraceabilityLotRepository traceabilityLotRepository;
     private final ModelMapper modelMapper;
     private final UnifiedDeliveryService unifiedDeliveryService;
       Set<String> allowedSet = new HashSet<>(Arrays.asList("Extra Vierge", "Vierge", "Lampante"));
 
-    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, DeliveryRepository deliveryRepository) {
+    public QualityControlResultService(BaseRepository<QualityControlResult> repository, ModelMapper modelMapper, QualityControlResultRepository repository1, QualityControlRuleRepository ruleRepository, DeliveryRepository deliveryRepo, ModelMapper modelMapper1, UnifiedDeliveryService unifiedDeliveryService, DeliveryRepository deliveryRepository, TraceabilityLotRepository traceabilityLotRepository) {
         super(repository, modelMapper);
         this.repository = repository1;
         this.ruleRepository = ruleRepository;
@@ -43,6 +44,7 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         this.modelMapper = modelMapper1;
         this.unifiedDeliveryService = unifiedDeliveryService;
         this.deliveryRepository = deliveryRepository;
+        this.traceabilityLotRepository = traceabilityLotRepository;
      }
 
     @Override
@@ -165,6 +167,39 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         return resultDtos;
     }
 
+    @Transactional
+    public List<QualityControlResultDto> saveForFiltration(UUID filtrationOperationId, List<QualityControlResultDto> dtos) {
+        if (filtrationOperationId == null) {
+            throw new IllegalArgumentException("Filtration operation ID is required");
+        }
+        if (dtos == null || dtos.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        UUID traceabilityLotId = traceabilityLotRepository
+                .findFirstByFiltrationOperationIdAndIsDeletedFalseOrderByCapturedAtDesc(filtrationOperationId)
+                .map(com.osm.oilproductionservice.model.TraceabilityLot::getId)
+                .orElse(null);
+
+        Map<UUID, QualityControlRule> ruleMap = fetchAndValidateRules(dtos);
+
+        List<QualityControlResult> entities = dtos.stream().map(dto -> {
+            QualityControlRule rule = ruleMap.get(dto.getRule().getId());
+            validateMeasuredValue(dto.getMeasuredValue(), rule);
+
+            QualityControlResult entity = new QualityControlResult();
+            entity.setRule(rule);
+            entity.setMeasuredValue(dto.getMeasuredValue());
+            entity.setFiltrationOperationId(filtrationOperationId);
+            entity.setTraceabilityLotId(dto.getTraceabilityLotId() != null ? dto.getTraceabilityLotId() : traceabilityLotId);
+            return entity;
+        }).toList();
+
+        return repository.saveAll(entities).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     // ——————————————————————————————————
 
     // Helper: fetch & validate rule IDs
@@ -250,6 +285,38 @@ public class QualityControlResultService extends BaseServiceImpl<QualityControlR
         OSMLogger.logMethodExit(this.getClass(), "findByDeliveryId", resultDtos);
         OSMLogger.logPerformance(this.getClass(), "findByDeliveryId", startTime, System.currentTimeMillis());
         return resultDtos;
+    }
+
+    @Transactional(readOnly = true)
+    public List<QualityControlResultDto> findByFiltrationOperationId(UUID filtrationOperationId) {
+        if (filtrationOperationId == null) {
+            throw new IllegalArgumentException("Filtration operation ID is required");
+        }
+
+        return repository.findByFiltrationOperationIdAndIsDeletedFalse(filtrationOperationId).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<QualityControlResultDto> findByTraceabilityLotId(UUID traceabilityLotId) {
+        if (traceabilityLotId == null) {
+            throw new IllegalArgumentException("Traceability lot ID is required");
+        }
+
+        return repository.findByTraceabilityLotIdAndIsDeletedFalse(traceabilityLotId).stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    private QualityControlResultDto toDto(QualityControlResult entity) {
+        QualityControlResultDto dto = modelMapper.map(entity, QualityControlResultDto.class);
+        dto.setFiltrationOperationId(entity.getFiltrationOperationId());
+        dto.setTraceabilityLotId(entity.getTraceabilityLotId());
+        if (entity.getDelivery() != null) {
+            dto.setDeliveryId(entity.getDelivery().getId());
+        }
+        return dto;
     }
 
 //    @Transactional(readOnly = true)

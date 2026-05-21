@@ -4,6 +4,7 @@ import com.xdev.xdevbase.entities.BaseEntity;
 import jakarta.persistence.*;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 @Entity
 @Table(name = "quality_control_result")
@@ -20,6 +21,12 @@ public class QualityControlResult extends BaseEntity implements Serializable {
     // Many-to-One relationship: each result is associated with one UnifiedDelivery.
     @ManyToOne(fetch = FetchType.LAZY)
     private UnifiedDelivery delivery;
+
+    @Column(name = "filtration_operation_id")
+    private UUID filtrationOperationId;
+
+    @Column(name = "traceability_lot_id")
+    private UUID traceabilityLotId;
 
     // Constructors
     public QualityControlResult() {
@@ -54,5 +61,21 @@ public class QualityControlResult extends BaseEntity implements Serializable {
 
     public void setDelivery(UnifiedDelivery delivery) {
         this.delivery = delivery;
+    }
+
+    public UUID getFiltrationOperationId() {
+        return filtrationOperationId;
+    }
+
+    public void setFiltrationOperationId(UUID filtrationOperationId) {
+        this.filtrationOperationId = filtrationOperationId;
+    }
+
+    public UUID getTraceabilityLotId() {
+        return traceabilityLotId;
+    }
+
+    public void setTraceabilityLotId(UUID traceabilityLotId) {
+        this.traceabilityLotId = traceabilityLotId;
     }
 }
