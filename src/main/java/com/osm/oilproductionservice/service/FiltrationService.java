@@ -218,7 +218,9 @@ public class FiltrationService {
                 }
             });
 
-            oilTransactionService.save(transactionDto);
+            // Stock is already updated above (source - volumeInitial, target + volumeAfter).
+            // Persist the filtration transaction without applying volume movement a second time.
+            oilTransactionService.saveWithoutStockAdjustment(transactionDto);
 
             // Mise à jour de l'opération avec les données de completion
             operation.setStatus(FiltrationStatus.COMPLETED);

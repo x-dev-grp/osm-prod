@@ -181,6 +181,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         oilTransaction = oilTransactionRepository.save(oilTransaction);
         StorageUnit storageUnitDestination = oilTransaction.getStorageUnitDestination();
         StorageUnit storageUnitSource = oilTransaction.getStorageUnitSource();
+        validateNonNegativeVolumeBeforeSave(storageUnitSource, storageUnitDestination, oilTransaction.getQuantityKg());
         // Update destination storage unit if present
         if (storageUnitDestination != null) {
             storageUnitDestination.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
@@ -197,6 +198,36 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
         OSMLogger.logMethodExit(this.getClass(), "save", modelMapper.map(oilTransaction, OilTransactionDTO.class));
         OSMLogger.logPerformance(this.getClass(), "save", startTime, System.currentTimeMillis());
+        return modelMapper.map(oilTransaction, OilTransactionDTO.class);
+    }
+
+    /**
+     * Saves an oil transaction record without applying any source/destination
+     * stock movement.
+     * Use this when stock was already adjusted by the caller in the same flow
+     * (e.g. filtration completion).
+     */
+    public OilTransactionDTO saveWithoutStockAdjustment(OilTransactionDTO request) {
+        long startTime = System.currentTimeMillis();
+        OSMLogger.logMethodEntry(this.getClass(), "saveWithoutStockAdjustment", request);
+
+        OilTransaction oilTransaction = modelMapper.map(request, OilTransaction.class);
+
+        if (request.getStorageUnitSource() != null && request.getStorageUnitSource().getId() != null) {
+            StorageUnit src = storageUnitRepo.findById(request.getStorageUnitSource().getId()).orElse(null);
+            oilTransaction.setStorageUnitSource(src);
+        }
+
+        if (request.getStorageUnitDestination() != null && request.getStorageUnitDestination().getId() != null) {
+            StorageUnit dest = storageUnitRepo.findById(request.getStorageUnitDestination().getId()).orElse(null);
+            oilTransaction.setStorageUnitDestination(dest);
+        }
+
+        oilTransaction.setTotalPrice();
+        oilTransaction = oilTransactionRepository.save(oilTransaction);
+
+        OSMLogger.logMethodExit(this.getClass(), "saveWithoutStockAdjustment", oilTransaction);
+        OSMLogger.logPerformance(this.getClass(), "saveWithoutStockAdjustment", startTime, System.currentTimeMillis());
         return modelMapper.map(oilTransaction, OilTransactionDTO.class);
     }
 
@@ -225,6 +256,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
             }
             if (updatedEntity.getStorageUnitDestination() != null) {
                 StorageUnit storageUnitDestination = updatedEntity.getStorageUnitDestination();
+                validateReverseNonNegativeVolumeBeforeSave(storageUnitDestination, updatedEntity.getQuantityKg());
                 storageUnitDestination.updateDeletedCurrentVolume(updatedEntity.getQuantityKg(), 1, updatedEntity.getUnitPrice());
                 storageUnitRepo.save(storageUnitDestination);
 
@@ -592,5 +624,46 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
         oilTransactionDTOforSale.setTransactionType(TransactionType.OIL_SALE);
         oilTransactionDTOforSale.setTransactionState(TransactionState.PENDING);
         return save(oilTransactionDTOforSale);
+    }
+
+    private void validateNonNegativeVolumeBeforeSave(StorageUnit source, StorageUnit destination, Double quantityKg) {
+        if (quantityKg == null || quantityKg <= 0) {
+            throw new IllegalArgumentException("Quantite d'huile invalide: elle doit etre strictement positive.");
+        }
+
+        if (source != null) {
+            double sourceVolume = source.getCurrentVolume() == null ? 0d : source.getCurrentVolume();
+            double projectedSource = sourceVolume - quantityKg;
+            if (projectedSource < 0) {
+                throw new IllegalStateException(String.format(
+                        "Operation refusee: volume negatif detecte sur la cuve source (%s). Disponible=%.3f, requis=%.3f",
+                        source.getName(), sourceVolume, quantityKg));
+            }
+        }
+
+        if (destination != null) {
+            double destinationVolume = destination.getCurrentVolume() == null ? 0d : destination.getCurrentVolume();
+            double projectedDestination = destinationVolume + quantityKg;
+            Double maxCapacity = destination.getMaxCapacity();
+            if (maxCapacity != null && maxCapacity > 0 && projectedDestination > maxCapacity) {
+                throw new IllegalStateException(String.format(
+                        "Operation refusee: capacite depassee sur la cuve destination (%s). Actuel=%.3f, ajout=%.3f, max=%.3f",
+                        destination.getName(), destinationVolume, quantityKg, maxCapacity));
+            }
+        }
+    }
+
+    private void validateReverseNonNegativeVolumeBeforeSave(StorageUnit destination, Double quantityKg) {
+        if (destination == null || quantityKg == null || quantityKg <= 0) {
+            return;
+        }
+
+        double destinationVolume = destination.getCurrentVolume() == null ? 0d : destination.getCurrentVolume();
+        double projectedDestination = destinationVolume - quantityKg;
+        if (projectedDestination < 0) {
+            throw new IllegalStateException(String.format(
+                    "Annulation refusee: volume negatif detecte sur la cuve destination (%s). Actuel=%.3f, a retirer=%.3f",
+                    destination.getName(), destinationVolume, quantityKg));
+        }
     }
 }
