@@ -1,5 +1,6 @@
 package com.osm.oilproductionservice.repository;
 
+import com.xdev.communicator.models.enums.TransactionType;
 import com.osm.oilproductionservice.model.OilTransaction;
 import com.xdev.xdevbase.repos.BaseRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,5 @@ public interface OilTransactionRepository extends BaseRepository<OilTransaction>
     List<OilTransaction> findByOilSaleId(UUID oilSaleId);
     Optional<OilTransaction> findByOilSaleIdAndIsDeletedFalse(UUID oilSaleId);
     Optional<OilTransaction> findFirstByOilSaleIdOrderByCreatedDateDesc(UUID oilSaleId);
+    Optional<OilTransaction> findFirstByStorageUnitDestinationIdAndTransactionTypeOrderByCreatedDateAsc(UUID storageUnitId, TransactionType transactionType);
 }

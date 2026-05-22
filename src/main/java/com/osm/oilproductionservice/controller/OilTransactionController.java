@@ -1,15 +1,21 @@
 package com.osm.oilproductionservice.controller;
 
 import com.osm.oilproductionservice.dto.OilTransactionDTO;
+import com.osm.oilproductionservice.dto.StorageUnitDto;
+import com.osm.oilproductionservice.dto.UnifiedDeliveryDTO;
 import com.osm.oilproductionservice.model.OilTransaction;
+import com.osm.oilproductionservice.model.StorageUnit;
+import com.osm.oilproductionservice.model.UnifiedDelivery;
 import com.osm.oilproductionservice.service.OilTransactionService;
 import com.xdev.xdevbase.apiDTOs.ApiResponse;
 import com.xdev.xdevbase.apiDTOs.ApiSingleResponse;
 import com.xdev.xdevbase.controllers.impl.BaseControllerImpl;
 import com.xdev.xdevbase.services.BaseService;
 import com.xdev.xdevbase.utils.OSMLogger;
+import org.hibernate.Hibernate;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -31,6 +37,7 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
      * Returns all transactions whose destination tank is the given storage-unit.
      */
     @GetMapping("/storage-unit/{storageUnitId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<OilTransaction, OilTransactionDTO>> getByStorageUnit(
             @PathVariable UUID storageUnitId) {
 
@@ -40,7 +47,7 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
             ApiResponse<OilTransaction, OilTransactionDTO> ff = new ApiResponse<>(true, "", oilTransactionService
                     .findByStorageUnitId(storageUnitId)
                     .stream()
-                    .map(tx -> modelMapper.map(tx, OilTransactionDTO.class))
+                    .map(this::toSafeDto)
                     .collect(Collectors.toList()));
 
             return ResponseEntity.ok(ff);
@@ -104,6 +111,61 @@ public class OilTransactionController extends BaseControllerImpl<OilTransaction,
     protected String getResourceName() {
         return "OILTRANSACTION".toUpperCase();
     }
+
+    private OilTransactionDTO toSafeDto(OilTransaction tx) {
+        OilTransactionDTO dto = new OilTransactionDTO();
+        dto.setId(tx.getId());
+        dto.setTransactionType(tx.getTransactionType());
+        dto.setTransactionState(tx.getTransactionState());
+        dto.setQualityGrade(tx.getQualityGrade());
+        dto.setOilType(tx.getOilType());
+        dto.setQuantityKg(tx.getQuantityKg());
+        dto.setUnitPrice(tx.getUnitPrice());
+        dto.setTotalPrice(tx.getTotalPrice());
+        dto.setOilSaleId(tx.getOilSaleId());
+        dto.setStorageUnitSource(toSafeStorageUnitDto(tx.getStorageUnitSource()));
+        dto.setStorageUnitDestination(toSafeStorageUnitDto(tx.getStorageUnitDestination()));
+        dto.setReception(toSafeReceptionDto(tx.getReception()));
+        return dto;
+    }
+
+    private StorageUnitDto toSafeStorageUnitDto(StorageUnit storageUnit) {
+        if (storageUnit == null) {
+            return null;
+        }
+
+        StorageUnitDto dto = new StorageUnitDto();
+        dto.setId(storageUnit.getId());
+
+        if (Hibernate.isInitialized(storageUnit)) {
+            dto.setName(storageUnit.getName());
+            dto.setLotNumber(storageUnit.getLotNumber());
+            dto.setCurrentVolume(storageUnit.getCurrentVolume());
+            dto.setMaxCapacity(storageUnit.getMaxCapacity());
+            dto.setQualityGrade(storageUnit.getQualityGrade());
+            dto.setFilteredOil(storageUnit.getFilteredOil());
+            dto.setStatus(storageUnit.getStatus());
+        }
+
+        return dto;
+    }
+
+    private UnifiedDeliveryDTO toSafeReceptionDto(UnifiedDelivery reception) {
+        if (reception == null) {
+            return null;
+        }
+
+        UnifiedDeliveryDTO dto = new UnifiedDeliveryDTO();
+        dto.setId(reception.getId());
+        if (Hibernate.isInitialized(reception)) {
+            dto.setDeliveryNumber(reception.getDeliveryNumber());
+            dto.setLotNumber(reception.getLotNumber());
+            dto.setDeliveryDate(reception.getDeliveryDate());
+            dto.setCategoryOliveOil(reception.getCategoryOliveOil());
+        }
+        return dto;
+    }
+
     @Override
     public ResponseEntity<?> resolve(String publicCode) {
         return null;

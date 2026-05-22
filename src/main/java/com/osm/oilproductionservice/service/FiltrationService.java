@@ -28,15 +28,17 @@ public class FiltrationService {
     private final ModelMapper modelMapper;
     private final OilTransactionService oilTransactionService;
     private final BusinessCodeGenerator businessCodeGenerator;
+    private final TraceabilityLotService traceabilityLotService;
 
     public FiltrationService(StorageUnitRepo storageUnitRepo, FiltrationOperationRepo filtrationRepo,
             org.modelmapper.ModelMapper modelMapper, OilTransactionService oilTransactionService,
-            BusinessCodeGenerator businessCodeGenerator) {
+            BusinessCodeGenerator businessCodeGenerator, TraceabilityLotService traceabilityLotService) {
         this.storageUnitRepo = storageUnitRepo;
         this.filtrationRepo = filtrationRepo;
         this.modelMapper = modelMapper;
         this.oilTransactionService = oilTransactionService;
         this.businessCodeGenerator = businessCodeGenerator;
+        this.traceabilityLotService = traceabilityLotService;
     }
 
     @Transactional
@@ -130,6 +132,10 @@ public class FiltrationService {
                         "Impossible de terminer: statut actuel = %s, attendu = IN_PROGRESS", operation.getStatus()));
             }
 
+            if (completionData == null) {
+                throw new IllegalArgumentException("Les donnees de completion sont obligatoires");
+            }
+
             // Validation du volume après filtration
             if (completionData.getVolumeAfter() == null || completionData.getVolumeAfter() < 0) {
                 throw new IllegalArgumentException("Le volume après filtration doit être positif");
@@ -145,8 +151,11 @@ public class FiltrationService {
             double lossPercent = (lossVolume / volumeInitial) * 100;
 
             // Récupération des unités de stockage
-            StorageUnit sourceUnit = operation.getSourceStorageUnit();
-            StorageUnit targetUnit = operation.getTargetStorageUnit();
+            StorageUnit sourceUnit = findStorageUnitById(operation.getSourceStorageUnit().getId(), "Source");
+            StorageUnit targetUnit = findStorageUnitById(operation.getTargetStorageUnit().getId(), "Target");
+
+            validateCompletionBusinessRules(sourceUnit, targetUnit, volumeInitial, volumeAfter);
+            traceabilityLotService.ensureRootLotForStorageUnit(sourceUnit);
 
             // Generate the target lot number with the shared business-code format.
             String targetLotNumber = businessCodeGenerator.generate(FiltrationOperation.class, "targetLotNumber", "FI");
@@ -217,6 +226,7 @@ public class FiltrationService {
             operation.setLossVolume(lossVolume);
             operation.setLossPercent(lossPercent);
             operation.setTargetLotNumber(targetLotNumber); // ← Stocker le lot cible dans l'opération
+            traceabilityLotService.createFilteredLot(sourceUnit, targetUnit, operation, volumeAfter);
 
             // Ajouter la note de completion si fournie
             if (completionData.getNote() != null && !completionData.getNote().isEmpty()) {
@@ -461,6 +471,30 @@ public class FiltrationService {
             throw new IllegalArgumentException(String.format(
                     "Capacité insuffisante dans la cible: disponible=%.2fL, max=%.2fL, nouveau volume=%.2fL",
                     target.getMaxCapacity() - target.getCurrentVolume(), target.getMaxCapacity(), newTargetVolume));
+        }
+    }
+
+    private void validateCompletionBusinessRules(StorageUnit source, StorageUnit target, double sourceVolumeToDeduct,
+            double targetVolumeToAdd) {
+        if (source == null || target == null) {
+            throw new IllegalArgumentException("Les unites de stockage de source et de cible sont obligatoires");
+        }
+
+        if (Objects.equals(source.getId(), target.getId())) {
+            throw new IllegalArgumentException("La source et la cible doivent etre differentes");
+        }
+
+        if (sourceVolumeToDeduct > source.getCurrentVolume()) {
+            throw new IllegalArgumentException(String.format(
+                    "Volume source insuffisant au moment de la cloture: disponible=%.2fL, requis=%.2fL",
+                    source.getCurrentVolume(), sourceVolumeToDeduct));
+        }
+
+        double newTargetVolume = target.getCurrentVolume() + targetVolumeToAdd;
+        if (newTargetVolume > target.getMaxCapacity()) {
+            throw new IllegalArgumentException(String.format(
+                    "Capacite cible insuffisante au moment de la cloture: disponible=%.2fL, ajout=%.2fL",
+                    target.getMaxCapacity() - target.getCurrentVolume(), targetVolumeToAdd));
         }
     }
 
