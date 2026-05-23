@@ -24,10 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -71,6 +73,7 @@ public class GenealogyService {
 
         buildLegacyFiltrationChain(unit.getLotNumber(), unit.getId(), dto);
         dto.setIntakeChain(buildIntakeChainForStorageUnit(unit.getId()));
+        supplementRootSourcesFromIntake(dto);
         return dto;
     }
 
@@ -91,6 +94,7 @@ public class GenealogyService {
         dto.setFilteredQualityControls(resolveQualityControls(traceabilityLot.getId(), traceabilityLot.getFiltrationOperationId()));
         appendRootSource(traceabilityLot, dto);
         dto.setIntakeChain(resolveIntakeChain(traceabilityLot, dto));
+        supplementRootSourcesFromIntake(dto);
         return dto;
     }
 
@@ -126,21 +130,13 @@ public class GenealogyService {
                 ? traceabilityLot.getRootReceptionId()
                 : traceabilityLot.getSourceEntityId();
         if (rootSourceId == null) {
+            findRootSources(traceabilityLot.getLotNumber(), traceabilityLot.getStorageUnitId(), dto);
             return;
         }
 
-        deliveryRepo.findById(rootSourceId).ifPresent(delivery -> {
-            if (delivery.getDeliveryType() == DeliveryType.OIL
-                    && delivery.getLotOliveNumber() != null
-                    && !delivery.getLotOliveNumber().isBlank()) {
-                deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(
-                                delivery.getLotOliveNumber(), DeliveryType.OLIVE)
-                        .stream()
-                        .findFirst()
-                        .ifPresent(olive -> dto.getRootSources().add(toRootSource(olive, null)));
-            }
-            dto.getRootSources().add(toRootSource(delivery, traceabilityLot.getSourceType()));
-        });
+        deliveryRepo.findById(rootSourceId).ifPresent(delivery ->
+                appendRootSourceFromDelivery(delivery, traceabilityLot.getSourceType(), dto));
+        mergeOilReceptionsForStorageUnit(traceabilityLot.getStorageUnitId(), traceabilityLot.getLotNumber(), dto);
     }
 
     private void buildLegacyFiltrationChain(String lotNumber, UUID storageUnitId, GenealogyDto dto) {
@@ -207,56 +203,168 @@ public class GenealogyService {
         return qcs;
     }
 
-    private void findRootSources(String lotNumber, UUID storageUnitId, GenealogyDto dto) {
-        List<UnifiedDelivery> deliveries = new java.util.ArrayList<>();
-        
-        if (storageUnitId != null) {
-            deliveries.addAll(deliveryRepo.findAllByStorageUnitIdAndDeliveryTypeAndIsDeletedFalse(storageUnitId, DeliveryType.OIL));
-        }
-        
-        if (deliveries.isEmpty() && lotNumber != null) {
-            deliveries.addAll(deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(lotNumber, DeliveryType.OIL));
-        }
-
-        for (UnifiedDelivery delivery : deliveries) {
-            dto.getRootSources().add(toRootSource(delivery, null));
+    /**
+     * When {@link #appendRootSource} cannot resolve a lot pointer, derive rootSources from intake steps
+     * (réception huile/olive already reconstructed on the tank).
+     */
+    private void supplementRootSourcesFromIntake(GenealogyDto dto) {
+        Set<UUID> seenDeliveryIds = existingRootSourceIds(dto);
+        appendRootSourcesFromIntakeChain(dto.getIntakeChain(), dto, seenDeliveryIds);
+        if (dto.getFiltrations() != null) {
+            for (FiltrationStepDto filtration : dto.getFiltrations()) {
+                appendRootSourcesFromIntakeChain(filtration.getSourceIntakeChain(), dto, seenDeliveryIds);
+            }
         }
     }
 
+    private Set<UUID> existingRootSourceIds(GenealogyDto dto) {
+        Set<UUID> seen = new HashSet<>();
+        if (dto.getRootSources() == null) {
+            return seen;
+        }
+        for (RootSourceDto root : dto.getRootSources()) {
+            if (root.getSourceId() != null) {
+                seen.add(root.getSourceId());
+            }
+        }
+        return seen;
+    }
+
+    private void appendRootSourcesFromIntakeChain(
+            List<IntakeStepDto> chain,
+            GenealogyDto dto,
+            Set<UUID> seenDeliveryIds) {
+        if (chain == null) {
+            return;
+        }
+        for (IntakeStepDto step : chain) {
+            if (!isOriginIntakeType(step.getType()) || step.getDeliveryId() == null) {
+                continue;
+            }
+            if (!seenDeliveryIds.add(step.getDeliveryId())) {
+                continue;
+            }
+            deliveryRepo.findById(step.getDeliveryId())
+                    .ifPresent(delivery -> appendRootSourceFromDelivery(delivery, null, dto));
+        }
+    }
+
+    private boolean isOriginIntakeType(String type) {
+        if (type == null || type.isBlank()) {
+            return false;
+        }
+        return switch (type.toUpperCase()) {
+            case "OIL_RECEPTION", "OLIVE_RECEPTION", "RECEPTION", "TRITURATION" -> true;
+            default -> false;
+        };
+    }
+
+    private void appendRootSourceFromDelivery(
+            UnifiedDelivery delivery,
+            TraceabilitySourceType sourceType,
+            GenealogyDto dto) {
+        if (delivery == null || delivery.getId() == null) {
+            return;
+        }
+        if (alreadyHasRootSource(dto, delivery.getId())) {
+            return;
+        }
+
+        if (delivery.getDeliveryType() == DeliveryType.OIL
+                && delivery.getLotOliveNumber() != null
+                && !delivery.getLotOliveNumber().isBlank()) {
+            deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(
+                            delivery.getLotOliveNumber(), DeliveryType.OLIVE)
+                    .stream()
+                    .findFirst()
+                    .ifPresent(olive -> {
+                        if (!alreadyHasRootSource(dto, olive.getId())) {
+                            dto.getRootSources().add(toRootSource(olive, null));
+                        }
+                    });
+        }
+        dto.getRootSources().add(toRootSource(delivery, sourceType));
+    }
+
+    private boolean alreadyHasRootSource(GenealogyDto dto, UUID deliveryId) {
+        if (dto.getRootSources() == null || deliveryId == null) {
+            return false;
+        }
+        return dto.getRootSources().stream()
+                .anyMatch(root -> deliveryId.equals(root.getSourceId()));
+    }
+
+    private void mergeOilReceptionsForStorageUnit(UUID storageUnitId, String lotNumber, GenealogyDto dto) {
+        Set<UUID> seen = existingRootSourceIds(dto);
+
+        if (storageUnitId != null) {
+            for (UnifiedDelivery delivery : deliveryRepo.findAllByStorageUnitIdAndDeliveryTypeAndIsDeletedFalse(
+                    storageUnitId, DeliveryType.OIL)) {
+                if (delivery.getId() != null && seen.add(delivery.getId())) {
+                    appendRootSourceFromDelivery(delivery, null, dto);
+                }
+            }
+        }
+
+        if (lotNumber != null) {
+            for (UnifiedDelivery delivery : deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(
+                    lotNumber, DeliveryType.OIL)) {
+                if (delivery.getId() != null && seen.add(delivery.getId())) {
+                    appendRootSourceFromDelivery(delivery, null, dto);
+                }
+            }
+        }
+    }
+
+    private void findRootSources(String lotNumber, UUID storageUnitId, GenealogyDto dto) {
+        mergeOilReceptionsForStorageUnit(storageUnitId, lotNumber, dto);
+    }
+
     /**
-     * Rebuilds olive reception → oil reception → RECEPTION_IN transaction for a storage tank.
+     * Rebuilds, for each RECEPTION_IN on the tank (chronological):
+     * olive reception (if linked) → oil reception → storage intake.
      */
     private List<IntakeStepDto> buildIntakeChainForStorageUnit(UUID storageUnitId) {
         if (storageUnitId == null) {
             return List.of();
         }
 
-        Optional<OilTransaction> receptionTxOpt = oilTransactionRepository
-                .findFirstByStorageUnitDestinationIdAndTransactionTypeOrderByCreatedDateAsc(
+        List<OilTransaction> receptionTxs = oilTransactionRepository
+                .findAllByStorageUnitDestinationIdAndTransactionTypeAndIsDeletedFalseOrderByCreatedDateAsc(
                         storageUnitId, TransactionType.RECEPTION_IN);
-        if (receptionTxOpt.isEmpty()) {
+        if (receptionTxs.isEmpty()) {
             return List.of();
         }
 
-        OilTransaction receptionTx = receptionTxOpt.get();
         StorageUnit storageUnit = storageUnitRepo.findById(storageUnitId).orElse(null);
-
-        UnifiedDelivery oilDelivery = resolveOilDelivery(receptionTx);
         List<IntakeStepDto> chain = new ArrayList<>();
+        Set<UUID> seenOilDeliveryIds = new HashSet<>();
+        Set<UUID> seenOliveDeliveryIds = new HashSet<>();
 
-        if (oilDelivery != null && oilDelivery.getLotOliveNumber() != null && !oilDelivery.getLotOliveNumber().isBlank()) {
-            deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(
-                            oilDelivery.getLotOliveNumber(), DeliveryType.OLIVE)
-                    .stream()
-                    .findFirst()
-                    .ifPresent(olive -> chain.add(toIntakeStepFromDelivery(olive, "OLIVE_RECEPTION")));
+        for (OilTransaction receptionTx : receptionTxs) {
+            UnifiedDelivery oilDelivery = resolveOilDelivery(receptionTx);
+
+            if (oilDelivery != null
+                    && oilDelivery.getLotOliveNumber() != null
+                    && !oilDelivery.getLotOliveNumber().isBlank()) {
+                deliveryRepo.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(
+                                oilDelivery.getLotOliveNumber(), DeliveryType.OLIVE)
+                        .stream()
+                        .findFirst()
+                        .ifPresent(olive -> {
+                            if (olive.getId() != null && seenOliveDeliveryIds.add(olive.getId())) {
+                                chain.add(toIntakeStepFromDelivery(olive, "OLIVE_RECEPTION"));
+                            }
+                        });
+            }
+
+            if (oilDelivery != null && oilDelivery.getId() != null && seenOilDeliveryIds.add(oilDelivery.getId())) {
+                chain.add(toIntakeStepFromDelivery(oilDelivery, "OIL_RECEPTION"));
+            }
+
+            chain.add(toIntakeStepFromTransaction(receptionTx, storageUnit, oilDelivery));
         }
 
-        if (oilDelivery != null) {
-            chain.add(toIntakeStepFromDelivery(oilDelivery, "OIL_RECEPTION"));
-        }
-
-        chain.add(toIntakeStepFromTransaction(receptionTx, storageUnit, oilDelivery));
         return chain;
     }
 
