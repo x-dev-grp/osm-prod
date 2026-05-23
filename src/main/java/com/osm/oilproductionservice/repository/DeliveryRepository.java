@@ -34,6 +34,7 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     UnifiedDelivery findByLotNumberAndDeliveryType(String lotNumber, DeliveryType deliveryType);
     List<UnifiedDelivery> findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(String lotNumber, DeliveryType deliveryType);
+    List<UnifiedDelivery> findAllByStorageUnitIdAndDeliveryTypeAndIsDeletedFalse(UUID storageUnitId, DeliveryType deliveryType);
 
     List<UnifiedDelivery> findByGlobalLotNumber(String globalLotNumber);
 

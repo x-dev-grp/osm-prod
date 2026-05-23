@@ -18,4 +18,6 @@ public class GenealogyDto {
 
     private List<FiltrationStepDto> filtrations = new ArrayList<>();
     private List<RootSourceDto> rootSources = new ArrayList<>();
+    /** Olive → oil reception → stock entry on the anchor storage unit (runtime). */
+    private List<IntakeStepDto> intakeChain = new ArrayList<>();
 }
