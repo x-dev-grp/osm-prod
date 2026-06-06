@@ -323,19 +323,16 @@ public class FiltrationService {
             FiltrationStatus currentStatus = operation.getStatus();
             FiltrationStatus newStatus = statusDto.getStatus();
 
-            if (currentStatus != FiltrationStatus.CREATED) {
-                throw new IllegalStateException(
-                        "Changement de statut interdit: seule une opération CREATED peut changer de statut");
+            if (currentStatus == FiltrationStatus.CREATED && newStatus == FiltrationStatus.IN_PROGRESS) {
+                operation.setStatus(FiltrationStatus.IN_PROGRESS);
+            } else if (currentStatus == FiltrationStatus.IN_PROGRESS && newStatus == FiltrationStatus.CANCELLED) {
+                operation.setStatus(FiltrationStatus.CANCELLED);
+            } else {
+                throw new IllegalStateException(String.format(
+                        "Transition non autorisée: %s -> %s", currentStatus, newStatus));
             }
 
-            if (newStatus != FiltrationStatus.IN_PROGRESS) {
-                throw new IllegalStateException(
-                        "Transition non autorisée: seule la transition CREATED -> IN_PROGRESS est permise");
-            }
-
-            operation.setStatus(FiltrationStatus.IN_PROGRESS);
-
-            String statusNote = "STATUS -> IN_PROGRESS";
+            String statusNote = "STATUS -> " + newStatus.name();
             if (statusDto.getNote() != null && !statusDto.getNote().isBlank()) {
                 statusNote = statusNote + " : " + statusDto.getNote().trim();
             }
