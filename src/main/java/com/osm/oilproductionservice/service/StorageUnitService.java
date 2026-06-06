@@ -154,7 +154,53 @@ public class StorageUnitService extends BaseServiceImpl<StorageUnit, StorageUnit
         return "/storage/" + entity.getId() + "/view";
     }
 
+    @Override
+    protected Object getData(StorageUnit entity) {
+        return enrichQrFields(modelMapper.map(entity, StorageUnitDto.class));
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public QrResolveResponse resolve(String publicCode) {
+        if (publicCode == null || publicCode.isBlank()) {
+            throw new IllegalArgumentException("Le code est obligatoire");
+        }
+
+        String normalizedCode = normalizeHex(publicCode);
+        UUID tenantId = TenantContext.getCurrentTenant();
+
+        Optional<StorageUnit> entity = (tenantId == null)
+                ? storageUnitRepo.findByQrHexIgnoreCaseAndIsDeletedFalse(normalizedCode)
+                : storageUnitRepo.findByQrHexIgnoreCaseAndTenantIdAndIsDeletedFalse(normalizedCode, tenantId);
+
+        if (entity.isEmpty() && tenantId != null) {
+            entity = storageUnitRepo.findByQrHexIgnoreCaseAndIsDeletedFalse(normalizedCode);
+        }
+
+        return entity.map(unit -> {
+                    QrResolveResponse response = new QrResolveResponse();
+                    response.setEntityType(getEntityType());
+                    response.setPublicCode(normalizedCode);
+                    response.setEntityId(unit.getId().toString());
+                    response.setLabel(getLabel(unit));
+                    response.setStatus(getStatus(unit));
+                    response.setMobileRoute(getMobileRoute());
+                    response.setWebRoute(getWebRoute(unit));
+                    response.setData(getData(unit));
+                    return response;
+                })
+                .orElseThrow(() -> new EntityNotFoundException("Storage unit not found for code: " + publicCode));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<QrResolveResponse> searchByCode(String code) {
+        try {
+            return Optional.ofNullable(resolve(code));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
 
     @Override
     public Set<Action> actionsMapping(StorageUnit storageUnit) {
