@@ -35,7 +35,7 @@ public class StorageUnitService extends BaseServiceImpl<StorageUnit, StorageUnit
     }
     @Transactional
     public void changeSupplier(UUID storageId, UUID supplierId) {
-        StorageUnit storageUnit = storageUnitRepo.findById(storageId)
+        StorageUnit storageUnit = storageUnitRepo.findByIdAndIsDeletedFalse(storageId)
                 .orElseThrow(() -> new EntityNotFoundException("Storage unit with id " + storageId + " not found"));
 
         Supplier currentSupplier = storageUnit.getSupplier();
@@ -48,7 +48,7 @@ public class StorageUnitService extends BaseServiceImpl<StorageUnit, StorageUnit
         }
 
         if (supplierId != null) {
-            Supplier newSupplier = supplierRepository.findById(supplierId)
+            Supplier newSupplier = supplierRepository.findByIdAndIsDeletedFalse(supplierId)
                     .orElseThrow(() -> new EntityNotFoundException("Supplier with id " + supplierId + " not found"));
 
             newSupplier.setHasStorage(true);

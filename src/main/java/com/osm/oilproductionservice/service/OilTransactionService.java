@@ -122,7 +122,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
 
             // 3. Restore oil quantity to source storage unit
             if (oilTransaction.getStorageUnitSource() != null) {
-                StorageUnit source = storageUnitRepo.findById(oilTransaction.getStorageUnitSource().getId()).orElseThrow(() -> new IllegalArgumentException("Source storage unit not found: " + oilTransaction.getStorageUnitSource().getId()));
+                StorageUnit source = storageUnitRepo.findByIdAndIsDeletedFalse(oilTransaction.getStorageUnitSource().getId()).orElseThrow(() -> new IllegalArgumentException("Source storage unit not found: " + oilTransaction.getStorageUnitSource().getId()));
                 source.updateCurrentVolume(oilTransaction.getQuantityKg(), 1, oilTransaction.getUnitPrice());
                 storageUnitRepo.save(source);
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.INFO, "Restored %.2f kg to storage unit %s", oilTransaction.getQuantityKg(), source.getId());
@@ -240,7 +240,7 @@ public class OilTransactionService extends BaseServiceImpl<OilTransaction, OilTr
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Delete ID is null: {}", id);
                 return null;
             }
-            OilTransaction entity = repository.findById(id).orElse(null);
+            OilTransaction entity = repository.findByIdAndIsDeletedFalse(id).orElse(null);
             if (entity == null) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Entity with ID {} not found for deletion", id);
                 return null;

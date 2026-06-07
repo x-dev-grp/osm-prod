@@ -146,5 +146,5 @@ public interface DeliveryRepository extends BaseRepository<UnifiedDelivery> {
 
     Optional<UnifiedDelivery> findTopByOrderByCreatedDateDesc();
 
-    List<UnifiedDelivery> findByGlobalLotNumberAndDeliveryType(String globalLotNumber, DeliveryType deliveryType);
+    List<UnifiedDelivery> findByGlobalLotNumberAndDeliveryTypeAndIsDeletedFalse(String globalLotNumber, DeliveryType deliveryType);
 }

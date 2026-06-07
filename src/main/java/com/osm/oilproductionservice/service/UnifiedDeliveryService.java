@@ -137,14 +137,14 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         long startTime = System.currentTimeMillis();
         OSMLogger.logMethodEntry(this.getClass(), "update", dto);
         // 1. Load existing or fail
-        UnifiedDelivery existing = deliveryRepository.findById(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
+        UnifiedDelivery existing = deliveryRepository.findByIdAndIsDeletedFalse(dto.getId()).orElseThrow(() -> new RuntimeException("UnifiedDelivery not found with id: " + dto.getId()));
 
         // 2. Copy simple fields (exclude those we manage manually, including status)
         BeanUtils.copyProperties(dto, existing, "id", "supplier", "storageUnit", "externalId", "paid", "oliveVariety", "parcel", "status");
 
         // 3. Resolve Supplier
         if (dto.getSupplier() != null && dto.getSupplier().getId() != null) {
-            Supplier supplier = supplierRepository.findById(dto.getSupplier().getId())
+            Supplier supplier = supplierRepository.findByIdAndIsDeletedFalse(dto.getSupplier().getId())
                     .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + dto.getSupplier().getId()));
             existing.setSupplierType(supplier);
         } else {
@@ -153,7 +153,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         // 4. Resolve StorageUnit
         if (dto.getStorageUnit() != null && dto.getStorageUnit().getId() != null) {
-            StorageUnit stu = storageUnitRepo.findById(dto.getStorageUnit().getId())
+            StorageUnit stu = storageUnitRepo.findByIdAndIsDeletedFalse(dto.getStorageUnit().getId())
                     .orElseThrow(() -> new RuntimeException("StorageUnit not found with id: " + dto.getStorageUnit().getId()));
             existing.setStorageUnit(stu);
         } else {
@@ -464,7 +464,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         try {
             // Find the original delivery
-            UnifiedDelivery delivery = repository.findById(uuid).orElseThrow(() -> {
+            UnifiedDelivery delivery = repository.findByIdAndIsDeletedFalse(uuid).orElseThrow(() -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[createOilRecFromOliveRecImpl] Original delivery not found with UUID: " + uuid);
                 return new EntityNotFoundException("Original delivery not found: " + uuid);
             });
@@ -744,7 +744,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         try {
             // Find the delivery
-            UnifiedDelivery delivery = repository.findById(id).orElseThrow(() -> {
+            UnifiedDelivery delivery = repository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateStatus] Delivery not found with ID: " + id);
                 return new EntityNotFoundException("Delivery not found: " + id);
             });
@@ -814,7 +814,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
 
         try {
             // Find the delivery
-            UnifiedDelivery delivery = repository.findById(id).orElseThrow(() -> {
+            UnifiedDelivery delivery = repository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.ERROR, "[updateprice] Delivery not found with ID: " + id);
                 return new EntityNotFoundException("Delivery not found: " + id);
             });
@@ -1169,7 +1169,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Delete ID is null: {}", id);
                 return null;
             }
-            UnifiedDelivery entity = repository.findById(id).orElse(null);
+            UnifiedDelivery entity = repository.findByIdAndIsDeletedFalse(id).orElse(null);
             if (entity == null) {
                 OSMLogger.log(this.getClass(), OSMLogger.LogLevel.WARN, "Entity with ID {} not found for deletion", id);
                 return null;
@@ -1177,7 +1177,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
             entity.setDeleted(true);
             UnifiedDelivery updatedEntity = repository.save(entity);
             Set<QualityControlResult> controlResults = entity.getQualityControlResults().stream().map(qc -> {
-                QualityControlResult result = qualityControlResultRepository.findById(qc.getId()).orElse(null);
+                QualityControlResult result = qualityControlResultRepository.findByIdAndIsDeletedFalse(qc.getId()).orElse(null);
                 if (result != null) {
                     result.setDeleted(true);
                     return result;
@@ -1198,12 +1198,12 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
         try {
             // Make enum lookup case-insensitive and trim spaces
 
-            var entity = deliveryRepository.findByLotNumberAndDeliveryType(lotNumber, deliveryType);
-            if (entity == null) {
+            var matches = deliveryRepository.findAllByLotNumberAndDeliveryTypeAndIsDeletedFalse(lotNumber, deliveryType);
+            if (matches == null || matches.isEmpty()) {
                 return null;
             }
 
-            return modelMapper.map(entity, UnifiedDeliveryDTO.class);
+            return modelMapper.map(matches.get(0), UnifiedDeliveryDTO.class);
 
         } catch (Exception e) {
             OSMLogger.logException(this.getClass(), "Error getByLotNumberAndType  : ", e);
@@ -1212,7 +1212,7 @@ public class UnifiedDeliveryService extends BaseServiceImpl<UnifiedDelivery, Uni
     }
 
     public List<UnifiedDeliveryDTO> getDeliveriesByGlobalLotNumber(String lotNumber) {
-        List<UnifiedDelivery> deliveries = deliveryRepository.findByGlobalLotNumberAndDeliveryType(lotNumber, DeliveryType.OLIVE);
+        List<UnifiedDelivery> deliveries = deliveryRepository.findByGlobalLotNumberAndDeliveryTypeAndIsDeletedFalse(lotNumber, DeliveryType.OLIVE);
         List<UnifiedDeliveryDTO> result = new ArrayList<>(deliveries.size());
         deliveries.forEach(d -> result.add(modelMapper.map(d, UnifiedDeliveryDTO.class)));
         return result;
