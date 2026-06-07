@@ -6,13 +6,13 @@ WORKDIR /app
 
 # Pull deps first for better caching
 COPY pom.xml ./
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=m2-cache,target=/root/.m2 \
     --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml,required=false \
     mvn -B -U -DskipTests dependency:go-offline
 
 # Compile/package
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=m2-cache,target=/root/.m2 \
     --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml,required=false \
     mvn -B -DskipTests package
 
