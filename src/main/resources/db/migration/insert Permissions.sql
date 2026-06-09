@@ -10,8 +10,7 @@ DO $$
             WHERE  schemaname = 'public'
               AND    indexname = 'uq_permission_mod_entity_name'
         ) THEN
-            EXECUTE 'CREATE UNIQUE INDEX uq_permission_mod_entity_name
-             ON public.permission(module, entity, permission_name)';
+            NULL;
         END IF;
     END;
 $$ LANGUAGE plpgsql;
@@ -71,10 +70,16 @@ BEGIN
                     INSERT INTO public.permission
                     (id, created_by, created_date, external_id, is_deleted, last_modified_by, last_modified_date,
                      tenant_id, entity, module, permission_name)
-                    VALUES
-                        (gen_random_uuid(), NULL, NOW(), gen_random_uuid(), FALSE, NULL, NOW(),
-                         NULL, ent_key, mod_int, action)
-                    ON CONFLICT (module, entity, permission_name) DO NOTHING;
+                    SELECT gen_random_uuid(), NULL, NOW(), gen_random_uuid(), FALSE, NULL, NOW(),
+                           NULL, ent_key, mod_int, action
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM public.permission p
+                        WHERE p.module = mod_int
+                          AND UPPER(p.entity) = UPPER(ent_key)
+                          AND UPPER(p.permission_name) = UPPER(action)
+                          AND COALESCE(p.is_deleted, FALSE) = FALSE
+                    );
 
                     IF FOUND THEN
                         v_created := v_created + 1;
@@ -367,6 +372,74 @@ SELECT public.seed_permissions_from_json($$
         "COMPLETE"
       ]
     },
+    "FILTRATIONOPERATION": {
+      "description": "Filtration operations",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "START",
+        "PAUSE",
+        "RESUME",
+        "COMPLETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+    "OILCONTAINER": {
+      "description": "Oil containers",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+    "OILCONTAINERSALE": {
+      "description": "Oil container sales",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "CANCEL",
+        "VALIDATE",
+        "PAY",
+        "GEN_PDF"
+      ]
+    },
+    "TRACEABILITYLOT": {
+      "description": "Traceability lots",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+    "WASTE": {
+      "description": "Waste management",
+      "module": "PRODUCTION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "CANCEL",
+        "VALIDATE",
+        "PAY",
+        "GEN_PDF"
+      ]
+    },
     "COMPANYPROFILE": {
       "description": "Company profile management",
       "module": "HABILITATION",
@@ -472,6 +545,16 @@ SELECT public.seed_permissions_from_json($$
     },
     "POSTE": {
       "description": "Job positions",
+      "module": "HR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "PAYROLLS": {
+      "description": "Payroll runs and items",
       "module": "HR",
       "permissions": [
         "READ",
@@ -606,6 +689,26 @@ SELECT public.seed_permissions_from_json($$
         "DELETE"
       ]
     },
+    "CONFIRMATIONCODE": {
+      "description": "Security confirmation codes",
+      "module": "HABILITATION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "AUTHORIZATION": {
+      "description": "OAuth authorizations",
+      "module": "HABILITATION",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
     "CLIENT": {
       "table": "abiooc_inventory.public.clients",
       "description": "System users",
@@ -632,6 +735,17 @@ SELECT public.seed_permissions_from_json($$
 
     "BOM": {
       "description": "Bill of materials",
+      "module": "INVENTAIR",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+
+    "BOMLINE": {
+      "description": "Bill of materials lines",
       "module": "INVENTAIR",
       "permissions": [
         "READ",
@@ -754,6 +868,28 @@ SELECT public.seed_permissions_from_json($$
         "TRANSFERER_STOCK"
       ]
     },
+    "BASETYPE": {
+      "description": "Finance generic type system",
+      "module": "FINANCE",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "SUPPLIER": {
+      "description": "Finance supplier management",
+      "module": "FINANCE",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
     "OF": {
       "description": "Conditioning manufacturing orders",
       "module": "CONDITIONING",
@@ -770,6 +906,32 @@ SELECT public.seed_permissions_from_json($$
         "GEN_PDF"
       ]
     },
+    "ORDREFABRICATION": {
+      "description": "Conditioning manufacturing orders",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "START",
+        "PAUSE",
+        "RESUME",
+        "CLOSE",
+        "AJUSTER_STOCK",
+        "GEN_PDF"
+      ]
+    },
+    "LIGNEOF": {
+      "description": "Conditioning manufacturing order lines",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
     "PROJET": {
       "description": "Conditioning projects",
       "module": "CONDITIONING",
@@ -781,6 +943,28 @@ SELECT public.seed_permissions_from_json($$
         "CANCEL",
         "UPDATE_STATUS",
         "GEN_PDF"
+      ]
+    },
+    "PROJETPRODUIT": {
+      "description": "Conditioning project products",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "PROJETRESERVATION": {
+      "description": "Conditioning project stock reservations",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "RESERVER_STOCK",
+        "LIBERER_STOCK"
       ]
     },
     "CLIENT": {
@@ -821,6 +1005,45 @@ SELECT public.seed_permissions_from_json($$
         "GEN_PDF"
       ]
     },
+    "SHIPPINGINFO": {
+      "description": "Conditioning shipping information",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ADD_LINE",
+        "REMOVE_LINE",
+        "UPDATE_STATUS",
+        "SHIP",
+        "DELIVER",
+        "GEN_PDF"
+      ]
+    },
+    "SHIPPINGLINE": {
+      "description": "Conditioning shipping lines",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ADD_LINE",
+        "REMOVE_LINE"
+      ]
+    },
+    "SHIPPINGEVENT": {
+      "description": "Conditioning shipping events",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "UPDATE_STATUS"
+      ]
+    },
     "EXPEDITION": {
       "description": "Conditioning expedition management",
       "module": "CONDITIONING",
@@ -839,6 +1062,18 @@ SELECT public.seed_permissions_from_json($$
         "GEN_PDF"
       ]
     },
+    "EXPEDITIONARTICLE": {
+      "description": "Conditioning expedition lines",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "ADD_LINE",
+        "REMOVE_LINE"
+      ]
+    },
     "QUALITY": {
       "description": "Conditioning quality control",
       "module": "CONDITIONING",
@@ -849,6 +1084,41 @@ SELECT public.seed_permissions_from_json($$
         "DELETE",
         "VALIDATE",
         "UPDATE_STATUS",
+        "GEN_PDF"
+      ]
+    },
+    "QCPLAN": {
+      "description": "Conditioning quality plans",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
+        "GEN_PDF"
+      ]
+    },
+    "QCCONTROLPOINT": {
+      "description": "Conditioning quality control points",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE"
+      ]
+    },
+    "QCRESULT": {
+      "description": "Conditioning quality results",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "VALIDATE",
         "GEN_PDF"
       ]
     },
@@ -865,6 +1135,27 @@ SELECT public.seed_permissions_from_json($$
         "FINALIZE",
         "EXPORT",
         "GEN_PDF"
+      ]
+    },
+    "LABELSOURCE": {
+      "description": "Conditioning label source snapshots",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "OFFLINEOPERATION": {
+      "description": "Conditioning offline operations",
+      "module": "CONDITIONING",
+      "permissions": [
+        "READ",
+        "CREATE",
+        "UPDATE",
+        "DELETE",
+        "SYNC"
       ]
     },
     "ANALYTICS": {
