@@ -989,61 +989,6 @@ SELECT public.seed_permissions_from_json($$
         "GEN_PDF"
       ]
     },
-    "SHIPPING": {
-      "description": "Conditioning shipping information",
-      "module": "CONDITIONING",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "ADD_LINE",
-        "REMOVE_LINE",
-        "UPDATE_STATUS",
-        "SHIP",
-        "DELIVER",
-        "GEN_PDF"
-      ]
-    },
-    "SHIPPINGINFO": {
-      "description": "Conditioning shipping information",
-      "module": "CONDITIONING",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "ADD_LINE",
-        "REMOVE_LINE",
-        "UPDATE_STATUS",
-        "SHIP",
-        "DELIVER",
-        "GEN_PDF"
-      ]
-    },
-    "SHIPPINGLINE": {
-      "description": "Conditioning shipping lines",
-      "module": "CONDITIONING",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "ADD_LINE",
-        "REMOVE_LINE"
-      ]
-    },
-    "SHIPPINGEVENT": {
-      "description": "Conditioning shipping events",
-      "module": "CONDITIONING",
-      "permissions": [
-        "READ",
-        "CREATE",
-        "UPDATE",
-        "DELETE",
-        "UPDATE_STATUS"
-      ]
-    },
     "EXPEDITION": {
       "description": "Conditioning expedition management",
       "module": "CONDITIONING",
